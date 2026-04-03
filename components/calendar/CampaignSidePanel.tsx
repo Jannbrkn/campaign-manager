@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useTransition, useEffect, useCallback } from 'react'
-import { X, Upload, FileText, ImageIcon, Loader2, ChevronLeft, ExternalLink, Trash2, Link2 } from 'lucide-react'
-import { uploadCampaignAsset, deleteCampaignAsset, updateCampaignStatus } from '@/app/(app)/calendar/actions'
+import { X, Upload, FileText, ImageIcon, Loader2, ChevronLeft, ExternalLink, Trash2, Link2, Pencil } from 'lucide-react'
+import { uploadCampaignAsset, deleteCampaignAsset, updateCampaignStatus, deleteCampaign } from '@/app/(app)/calendar/actions'
 import type { CampaignWithManufacturer, CampaignAsset, CampaignStatus, CampaignType } from '@/lib/supabase/types'
+import EditCampaignModal from './EditCampaignModal'
 
 interface Props {
   campaigns: CampaignWithManufacturer[]
@@ -190,6 +191,9 @@ function CampaignDetail({ campaign, onBack, onRefresh }: CampaignDetailProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [showEdit, setShowEdit] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deletingCampaign, setDeletingCampaign] = useState(false)
   const isLoadingRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -256,10 +260,22 @@ function CampaignDetail({ campaign, onBack, onRefresh }: CampaignDetailProps) {
   const mfg = campaign.manufacturers
   const agency = mfg?.agencies
 
+  async function handleDeleteCampaign() {
+    setDeletingCampaign(true)
+    try {
+      await deleteCampaign(campaign.id)
+      onRefresh()
+      onBack()
+    } catch {
+      setDeletingCampaign(false)
+      setConfirmDelete(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-border shrink-0">
         <button onClick={onBack} className="text-text-secondary hover:text-text-primary transition-colors shrink-0">
           <ChevronLeft size={16} />
         </button>
@@ -267,7 +283,53 @@ function CampaignDetail({ campaign, onBack, onRefresh }: CampaignDetailProps) {
           <span className={`w-2 h-2 rounded-full shrink-0 ${TYPE_DOT[campaign.type]}`} />
           <span className="text-sm text-text-primary truncate">{campaign.title}</span>
         </div>
+        <button
+          onClick={() => setShowEdit(true)}
+          className="p-1.5 text-text-secondary hover:text-text-primary transition-colors shrink-0"
+          title="Bearbeiten"
+        >
+          <Pencil size={13} />
+        </button>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          className="p-1.5 text-text-secondary hover:text-warning transition-colors shrink-0"
+          title="Löschen"
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
+
+      {/* Delete confirmation bar */}
+      {confirmDelete && (
+        <div className="flex items-center justify-between px-5 py-3 bg-warning/5 border-b border-warning/20 shrink-0">
+          <p className="text-xs text-warning">Kampagne wirklich löschen?</p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={handleDeleteCampaign}
+              disabled={deletingCampaign}
+              className="flex items-center gap-1.5 text-xs px-3 py-1 bg-warning/10 border border-warning/30 text-warning rounded-sm hover:bg-warning/20 transition-colors disabled:opacity-50"
+            >
+              {deletingCampaign && <Loader2 size={11} className="animate-spin" />}
+              Löschen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {showEdit && (
+        <EditCampaignModal
+          campaign={campaign}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => { setShowEdit(false); onRefresh() }}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
 

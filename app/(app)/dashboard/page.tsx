@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Campaign, Manufacturer, Agency } from '@/lib/supabase/types'
+import CampaignList from '@/components/dashboard/CampaignList'
 
 interface CampaignRow extends Campaign {
   manufacturers: (Manufacturer & { agencies: Agency }) | null
@@ -28,22 +29,6 @@ async function getNextCampaigns(): Promise<CampaignRow[]> {
   return (data ?? []) as unknown as CampaignRow[]
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  planned:          'Geplant',
-  assets_pending:   'Assets ausstehend',
-  assets_complete:  'Assets vollständig',
-  generating:       'Wird generiert',
-  review:           'In Prüfung',
-  approved:         'Freigegeben',
-  sent:             'Versendet',
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  postcard:         'Postkarte',
-  newsletter:       'Newsletter',
-  report_internal:  'Bericht intern',
-  report_external:  'Bericht extern',
-}
 
 export default async function DashboardPage() {
   const { agencyCount, manufacturerCount, campaignCount } = await getStats()
@@ -79,35 +64,7 @@ export default async function DashboardPage() {
           Nächste Kampagnen
         </h2>
         <div className="bg-surface border border-border rounded-sm divide-y divide-border">
-          {nextCampaigns.length === 0 ? (
-            <p className="px-6 py-8 text-text-secondary text-sm text-center">
-              Noch keine Kampagnen geplant
-            </p>
-          ) : (
-            nextCampaigns.map((campaign) => (
-              <div key={campaign.id} className="px-6 py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-text-primary">{campaign.title}</p>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {campaign.manufacturers?.name} · {campaign.manufacturers?.agencies?.name}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 text-right">
-                  <span className="text-xs text-text-secondary hidden sm:block">
-                    {TYPE_LABELS[campaign.type] ?? campaign.type}
-                  </span>
-                  <span className="text-xs text-text-secondary">
-                    {new Date(campaign.scheduled_date).toLocaleDateString('de-DE', {
-                      day: '2-digit', month: 'short', year: 'numeric'
-                    })}
-                  </span>
-                  <span className="text-xs px-2 py-0.5 bg-background border border-border rounded-sm text-accent-warm">
-                    {STATUS_LABELS[campaign.status] ?? campaign.status}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
+          <CampaignList campaigns={nextCampaigns as any} />
         </div>
       </div>
     </div>

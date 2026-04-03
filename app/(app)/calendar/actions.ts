@@ -109,6 +109,50 @@ export async function createCampaign(data: {
   revalidatePath('/calendar')
 }
 
+// ─── Update campaign ────────────────────────────────────────────────────────
+
+export async function updateCampaign(
+  campaignId: string,
+  data: { title: string; scheduled_date: string; notes: string | null; manufacturer_id: string }
+) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('campaigns').update(data).eq('id', campaignId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/calendar')
+  revalidatePath('/dashboard')
+}
+
+// ─── Delete campaign (+ storage cleanup) ────────────────────────────────────
+
+export async function deleteCampaign(campaignId: string) {
+  const supabase = await createClient()
+
+  // Fetch asset URLs before cascade-delete removes them from DB
+  const { data: assets } = await supabase
+    .from('campaign_assets')
+    .select('file_url')
+    .eq('campaign_id', campaignId)
+
+  if (assets && assets.length > 0) {
+    const marker = '/campaign-assets/'
+    const paths = assets
+      .map((a: any) => {
+        const idx = (a.file_url as string).indexOf(marker)
+        return idx !== -1 ? decodeURIComponent((a.file_url as string).slice(idx + marker.length)) : null
+      })
+      .filter(Boolean) as string[]
+    if (paths.length > 0) {
+      await supabase.storage.from('campaign-assets').remove(paths)
+    }
+  }
+
+  const { error } = await supabase.from('campaigns').delete().eq('id', campaignId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/calendar')
+  revalidatePath('/dashboard')
+}
+
 // ─── Update campaign status ──────────────────────────────────────────────────
 
 export async function updateCampaignStatus(campaignId: string, status: CampaignStatus) {
