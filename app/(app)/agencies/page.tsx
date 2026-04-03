@@ -13,7 +13,7 @@ export default async function AgenciesPage() {
   const agencies = (data ?? []) as Agency[]
 
   return (
-    <div>
+    <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-light text-text-primary">Agenturen</h1>
         <Link

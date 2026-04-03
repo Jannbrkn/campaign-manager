@@ -34,7 +34,7 @@ export default async function ManufacturersPage({
   }, {})
 
   return (
-    <div>
+    <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-light text-text-primary">Hersteller</h1>
       </div>

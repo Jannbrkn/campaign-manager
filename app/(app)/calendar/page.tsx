@@ -1,10 +1,19 @@
-export default function CalendarPage() {
+import { createClient } from '@/lib/supabase/server'
+import CalendarView from '@/components/calendar/CalendarView'
+import type { Agency, Manufacturer } from '@/lib/supabase/types'
+
+export default async function CalendarPage() {
+  const supabase = await createClient()
+
+  const [{ data: agencyData }, { data: mfgData }] = await Promise.all([
+    supabase.from('agencies').select('*').order('name'),
+    supabase.from('manufacturers').select('*').order('name'),
+  ])
+
+  const agencies = (agencyData ?? []) as Agency[]
+  const manufacturers = (mfgData ?? []) as Manufacturer[]
+
   return (
-    <div>
-      <h1 className="text-2xl font-light text-text-primary mb-8">Kalender</h1>
-      <div className="bg-surface border border-border rounded-sm px-6 py-16 text-center">
-        <p className="text-text-secondary text-sm">Kalender-Ansicht — folgt in nächster Version</p>
-      </div>
-    </div>
+    <CalendarView agencies={agencies} manufacturers={manufacturers} />
   )
 }

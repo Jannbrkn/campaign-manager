@@ -60,7 +60,7 @@ export default async function DashboardPage() {
   ]
 
   return (
-    <div>
+    <div className="p-8">
       <h1 className="text-2xl font-light text-text-primary mb-8">Dashboard</h1>
 
       {/* Stat cards */}

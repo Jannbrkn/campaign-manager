@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 
 export default function NewAgencyPage() {
   return (
-    <div>
+    <div className="p-8">
       <Link
         href="/agencies"
         className="inline-flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary transition-colors mb-6"

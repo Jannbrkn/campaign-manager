@@ -15,10 +15,8 @@ export default async function AppLayout({
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          {children}
-        </div>
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        {children}
       </main>
     </div>
   )

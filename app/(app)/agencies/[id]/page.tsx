@@ -26,7 +26,7 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
   ]
 
   return (
-    <div>
+    <div className="p-8">
       <Link
         href="/agencies"
         className="inline-flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary transition-colors mb-6"

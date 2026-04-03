@@ -42,7 +42,7 @@ export default async function ManufacturerDetailPage({ params }: { params: { id:
   ]
 
   return (
-    <div>
+    <div className="p-8">
       <Link
         href="/manufacturers"
         className="inline-flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary transition-colors mb-6"
