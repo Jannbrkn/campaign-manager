@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { CampaignType, CampaignStatus } from '@/lib/supabase/types'
 
-// ─── Date helpers ───────────────────────────────────────────────────────────
+// ─── Date helpers ────────────────────────────────────────────────────────────
 
 function nextWeekdayAfter(from: Date, targetDay: number): Date {
   const d = new Date(from)
@@ -17,7 +17,11 @@ function toDateStr(d: Date): string {
   return d.toISOString().split('T')[0]
 }
 
-// ─── Create campaign (+ optional chain for postcards) ───────────────────────
+function monthLabel(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+}
+
+// ─── Create campaign ─────────────────────────────────────────────────────────
 
 export async function createCampaign(data: {
   manufacturer_id: string
@@ -25,11 +29,15 @@ export async function createCampaign(data: {
   title: string
   scheduled_date: string
   notes?: string
+  createChain?: boolean          // true = auto-create linked follow-up campaigns
 }) {
   const supabase = await createClient()
+  const month = monthLabel(data.scheduled_date)
+  // Strip trailing type label from title to get base name
+  const base = data.title.replace(/\s*–\s*(Postkarte|Newsletter|Report.*)/i, '').trim()
 
-  // Insert the primary campaign
-  const { data: postcard, error } = await supabase
+  // Insert primary campaign
+  const { data: primary, error } = await supabase
     .from('campaigns')
     .insert({
       manufacturer_id: data.manufacturer_id,
@@ -48,68 +56,101 @@ export async function createCampaign(data: {
 
   if (error) throw new Error(error.message)
 
-  // Auto-create chain when postcard is created
+  if (!data.createChain) {
+    revalidatePath('/calendar')
+    return
+  }
+
+  // ── Postcard chain: Newsletter → Reports ────────────────────────────────
   if (data.type === 'postcard') {
     const postcardDate = new Date(data.scheduled_date)
     const newsletterDate = nextWeekdayAfter(postcardDate, 3) // Wednesday
-    const reportDate = nextWeekdayAfter(newsletterDate, 1) // Monday
+    const reportDate = nextWeekdayAfter(newsletterDate, 1)   // Monday
 
-    // Derive base title (strip type suffix if present)
-    const baseTitle = data.title.replace(/\s*–\s*Postkarte.*/, '')
-
-    // Create newsletter
-    const { data: newsletter, error: nlError } = await supabase
+    const { data: nl, error: nlErr } = await supabase
       .from('campaigns')
       .insert({
         manufacturer_id: data.manufacturer_id,
         type: 'newsletter' as CampaignType,
-        title: `${baseTitle} – Newsletter ${new Date(data.scheduled_date).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`,
+        title: `${base} – Newsletter ${month}`,
         scheduled_date: toDateStr(newsletterDate),
         status: 'planned',
         notes: null,
         review_approved: false,
         auto_send_emails: null,
-        linked_postcard_id: postcard.id,
+        linked_postcard_id: primary.id,
         linked_newsletter_id: null,
       })
       .select('id')
       .single()
 
-    if (!nlError && newsletter) {
-      // Create report internal + external linked to newsletter
+    if (!nlErr && nl) {
       await supabase.from('campaigns').insert([
         {
           manufacturer_id: data.manufacturer_id,
           type: 'report_internal' as CampaignType,
-          title: `${baseTitle} – Report Intern ${new Date(data.scheduled_date).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`,
+          title: `${base} – Report Intern ${month}`,
           scheduled_date: toDateStr(reportDate),
           status: 'planned',
           notes: null,
           review_approved: false,
           auto_send_emails: null,
           linked_postcard_id: null,
-          linked_newsletter_id: newsletter.id,
+          linked_newsletter_id: nl.id,
         },
         {
           manufacturer_id: data.manufacturer_id,
           type: 'report_external' as CampaignType,
-          title: `${baseTitle} – Report Extern ${new Date(data.scheduled_date).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`,
+          title: `${base} – Report Extern ${month}`,
           scheduled_date: toDateStr(reportDate),
           status: 'planned',
           notes: null,
           review_approved: false,
           auto_send_emails: null,
           linked_postcard_id: null,
-          linked_newsletter_id: newsletter.id,
+          linked_newsletter_id: nl.id,
         },
       ])
     }
   }
 
+  // ── Newsletter chain: Reports ────────────────────────────────────────────
+  if (data.type === 'newsletter') {
+    const newsletterDate = new Date(data.scheduled_date)
+    const reportDate = nextWeekdayAfter(newsletterDate, 1) // Monday
+
+    await supabase.from('campaigns').insert([
+      {
+        manufacturer_id: data.manufacturer_id,
+        type: 'report_internal' as CampaignType,
+        title: `${base} – Report Intern ${month}`,
+        scheduled_date: toDateStr(reportDate),
+        status: 'planned',
+        notes: null,
+        review_approved: false,
+        auto_send_emails: null,
+        linked_postcard_id: null,
+        linked_newsletter_id: primary.id,
+      },
+      {
+        manufacturer_id: data.manufacturer_id,
+        type: 'report_external' as CampaignType,
+        title: `${base} – Report Extern ${month}`,
+        scheduled_date: toDateStr(reportDate),
+        status: 'planned',
+        notes: null,
+        review_approved: false,
+        auto_send_emails: null,
+        linked_postcard_id: null,
+        linked_newsletter_id: primary.id,
+      },
+    ])
+  }
+
   revalidatePath('/calendar')
 }
 
-// ─── Update campaign ────────────────────────────────────────────────────────
+// ─── Update campaign ──────────────────────────────────────────────────────────
 
 export async function updateCampaign(
   campaignId: string,
@@ -122,12 +163,11 @@ export async function updateCampaign(
   revalidatePath('/dashboard')
 }
 
-// ─── Delete campaign (+ storage cleanup) ────────────────────────────────────
+// ─── Delete campaign (+ storage cleanup) ─────────────────────────────────────
 
 export async function deleteCampaign(campaignId: string) {
   const supabase = await createClient()
 
-  // Fetch asset URLs before cascade-delete removes them from DB
   const { data: assets } = await supabase
     .from('campaign_assets')
     .select('file_url')
@@ -141,9 +181,7 @@ export async function deleteCampaign(campaignId: string) {
         return idx !== -1 ? decodeURIComponent((a.file_url as string).slice(idx + marker.length)) : null
       })
       .filter(Boolean) as string[]
-    if (paths.length > 0) {
-      await supabase.storage.from('campaign-assets').remove(paths)
-    }
+    if (paths.length > 0) await supabase.storage.from('campaign-assets').remove(paths)
   }
 
   const { error } = await supabase.from('campaigns').delete().eq('id', campaignId)
@@ -153,19 +191,17 @@ export async function deleteCampaign(campaignId: string) {
   revalidatePath('/dashboard')
 }
 
-// ─── Update campaign status ──────────────────────────────────────────────────
+// ─── Update status ────────────────────────────────────────────────────────────
 
 export async function updateCampaignStatus(campaignId: string, status: CampaignStatus) {
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('campaigns')
-    .update({ status })
-    .eq('id', campaignId)
+  const { error } = await supabase.from('campaigns').update({ status }).eq('id', campaignId)
   if (error) throw new Error(error.message)
   revalidatePath('/calendar')
+  revalidatePath('/dashboard')
 }
 
-// ─── Upload asset ────────────────────────────────────────────────────────────
+// ─── Upload asset ─────────────────────────────────────────────────────────────
 
 export async function uploadCampaignAsset(formData: FormData) {
   const supabase = await createClient()
@@ -177,14 +213,10 @@ export async function uploadCampaignAsset(formData: FormData) {
 
   const path = `${campaignId}/${Date.now()}-${file.name}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('campaign-assets')
-    .upload(path, file)
+  const { error: uploadError } = await supabase.storage.from('campaign-assets').upload(path, file)
   if (uploadError) throw new Error(uploadError.message)
 
-  const { data: urlData } = supabase.storage
-    .from('campaign-assets')
-    .getPublicUrl(path)
+  const { data: urlData } = supabase.storage.from('campaign-assets').getPublicUrl(path)
 
   const mimeToCategory: Record<string, string> = {
     'application/pdf': 'postcard_pdf',
@@ -211,12 +243,11 @@ export async function uploadCampaignAsset(formData: FormData) {
   revalidatePath('/calendar')
 }
 
-// ─── Delete asset ────────────────────────────────────────────────────────────
+// ─── Delete asset ─────────────────────────────────────────────────────────────
 
 export async function deleteCampaignAsset(assetId: string, fileUrl: string) {
   const supabase = await createClient()
 
-  // Extract storage path from public URL
   const marker = '/campaign-assets/'
   const idx = fileUrl.indexOf(marker)
   if (idx !== -1) {

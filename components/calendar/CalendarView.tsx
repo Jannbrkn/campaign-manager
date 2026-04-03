@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Agency, Manufacturer, CampaignWithManufacturer, CampaignType } from '@/lib/supabase/types'
 import NewCampaignModal from './NewCampaignModal'
-import CampaignSidePanel from './CampaignSidePanel'
+import CampaignSidePanel, { STATUS_STYLE } from './CampaignSidePanel'
 
 interface Props {
   agencies: Agency[]
@@ -13,13 +13,6 @@ interface Props {
 }
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-
-const TYPE_DOT: Record<CampaignType, string> = {
-  postcard: 'bg-accent-gold',
-  newsletter: 'bg-accent-warm',
-  report_internal: 'bg-text-secondary',
-  report_external: 'bg-text-secondary',
-}
 
 // ISO Monday-first: 0=Mon … 6=Sun
 function isoWeekday(d: Date): number {
@@ -209,14 +202,14 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
                   </span>
                 </div>
 
-                {/* Campaign dots */}
+                {/* Campaign dots — color = status */}
                 {dayCampaigns.length > 0 && (
                   <div className="px-3 pb-2 flex flex-wrap gap-1">
                     {dayCampaigns.slice(0, 3).map((c) => (
                       <span
                         key={c.id}
-                        className={`inline-block w-1.5 h-1.5 rounded-full ${TYPE_DOT[c.type]}`}
-                        title={c.title}
+                        className={`inline-block w-1.5 h-1.5 rounded-full ${STATUS_STYLE[c.status].dot}`}
+                        title={`${c.title} · ${c.status}`}
                       />
                     ))}
                     {dayCampaigns.length > 3 && (
@@ -225,19 +218,15 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
                   </div>
                 )}
 
-                {/* Campaign titles (shown if cell is tall enough) */}
+                {/* Campaign labels (taller cells) */}
                 {dayCampaigns.length > 0 && (
                   <div className="px-2 pb-1.5 space-y-0.5 hidden [@media(min-height:800px)]:block">
                     {dayCampaigns.slice(0, 2).map((c) => (
                       <div
                         key={c.id}
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm text-[10px] truncate
-                          ${c.type === 'postcard' ? 'bg-accent-gold/10 text-accent-gold' :
-                            c.type === 'newsletter' ? 'bg-accent-warm/10 text-accent-warm' :
-                            'bg-text-secondary/10 text-text-secondary'}
-                        `}
+                        className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm text-[10px] truncate bg-white/[0.04] text-text-secondary"
                       >
-                        <span className={`w-1 h-1 rounded-full shrink-0 ${TYPE_DOT[c.type]}`} />
+                        <span className={`w-1 h-1 rounded-full shrink-0 ${STATUS_STYLE[c.status].dot}`} />
                         <span className="truncate">{c.title}</span>
                       </div>
                     ))}

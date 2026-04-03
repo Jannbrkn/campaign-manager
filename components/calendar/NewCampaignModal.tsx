@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Check } from 'lucide-react'
 import { createCampaign } from '@/app/(app)/calendar/actions'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
 
@@ -16,22 +16,46 @@ interface Props {
 type CampaignTypeOption = 'postcard' | 'newsletter' | 'report_internal' | 'report_external'
 
 const TYPE_LABELS: Record<CampaignTypeOption, string> = {
-  postcard: 'Postkarte',
-  newsletter: 'Newsletter',
+  postcard:        'Postkarte',
+  newsletter:      'Newsletter',
   report_internal: 'Report Intern',
   report_external: 'Report Extern',
 }
 
-function nextWeekday(from: Date, targetDay: number): Date {
-  // targetDay: 0=Sun, 1=Mon, 3=Wed, 4=Thu
+function nextWeekdayAfter(from: Date, targetDay: number): Date {
   const d = new Date(from)
   d.setDate(d.getDate() + 1)
   while (d.getDay() !== targetDay) d.setDate(d.getDate() + 1)
   return d
 }
 
-function toInputDate(d: Date): string {
+function fmt(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('de-DE', {
+    weekday: 'short', day: 'numeric', month: 'short',
+  })
+}
+
+function toDateStr(d: Date): string {
   return d.toISOString().split('T')[0]
+}
+
+interface ChainDates {
+  newsletter?: string   // for postcard
+  report: string        // for both postcard and newsletter
+}
+
+function computeChain(type: CampaignTypeOption, dateStr: string): ChainDates | null {
+  if (!dateStr) return null
+  if (type === 'postcard') {
+    const nl = nextWeekdayAfter(new Date(dateStr), 3)   // Wednesday
+    const rep = nextWeekdayAfter(nl, 1)                  // Monday
+    return { newsletter: toDateStr(nl), report: toDateStr(rep) }
+  }
+  if (type === 'newsletter') {
+    const rep = nextWeekdayAfter(new Date(dateStr), 1)   // Monday
+    return { report: toDateStr(rep) }
+  }
+  return null
 }
 
 export default function NewCampaignModal({ agencies, manufacturers, defaultDate, onClose, onCreated }: Props) {
@@ -40,58 +64,45 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
   const [date, setDate] = useState(defaultDate ?? '')
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
-  const [suggestions, setSuggestions] = useState<{ newsletter?: string; report?: string } | null>(null)
+  const [createChain, setCreateChain] = useState(true)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
+  const chain = computeChain(type, date)
+  const offerChain = chain !== null
+
   function handleTypeChange(t: CampaignTypeOption) {
     setType(t)
-    if (t === 'postcard' && date) {
-      const postcardDate = new Date(date)
-      const newsletterDate = nextWeekday(postcardDate, 3) // Wednesday
-      const reportDate = nextWeekday(newsletterDate, 1) // Monday
-      setSuggestions({
-        newsletter: toInputDate(newsletterDate),
-        report: toInputDate(reportDate),
-      })
-    } else {
-      setSuggestions(null)
-    }
-  }
-
-  function handleDateChange(d: string) {
-    setDate(d)
-    if (type === 'postcard' && d) {
-      const postcardDate = new Date(d)
-      const newsletterDate = nextWeekday(postcardDate, 3)
-      const reportDate = nextWeekday(newsletterDate, 1)
-      setSuggestions({
-        newsletter: toInputDate(newsletterDate),
-        report: toInputDate(reportDate),
-      })
-    }
+    if (t !== 'postcard' && t !== 'newsletter') setCreateChain(false)
+    else setCreateChain(true)
   }
 
   function getAutoTitle(): string {
-    if (!manufacturerId) return ''
+    if (!manufacturerId || !date) return ''
     const mfg = manufacturers.find((m) => m.id === manufacturerId)
     if (!mfg) return ''
-    const typeLabel = TYPE_LABELS[type]
-    const month = date ? new Date(date).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) : ''
-    return `${mfg.name} – ${typeLabel}${month ? ` ${month}` : ''}`
+    const month = new Date(date + 'T00:00:00').toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+    return `${mfg.name} – ${TYPE_LABELS[type]} ${month}`
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    const finalTitle = title || getAutoTitle()
+    const finalTitle = title.trim() || getAutoTitle()
     if (!manufacturerId || !date || !finalTitle) {
       setError('Hersteller, Datum und Titel sind Pflichtfelder.')
       return
     }
     startTransition(async () => {
       try {
-        await createCampaign({ manufacturer_id: manufacturerId, type, title: finalTitle, scheduled_date: date, notes })
+        await createCampaign({
+          manufacturer_id: manufacturerId,
+          type,
+          title: finalTitle,
+          scheduled_date: date,
+          notes: notes.trim() || undefined,
+          createChain: offerChain && createChain,
+        })
         onCreated()
         onClose()
       } catch (err: any) {
@@ -100,9 +111,8 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
     })
   }
 
-  // Group manufacturers by agency
-  const grouped = agencies.reduce<Record<string, Manufacturer[]>>((acc, agency) => {
-    acc[agency.id] = manufacturers.filter((m) => m.agency_id === agency.id)
+  const grouped = agencies.reduce<Record<string, Manufacturer[]>>((acc, ag) => {
+    acc[ag.id] = manufacturers.filter((m) => m.agency_id === ag.id)
     return acc
   }, {})
 
@@ -110,7 +120,7 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg bg-surface border border-border rounded-sm shadow-2xl">
-        {/* Header */}
+
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <h2 className="text-sm font-medium text-text-primary">Neue Kampagne</h2>
           <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
@@ -119,6 +129,7 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+
           {/* Manufacturer */}
           <div>
             <label className="block text-xs text-text-secondary mb-1.5">Hersteller</label>
@@ -129,11 +140,11 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
               required
             >
               <option value="">Hersteller wählen…</option>
-              {agencies.map((agency) => {
-                const mfgs = grouped[agency.id] ?? []
+              {agencies.map((ag) => {
+                const mfgs = grouped[ag.id] ?? []
                 if (!mfgs.length) return null
                 return (
-                  <optgroup key={agency.id} label={agency.name}>
+                  <optgroup key={ag.id} label={ag.name}>
                     {mfgs.map((m) => (
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
@@ -155,7 +166,7 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
                   className={`px-2 py-2 text-xs rounded-sm border transition-colors ${
                     type === t
                       ? 'border-accent-warm text-accent-warm bg-accent-warm/5'
-                      : 'border-border text-text-secondary hover:border-border hover:text-text-primary'
+                      : 'border-border text-text-secondary hover:text-text-primary'
                   }`}
                 >
                   {TYPE_LABELS[t]}
@@ -170,32 +181,50 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
             <input
               type="date"
               value={date}
-              onChange={(e) => handleDateChange(e.target.value)}
+              onChange={(e) => setDate(e.target.value)}
               className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50 [color-scheme:dark]"
               required
             />
           </div>
 
-          {/* Auto chain preview for postcard */}
-          {type === 'postcard' && suggestions && (
-            <div className="bg-background border border-border rounded-sm px-4 py-3 space-y-2">
-              <p className="text-xs text-text-secondary uppercase tracking-wider">Kampagnenkette wird automatisch erstellt</p>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-warm shrink-0" />
-                  <span className="text-text-secondary">Newsletter</span>
-                  <span className="text-accent-warm ml-auto">
-                    {new Date(suggestions.newsletter!).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </span>
+          {/* Chain prompt — only for postcard/newsletter when date is set */}
+          {offerChain && chain && (
+            <div className="bg-background border border-border rounded-sm overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCreateChain((v) => !v)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors"
+              >
+                {/* Checkbox */}
+                <span className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                  createChain ? 'bg-accent-warm border-accent-warm' : 'bg-transparent border-border'
+                }`}>
+                  {createChain && <Check size={10} strokeWidth={3} className="text-background" />}
+                </span>
+                <span className="text-xs text-text-primary text-left">
+                  {type === 'postcard'
+                    ? 'Newsletter und Reports automatisch anlegen'
+                    : 'Reports automatisch anlegen'}
+                </span>
+              </button>
+
+              {/* Preview */}
+              {createChain && (
+                <div className="px-4 pb-3 space-y-1.5 border-t border-border">
+                  {chain.newsletter && (
+                    <div className="flex items-center gap-2 pt-3 text-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent-warm shrink-0" />
+                      <span className="text-text-secondary flex-1">Newsletter</span>
+                      <span className="text-accent-warm">{fmt(chain.newsletter)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#999999] shrink-0" />
+                    <span className="text-text-secondary flex-1">Report Intern + Extern</span>
+                    <span className="text-text-primary">{fmt(chain.report)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-text-secondary shrink-0" />
-                  <span className="text-text-secondary">Report Intern + Extern</span>
-                  <span className="text-text-primary ml-auto">
-                    {new Date(suggestions.report!).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -226,12 +255,11 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
 
           {error && <p className="text-xs text-warning">{error}</p>}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-sm text-text-secondary border border-border rounded-sm hover:text-text-primary hover:border-text-secondary/30 transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm text-text-secondary border border-border rounded-sm hover:text-text-primary transition-colors"
             >
               Abbrechen
             </button>
@@ -241,7 +269,7 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
               className="flex-1 px-4 py-2.5 text-sm text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isPending && <Loader2 size={14} className="animate-spin" />}
-              {type === 'postcard' ? 'Kette erstellen' : 'Erstellen'}
+              {offerChain && createChain ? 'Kette erstellen' : 'Erstellen'}
             </button>
           </div>
         </form>
