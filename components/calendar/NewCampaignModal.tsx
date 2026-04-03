@@ -176,19 +176,25 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
             />
           </div>
 
-          {/* Date suggestions for postcard */}
-          {suggestions && type === 'postcard' && (
-            <div className="bg-background border border-border rounded-sm px-4 py-3 space-y-1.5">
-              <p className="text-xs text-text-secondary">Automatische Folge-Termine:</p>
-              <div className="flex gap-6 text-xs">
-                <span>
-                  <span className="text-text-secondary">Newsletter: </span>
-                  <span className="text-accent-warm">{suggestions.newsletter && new Date(suggestions.newsletter).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                </span>
-                <span>
-                  <span className="text-text-secondary">Report: </span>
-                  <span className="text-text-primary">{suggestions.report && new Date(suggestions.report).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                </span>
+          {/* Auto chain preview for postcard */}
+          {type === 'postcard' && suggestions && (
+            <div className="bg-background border border-border rounded-sm px-4 py-3 space-y-2">
+              <p className="text-xs text-text-secondary uppercase tracking-wider">Kampagnenkette wird automatisch erstellt</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-warm shrink-0" />
+                  <span className="text-text-secondary">Newsletter</span>
+                  <span className="text-accent-warm ml-auto">
+                    {new Date(suggestions.newsletter!).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-secondary shrink-0" />
+                  <span className="text-text-secondary">Report Intern + Extern</span>
+                  <span className="text-text-primary ml-auto">
+                    {new Date(suggestions.report!).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -235,7 +241,7 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
               className="flex-1 px-4 py-2.5 text-sm text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isPending && <Loader2 size={14} className="animate-spin" />}
-              Erstellen
+              {type === 'postcard' ? 'Kette erstellen' : 'Erstellen'}
             </button>
           </div>
         </form>

@@ -60,6 +60,7 @@ export interface CampaignAsset {
   file_name: string
   file_type: string
   file_url: string
+  file_size: number | null
   asset_category: AssetCategory
   is_output: boolean
   created_at: string
@@ -89,7 +90,7 @@ export type Database = {
       agencies: { Row: Agency; Insert: Omit<Agency, 'id' | 'created_at'>; Update: Partial<Omit<Agency, 'id' | 'created_at'>> }
       manufacturers: { Row: Manufacturer; Insert: Omit<Manufacturer, 'id' | 'created_at'>; Update: Partial<Omit<Manufacturer, 'id' | 'created_at'>> }
       campaigns: { Row: Campaign; Insert: Omit<Campaign, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Omit<Campaign, 'id' | 'created_at' | 'updated_at'>> }
-      campaign_assets: { Row: CampaignAsset; Insert: Omit<CampaignAsset, 'id' | 'created_at'>; Update: Partial<Omit<CampaignAsset, 'id' | 'created_at'>> }
+      campaign_assets: { Row: CampaignAsset; Insert: Omit<CampaignAsset, 'id' | 'created_at'> & { file_size?: number | null }; Update: Partial<Omit<CampaignAsset, 'id' | 'created_at'>> }
       campaign_alerts: { Row: CampaignAlert; Insert: Omit<CampaignAlert, 'id'>; Update: Partial<Omit<CampaignAlert, 'id'>> }
     }
   }
