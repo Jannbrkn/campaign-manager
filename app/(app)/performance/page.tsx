@@ -87,7 +87,7 @@ export default async function PerformancePage({
         <h1 className="text-2xl font-light text-text-primary">Performance</h1>
       </div>
 
-      <KpiRow groups={groups} totalCampaigns={campaigns.length} />
+      <KpiRow groups={groups} totalCampaigns={groups.reduce((sum, g) => sum + g.campaigns.length, 0)} />
 
       <ManufacturerGrid
         groups={groups}
