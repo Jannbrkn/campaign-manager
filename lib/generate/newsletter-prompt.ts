@@ -11,6 +11,18 @@ Build versandfertige Produkt-Newsletter für Luxusmöbelmarken. Output ist immer
 
 ---
 
+## ABSENDER-LOGIK (KRITISCH — immer beachten)
+
+**Der Newsletter wird im Namen des HERSTELLERS geschrieben, nicht im Namen der Agentur.**
+
+- Sign-off/Unterschrift: "Ihr [Herstellername]-Team" — niemals "Ihr Collezioni-Team", "Ihr Exclusive Collection-Team" o.ä.
+- Die Agentur ist der rechtliche Absender und erscheint NUR im Footer (Adressdaten) — sie tritt inhaltlich nicht in Erscheinung.
+- **Die order@-E-Mail der Agentur darf NIEMALS als Kontaktadresse im Newsletter-Inhalt stehen.** Diese Adressen sind interne Bestelladressen, keine Kundenpost-Adressen.
+- Wenn im Input eine "Kontakt-Mail (Hersteller)" angegeben ist → diese für CTA / Kontaktzeile im Body verwenden.
+- Wenn KEINE Hersteller-Kontaktmail vorhanden → keine Kontaktadresse im Body nennen.
+
+---
+
 ## Erwarteter Input
 
 Wenn dieser Skill über die API aufgerufen wird, werden folgende Daten übergeben:
@@ -111,6 +123,12 @@ Nimm den Textentwurf als Basis. Nicht komplett umschreiben — nah am Original b
 
 ### Schritt 5: MJML bauen, kompilieren, ZIP erstellen
 
+#### MJML-Strukturregel (KRITISCH)
+**mj-section darf NUR direkt in mj-body stehen — NIEMALS in mj-column.**
+Innerhalb von mj-column sind ausschließlich erlaubt: mj-text, mj-image, mj-button, mj-divider, mj-social, mj-spacer.
+Verschachtelung: mj-body → mj-section → mj-column → (Inhalts-Tags).
+Niemals: mj-body → mj-section → mj-column → mj-section.
+
 #### MJML-Grundregeln
 1. MJML 4.x, \`lang="de"\` auf Root-Tag
 2. 640px Breite
@@ -143,7 +161,7 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 | Sub-Headlines | Light (300) | 12–13px | Versalien, Laufweite 3px |
 | Fließtext | Light (300) | 14px | Zeilenhöhe 1.85 |
 | Buttons | Medium (500) | 10–11px | Versalien, Laufweite 2.5px |
-| Footer | Light (300) | 9–10px | Hellgrau |
+| Footer | Light (300) | 9–10px | Dunkelgrau (#3a3a3a) auf hellem Hintergrund ODER #cccccc auf dunklem (#1a1a1a) |
 
 #### Layout-Regeln
 - Hero-Bild: Full-Width, ganz oben nach der Topbar
@@ -161,11 +179,13 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 
 #### Footer — DYNAMISCH
 
-Der Footer MUSS die Agentur-Daten enthalten:
+Der Footer enthält die Agentur-Adressdaten (rechtlicher Absender) — **aber keine order@-Mail**.
+
+Pflichtinhalt:
 \`\`\`
 [Agentur-Name]
 [Agentur-Adresse]
-[Agentur-Telefon] · [Agentur-Mail]
+[Agentur-Telefon]
 \`\`\`
 
 Plus Mailchimp-Merge-Tags:
@@ -173,6 +193,14 @@ Plus Mailchimp-Merge-Tags:
 <a href="*|UNSUB|*">Abmelden</a>
 <a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>
 \`\`\`
+
+**Footer-Kontrast (PFLICHT):**
+- Hintergrund: #1a1a1a oder #2c2c2c (dunkel)
+- Haupttext: #999999
+- Adressen/Details: #777777
+- Links (Abmelden etc.): #888888, underline
+- NIEMALS: hellgrauer Text auf weißem oder hellgrauem Hintergrund — das ist nicht lesbar.
+- Der Footer-Hintergrund muss sich klar vom Rest der Mail abheben.
 
 #### Kompilierung
 

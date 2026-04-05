@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef, useTransition, useEffect, useCallback } from 'react'
-import { X, Upload, FileText, ImageIcon, Loader2, ChevronLeft, ExternalLink, Trash2, Pencil, Link2, ChevronRight } from 'lucide-react'
-import { uploadCampaignAsset, deleteCampaignAsset, updateCampaignStatus, deleteCampaign } from '@/app/(app)/calendar/actions'
-import type { CampaignWithManufacturer, CampaignAsset, CampaignStatus, CampaignType } from '@/lib/supabase/types'
+import { X, Upload, FileText, ImageIcon, Loader2, ChevronLeft, ExternalLink, Trash2, Pencil, Link2, ChevronRight, Plus, Maximize2, Mail, CheckCircle2 } from 'lucide-react'
+import { uploadCampaignAsset, deleteCampaignAsset, updateCampaignStatus, deleteCampaign, updateCampaignBriefing, updateReviewApproved, updateAutoSendEmails } from '@/app/(app)/calendar/actions'
+import type { CampaignWithManufacturer, CampaignAsset, CampaignStatus, CampaignType, NewsletterBriefing } from '@/lib/supabase/types'
 import EditCampaignModal from './EditCampaignModal'
+import { generateReportEmailDraft } from '@/lib/emails/report-draft'
 
 // ─── Status & type constants ──────────────────────────────────────────────────
 
@@ -212,9 +213,23 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState('')
+  const [emailDraft, setEmailDraft] = useState<{ to: string; subject: string; body: string } | null>(null)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [reviewApproved, setReviewApproved] = useState(campaign.review_approved)
+  const [autoSendEmails, setAutoSendEmails] = useState<string[]>(campaign.auto_send_emails ?? [])
+  const [newEmail, setNewEmail] = useState('')
   const [previewSrc, setPreviewSrc] = useState<string | null>(null)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [briefing, setBriefing] = useState<NewsletterBriefing>(
+    () => campaign.briefing ?? {}
+  )
+  const [briefingSaving, setBriefingSaving] = useState(false)
   const isLoadingRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const briefingSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const briefingInitialized = useRef(false)
 
   const loadAssets = useCallback(async () => {
     if (isLoadingRef.current) return
@@ -227,7 +242,21 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       .eq('campaign_id', campaign.id)
       .order('is_output', { ascending: false })
       .order('created_at', { ascending: false })
-    setAssets((data as CampaignAsset[]) ?? [])
+    const raw = (data as CampaignAsset[]) ?? []
+    // Sign all asset URLs (bucket is private)
+    const marker = '/campaign-assets/'
+    const signed = await Promise.all(
+      raw.map(async (asset) => {
+        const idx = asset.file_url.indexOf(marker)
+        if (idx === -1) return asset
+        const path = decodeURIComponent(asset.file_url.slice(idx + marker.length).split('?')[0])
+        const { data: s } = await supabase.storage
+          .from('campaign-assets')
+          .createSignedUrl(path, 3600)
+        return s?.signedUrl ? { ...asset, file_url: s.signedUrl } : asset
+      })
+    )
+    setAssets(signed)
     setLoadingAssets(false)
     isLoadingRef.current = false
   }, [campaign.id])
@@ -239,6 +268,36 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
 
   // Reset status when campaign prop changes (navigation)
   useEffect(() => { setStatus(campaign.status) }, [campaign.id])
+
+  // Reset briefing when campaign changes (navigation)
+  useEffect(() => {
+    setBriefing(campaign.briefing ?? {})
+    briefingInitialized.current = false
+    setReviewApproved(campaign.review_approved)
+    setAutoSendEmails(campaign.auto_send_emails ?? [])
+    setNewEmail('')
+  }, [campaign.id])
+
+  // Autosave briefing with 800ms debounce (newsletter campaigns only)
+  useEffect(() => {
+    if (campaign.type !== 'newsletter') return
+    if (!briefingInitialized.current) {
+      briefingInitialized.current = true
+      return
+    }
+    if (briefingSaveTimer.current) clearTimeout(briefingSaveTimer.current)
+    briefingSaveTimer.current = setTimeout(async () => {
+      setBriefingSaving(true)
+      try {
+        await updateCampaignBriefing(campaign.id, briefing)
+      } finally {
+        setBriefingSaving(false)
+      }
+    }, 800)
+    return () => {
+      if (briefingSaveTimer.current) clearTimeout(briefingSaveTimer.current)
+    }
+  }, [briefing])
 
   // Load newsletter preview as Blob URL for the iframe
   useEffect(() => {
@@ -327,10 +386,45 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       await loadAssets()
       onRefresh()
       setFeedback('')
+
+      // After successful report generation: offer to email if manufacturer has contact
+      if (
+        (campaign.type === 'report_internal' || campaign.type === 'report_external') &&
+        mfg?.contact_email
+      ) {
+        const draft = generateReportEmailDraft({
+          contactPerson: mfg.contact_person ?? null,
+          manufacturerName: mfg.name ?? '',
+          campaignTitle: campaign.title,
+        })
+        setEmailDraft({ to: mfg.contact_email, ...draft })
+        setEmailSent(false)
+        setEmailError(null)
+      }
     } catch (e: any) {
       setGenError(e.message)
     } finally {
       setGenerating(false)
+    }
+  }
+
+  async function handleSendEmail() {
+    if (!emailDraft) return
+    setEmailSending(true)
+    setEmailError(null)
+    try {
+      const res = await fetch('/api/send/report-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaign.id, ...emailDraft }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Fehler beim Senden')
+      setEmailSent(true)
+    } catch (e: any) {
+      setEmailError(e.message)
+    } finally {
+      setEmailSending(false)
     }
   }
 
@@ -432,6 +526,129 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           )}
         </div>
 
+        {/* Briefing form — newsletter only */}
+        {campaign.type === 'newsletter' && (
+          <>
+            <div className="border-t border-border" />
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-text-secondary uppercase tracking-wider">Briefing</p>
+                {briefingSaving && <Loader2 size={11} className="animate-spin text-text-secondary" />}
+              </div>
+              <div className="space-y-3">
+
+                <div>
+                  <label className="block text-[10px] text-text-secondary mb-1">Produkt / Thema</label>
+                  <input
+                    type="text"
+                    value={briefing.product ?? ''}
+                    onChange={(e) => setBriefing((b) => ({ ...b, product: e.target.value }))}
+                    placeholder="z.B. Boffi Küchen Frühjahr 2026"
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-text-secondary mb-1">Textentwurf</label>
+                  <textarea
+                    value={briefing.draft ?? ''}
+                    onChange={(e) => setBriefing((b) => ({ ...b, draft: e.target.value }))}
+                    placeholder="Rohentwurf oder Stichpunkte für den Newsletter-Text…"
+                    rows={5}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-text-secondary mb-1">CTA-Text</label>
+                    <input
+                      type="text"
+                      value={briefing.cta_text ?? ''}
+                      onChange={(e) => setBriefing((b) => ({ ...b, cta_text: e.target.value }))}
+                      placeholder="Einladung bestätigen"
+                      className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-text-secondary mb-1">CTA-Link</label>
+                    <input
+                      type="url"
+                      value={briefing.cta_link ?? ''}
+                      onChange={(e) => setBriefing((b) => ({ ...b, cta_link: e.target.value }))}
+                      placeholder="https://…"
+                      className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-text-secondary mb-1">Weitere Links</label>
+                  <div className="space-y-1.5">
+                    {(briefing.extra_links ?? []).map((link, i) => (
+                      <div key={i} className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={link.label}
+                          onChange={(e) => {
+                            const updated = [...(briefing.extra_links ?? [])]
+                            updated[i] = { ...updated[i], label: e.target.value }
+                            setBriefing((b) => ({ ...b, extra_links: updated }))
+                          }}
+                          placeholder="Label"
+                          className="flex-1 bg-background border border-border rounded-sm px-2 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                        />
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => {
+                            const updated = [...(briefing.extra_links ?? [])]
+                            updated[i] = { ...updated[i], url: e.target.value }
+                            setBriefing((b) => ({ ...b, extra_links: updated }))
+                          }}
+                          placeholder="https://…"
+                          className="flex-1 bg-background border border-border rounded-sm px-2 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                        />
+                        <button
+                          onClick={() => {
+                            const updated = (briefing.extra_links ?? []).filter((_, j) => j !== i)
+                            setBriefing((b) => ({ ...b, extra_links: updated }))
+                          }}
+                          className="p-1.5 text-text-secondary hover:text-[#E65100] transition-colors"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setBriefing((b) => ({
+                        ...b,
+                        extra_links: [...(b.extra_links ?? []), { label: '', url: '' }],
+                      }))}
+                      className="text-[10px] text-text-secondary hover:text-accent-warm transition-colors flex items-center gap-1"
+                    >
+                      <Plus size={10} />
+                      Link hinzufügen
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-text-secondary mb-1">Extra-Hinweise</label>
+                  <textarea
+                    value={briefing.hints ?? ''}
+                    onChange={(e) => setBriefing((b) => ({ ...b, hints: e.target.value }))}
+                    placeholder="z.B. Messe-Einladung, förmlicher Ton, Termin: 23. April"
+                    rows={2}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none"
+                  />
+                </div>
+
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Generation */}
         {(campaign.type === 'newsletter' ||
           campaign.type === 'report_internal' ||
@@ -477,6 +694,162 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           </>
         )}
 
+        {/* Freigabe & Auto-Send — report campaigns only */}
+        {(campaign.type === 'report_internal' || campaign.type === 'report_external') && (
+          <>
+            <div className="border-t border-border" />
+            <div className="space-y-3">
+              <p className="text-xs text-text-secondary uppercase tracking-wider">Freigabe & Auto-Send</p>
+
+              {/* review_approved toggle */}
+              <button
+                onClick={async () => {
+                  const next = !reviewApproved
+                  setReviewApproved(next)
+                  await updateReviewApproved(campaign.id, next)
+                  onRefresh()
+                }}
+                className={`w-full flex items-center justify-between px-4 py-3 border rounded-sm transition-colors ${
+                  reviewApproved
+                    ? 'border-[#2E7D32]/50 bg-[#2E7D32]/8'
+                    : 'border-border bg-background hover:border-text-secondary/30'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${
+                    reviewApproved ? 'bg-[#2E7D32] border-[#2E7D32]' : 'border-border'
+                  }`}>
+                    {reviewApproved && <CheckCircle2 size={11} className="text-white" />}
+                  </div>
+                  <span className="text-xs text-text-primary">Report freigegeben</span>
+                </div>
+                <span className={`text-[10px] ${reviewApproved ? 'text-[#2E7D32]' : 'text-text-secondary/50'}`}>
+                  {reviewApproved ? 'Wird montags versendet' : 'Kein Auto-Send'}
+                </span>
+              </button>
+
+              {/* auto_send_emails */}
+              <div>
+                <p className="text-[10px] text-text-secondary/70 mb-2">Empfänger (Montags-Auto-Send)</p>
+                <div className="space-y-1.5">
+                  {autoSendEmails.map((email) => (
+                    <div key={email} className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-sm">
+                      <Mail size={10} className="text-text-secondary/50 shrink-0" />
+                      <span className="text-xs text-text-primary flex-1 truncate">{email}</span>
+                      <button
+                        onClick={async () => {
+                          const next = autoSendEmails.filter((e) => e !== email)
+                          setAutoSendEmails(next)
+                          await updateAutoSendEmails(campaign.id, next)
+                        }}
+                        className="text-text-secondary/40 hover:text-[#E65100] transition-colors shrink-0"
+                      >
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter' && newEmail.trim()) {
+                          const next = [...autoSendEmails, newEmail.trim()]
+                          setAutoSendEmails(next)
+                          setNewEmail('')
+                          await updateAutoSendEmails(campaign.id, next)
+                        }
+                      }}
+                      placeholder="mail@beispiel.de + Enter"
+                      className="flex-1 bg-background border border-border rounded-sm px-3 py-1.5 text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 transition-colors"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!newEmail.trim()) return
+                        const next = [...autoSendEmails, newEmail.trim()]
+                        setAutoSendEmails(next)
+                        setNewEmail('')
+                        await updateAutoSendEmails(campaign.id, next)
+                      }}
+                      className="px-2.5 py-1.5 text-xs border border-border text-text-secondary hover:text-text-primary hover:border-text-secondary/40 rounded-sm transition-colors"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Email suggestion — shown after successful report generation */}
+        {emailDraft && (campaign.type === 'report_internal' || campaign.type === 'report_external') && (
+          <>
+            <div className="border-t border-border" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-text-secondary uppercase tracking-wider">Report per Mail senden</p>
+                <button
+                  onClick={() => setEmailDraft(null)}
+                  className="text-text-secondary/50 hover:text-text-secondary transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              {emailSent ? (
+                <div className="flex items-center gap-2 px-3 py-3 bg-[#2E7D32]/10 border border-[#2E7D32]/30 rounded-sm">
+                  <CheckCircle2 size={13} className="text-[#2E7D32] shrink-0" />
+                  <p className="text-xs text-[#2E7D32]">Mail wurde gesendet an {emailDraft.to}</p>
+                </div>
+              ) : (
+                <>
+                  {/* To */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-sm">
+                    <Mail size={11} className="text-text-secondary/50 shrink-0" />
+                    <span className="text-xs text-text-secondary">An:</span>
+                    <span className="text-xs text-text-primary">{emailDraft.to}</span>
+                  </div>
+
+                  {/* Subject */}
+                  <input
+                    type="text"
+                    value={emailDraft.subject}
+                    onChange={(e) => setEmailDraft((d) => d ? { ...d, subject: e.target.value } : d)}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 transition-colors"
+                    placeholder="Betreff"
+                  />
+
+                  {/* Body */}
+                  <textarea
+                    value={emailDraft.body}
+                    onChange={(e) => setEmailDraft((d) => d ? { ...d, body: e.target.value } : d)}
+                    rows={9}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 resize-none transition-colors leading-relaxed"
+                  />
+
+                  {emailError && (
+                    <p className="text-xs text-[#E65100]">{emailError}</p>
+                  )}
+
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={emailSending}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                  >
+                    {emailSending ? (
+                      <><Loader2 size={12} className="animate-spin" /> Wird gesendet…</>
+                    ) : (
+                      <><Mail size={12} /> Mail mit Anhängen senden</>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+
         {/* Linked campaigns */}
         {linked.length > 0 && (
           <>
@@ -515,7 +888,16 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           <>
             <div className="border-t border-border" />
             <div>
-              <p className="text-xs text-text-secondary uppercase tracking-wider mb-2">Newsletter-Vorschau</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-text-secondary uppercase tracking-wider">Newsletter-Vorschau</p>
+                <button
+                  onClick={() => setShowPreviewModal(true)}
+                  className="flex items-center gap-1.5 text-[10px] text-text-secondary hover:text-accent-warm transition-colors px-2 py-1 border border-border hover:border-accent-warm/40 rounded-sm"
+                >
+                  <Maximize2 size={11} />
+                  Vollbild
+                </button>
+              </div>
               <iframe
                 src={previewSrc}
                 className="w-full rounded-sm border border-border"
@@ -525,6 +907,50 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
               />
             </div>
           </>
+        )}
+
+        {/* Preview modal */}
+        {showPreviewModal && previewSrc && (
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto py-8"
+            onClick={() => setShowPreviewModal(false)}
+          >
+            <div
+              className="relative flex flex-col"
+              style={{ width: 680 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal toolbar */}
+              <div className="flex items-center justify-between px-4 py-3 bg-surface border border-border rounded-t-sm">
+                <p className="text-sm text-text-primary">{campaign.title}</p>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={previewSrc}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary border border-border px-2.5 py-1 rounded-sm transition-colors"
+                  >
+                    <ExternalLink size={12} />
+                    Im Browser öffnen
+                  </a>
+                  <button
+                    onClick={() => setShowPreviewModal(false)}
+                    className="p-1.5 text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+              {/* Full iframe */}
+              <iframe
+                src={previewSrc}
+                className="w-full border-x border-b border-border rounded-b-sm bg-white"
+                style={{ height: '90vh' }}
+                title="Newsletter Vorschau Vollbild"
+                sandbox="allow-same-origin"
+              />
+            </div>
+          </div>
         )}
 
         <div className="border-t border-border" />

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Campaign, Manufacturer, Agency } from '@/lib/supabase/types'
 import CampaignList from '@/components/dashboard/CampaignList'
+import QuickReportButton from '@/components/dashboard/QuickReportButton'
 
 interface CampaignRow extends Campaign {
   manufacturers: (Manufacturer & { agencies: Agency }) | null
@@ -14,6 +15,15 @@ async function getStats() {
     supabase.from('campaigns').select('*', { count: 'exact', head: true }).neq('status', 'sent'),
   ])
   return { agencyCount, manufacturerCount, campaignCount }
+}
+
+async function getManufacturers() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('manufacturers')
+    .select('*, agencies(*)')
+    .order('name')
+  return (data ?? []) as unknown as (Manufacturer & { agencies: Agency })[]
 }
 
 async function getNextCampaigns(): Promise<CampaignRow[]> {
@@ -31,8 +41,8 @@ async function getNextCampaigns(): Promise<CampaignRow[]> {
 
 
 export default async function DashboardPage() {
-  const { agencyCount, manufacturerCount, campaignCount } = await getStats()
-  const nextCampaigns = await getNextCampaigns()
+  const [{ agencyCount, manufacturerCount, campaignCount }, nextCampaigns, manufacturers] =
+    await Promise.all([getStats(), getNextCampaigns(), getManufacturers()])
 
   const stats = [
     { label: 'Agenturen',            value: agencyCount ?? 0 },
@@ -46,7 +56,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-light text-text-primary mb-8">Dashboard</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-light text-text-primary">Dashboard</h1>
+        <QuickReportButton manufacturers={manufacturers as any} />
+      </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">

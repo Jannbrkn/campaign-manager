@@ -8,11 +8,32 @@ import Papa from 'papaparse'
 import { filterAndScore, type ScoredContact } from './scoring'
 
 export interface ReportParams {
-  csvText: string
+  recipientsCsv: string  // Mailchimp audience/members export (has Phone, Name)
+  campaignCsv: string    // Mailchimp campaign report export (has Opens, Clicks)
   manufacturerName: string
   agencyName: string
   campaignTitle: string
   campaignDate: string // YYYY-MM-DD
+}
+
+// Detects which type of Mailchimp CSV a file is
+export type CsvFileType = 'recipients' | 'campaign' | 'combined' | 'unknown'
+
+export function detectCsvType(csvText: string): CsvFileType {
+  const { data } = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    preview: 3,
+    skipEmptyLines: true,
+  })
+  if (!data.length) return 'unknown'
+  const keys = Object.keys(data[0]).map((k) => k.toLowerCase().replace(/[\s_-]/g, ''))
+  const hasPhone = keys.some((k) => k.includes('phone'))
+  const hasOpens = keys.some((k) => k === 'opens')
+  const hasClicks = keys.some((k) => k === 'clicks')
+  if ((hasOpens || hasClicks) && hasPhone) return 'combined'
+  if (hasOpens || hasClicks) return 'campaign'
+  if (hasPhone) return 'recipients'
+  return 'unknown'
 }
 
 export interface ReportBuffers {
@@ -32,21 +53,101 @@ function findCol(row: Record<string, string>, ...candidates: string[]): string {
   return ''
 }
 
-function parseContacts(csvText: string) {
+function cleanPhone(raw: string): string | null {
+  const cleaned = raw.replace(/^'+/, '').trim()
+  return cleaned || null
+}
+
+interface RecipientData {
+  firstName: string
+  lastName: string
+  phone: string | null
+}
+
+interface CampaignData {
+  opens: number
+  clicks: number
+  firstName: string
+  lastName: string
+}
+
+// Parses a Mailchimp audience/members export (has Phone column)
+function parseRecipientsFile(csvText: string): Map<string, RecipientData> {
   const { data } = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
   })
-  return data
-    .map((row) => ({
-      email: findCol(row, 'email address', 'email_address', 'email'),
+  const map = new Map<string, RecipientData>()
+  for (const row of data) {
+    const email = findCol(row, 'email address', 'email_address', 'email').toLowerCase().trim()
+    if (!email) continue
+    map.set(email, {
       firstName: findCol(row, 'first name', 'first_name', 'firstname'),
       lastName: findCol(row, 'last name', 'last_name', 'lastname'),
-      phone: findCol(row, 'phone number', 'phone_number', 'phone') || null,
-      opens: parseInt(findCol(row, 'opens') || '0', 10) || 0,
-      clicks: parseInt(findCol(row, 'clicks') || '0', 10) || 0,
-    }))
-    .filter((c) => c.email)
+      phone: cleanPhone(findCol(row, 'phone number', 'phone_number', 'phone')),
+    })
+  }
+  return map
+}
+
+// Parses a Mailchimp campaign report export (has Opens/Clicks columns)
+function parseCampaignFile(csvText: string): Map<string, CampaignData> {
+  const { data } = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    skipEmptyLines: true,
+  })
+  const map = new Map<string, CampaignData>()
+  for (const row of data) {
+    const email = findCol(row, 'email address', 'email_address', 'email').toLowerCase().trim()
+    if (!email) continue
+    const opens = parseInt(findCol(row, 'opens') || '0', 10) || 0
+    const clicks = parseInt(findCol(row, 'clicks') || '0', 10) || 0
+    const existing = map.get(email)
+    if (existing) {
+      // Multiple rows per email (e.g. one row per clicked URL) — aggregate
+      map.set(email, {
+        ...existing,
+        opens: Math.max(existing.opens, opens),
+        clicks: existing.clicks + clicks,
+      })
+    } else {
+      map.set(email, {
+        firstName: findCol(row, 'first name', 'first_name', 'firstname'),
+        lastName: findCol(row, 'last name', 'last_name', 'lastname'),
+        opens,
+        clicks,
+      })
+    }
+  }
+  return map
+}
+
+// Merges recipients (contact data) + campaign (engagement data) on email
+function mergeContacts(
+  recipients: Map<string, RecipientData>,
+  campaign: Map<string, CampaignData>
+) {
+  const results: Array<{
+    email: string
+    firstName: string
+    lastName: string
+    phone: string | null
+    opens: number
+    clicks: number
+  }> = []
+
+  campaign.forEach((cv, email) => {
+    const rec = recipients.get(email)
+    results.push({
+      email,
+      firstName: rec?.firstName || cv.firstName,
+      lastName: rec?.lastName || cv.lastName,
+      phone: rec?.phone ?? null,
+      opens: cv.opens,
+      clicks: cv.clicks,
+    })
+  })
+  return results
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -63,7 +164,7 @@ function setFill(cell: ExcelJS.Cell, hex: string) {
 
 async function buildInternal(
   contacts: ScoredContact[],
-  p: Omit<ReportParams, 'csvText'>
+  p: Omit<ReportParams, 'recipientsCsv' | 'campaignCsv'>
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
 
@@ -214,7 +315,7 @@ async function buildInternal(
 
 async function buildExternal(
   contacts: ScoredContact[],
-  p: Omit<ReportParams, 'csvText'>
+  p: Omit<ReportParams, 'recipientsCsv' | 'campaignCsv'>
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
 
@@ -291,7 +392,9 @@ async function buildExternal(
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function generateReports(params: ReportParams): Promise<ReportBuffers> {
-  const contacts = parseContacts(params.csvText)
+  const recipients = parseRecipientsFile(params.recipientsCsv)
+  const campaign = parseCampaignFile(params.campaignCsv)
+  const contacts = mergeContacts(recipients, campaign)
   const scored = filterAndScore(contacts)
   const base = {
     manufacturerName: params.manufacturerName,

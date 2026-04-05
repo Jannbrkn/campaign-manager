@@ -7,12 +7,13 @@ import Anthropic from '@anthropic-ai/sdk'
 import mjml2html from 'mjml'
 import JSZip from 'jszip'
 import { NEWSLETTER_SYSTEM_PROMPT } from './newsletter-prompt'
-import type { CampaignWithManufacturer, CampaignAsset } from '@/lib/supabase/types'
+import type { CampaignWithManufacturer, CampaignAsset, NewsletterBriefing } from '@/lib/supabase/types'
 
 export interface NewsletterInput {
   campaign: CampaignWithManufacturer
   assets: CampaignAsset[]          // Own campaign assets (input only)
   postcardAssets: CampaignAsset[]  // Linked postcard assets for style reference
+  briefing?: NewsletterBriefing    // Structured briefing from the form
   feedback?: string                 // Optional regeneration feedback
 }
 
@@ -25,7 +26,7 @@ export interface NewsletterOutput {
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
 function buildUserPrompt(input: NewsletterInput): string {
-  const { campaign, assets, postcardAssets, feedback } = input
+  const { campaign, assets, postcardAssets, briefing, feedback } = input
   const mfg = campaign.manufacturers as any
   const agency = mfg?.agencies as any
 
@@ -47,6 +48,9 @@ function buildUserPrompt(input: NewsletterInput): string {
     '## HERSTELLER',
     `Name: ${mfg?.name ?? ''}`,
     `Kategorie: ${mfg?.category ?? ''}`,
+    mfg?.contact_email
+      ? `Kontakt-Mail (Hersteller, für CTA/Kontaktzeile im Body verwenden): ${mfg.contact_email}`
+      : '(Keine Hersteller-Kontaktmail — keine Kontaktadresse im Newsletter-Body nennen)',
     '',
     '## KAMPAGNE',
     `Titel: ${campaign.title}`,
@@ -55,28 +59,65 @@ function buildUserPrompt(input: NewsletterInput): string {
     '',
   ]
 
+  // Briefing fields (structured input from the briefing form)
+  if (briefing?.product) {
+    lines.push('## PRODUKT / THEMA')
+    lines.push(briefing.product)
+    lines.push('')
+  }
+
+  if (briefing?.draft) {
+    lines.push('## TEXTENTWURF (Briefing)')
+    lines.push('(Als direkte Basis verwenden — nah am Original bleiben, humanisieren)')
+    lines.push(briefing.draft)
+    lines.push('')
+  }
+
+  if (briefing?.cta_text || briefing?.cta_link) {
+    lines.push('## HAUPT-CTA')
+    if (briefing.cta_text) lines.push(`Text: ${briefing.cta_text}`)
+    if (briefing.cta_link) lines.push(`Link: ${briefing.cta_link}`)
+    lines.push('')
+  }
+
+  if (briefing?.extra_links?.length) {
+    lines.push('## WEITERE LINKS')
+    for (const l of briefing.extra_links) {
+      if (l.label || l.url) lines.push(`- ${l.label}: ${l.url}`)
+    }
+    lines.push('')
+  }
+
+  if (briefing?.hints) {
+    lines.push('## EXTRA-HINWEISE')
+    lines.push(briefing.hints)
+    lines.push('')
+  }
+
   if (textAssets.length > 0) {
-    lines.push('## TEXTENTWURF')
-    lines.push('(Texte aus hochgeladenen Assets — als Basis verwenden, humanisieren)')
+    lines.push('## TEXTENTWURF (hochgeladene Assets)')
+    lines.push('(Als zusätzliche Basis verwenden, humanisieren)')
     for (const a of textAssets) lines.push(`- ${a.file_name}: ${a.file_url}`)
     lines.push('')
   }
 
   if (imageAssets.length > 0) {
     lines.push('## BILDER (eigene Kampagne)')
-    for (const a of imageAssets) lines.push(`- ${a.file_name}: ${a.file_url}`)
+    lines.push('(Bilder sind als Vision-Blöcke beigefügt — verwende die Dateinamen als src-Attribut: src="dateiname.jpg")')
+    for (const a of imageAssets) lines.push(`- ${a.file_name}`)
     lines.push('')
   }
 
   if (ctaAssets.length > 0) {
-    lines.push('## CTA-LINKS')
+    lines.push('## CTA-LINKS (Assets)')
     for (const a of ctaAssets) lines.push(`- ${a.file_name}: ${a.file_url}`)
     lines.push('')
   }
 
   if (postcardImages.length > 0) {
     lines.push('## POSTKARTE (Stil-Referenz — Newsletter muss visuell passen)')
-    for (const a of postcardImages) lines.push(`- ${a.file_name}: ${a.file_url}`)
+    lines.push('(Postkarten-Bilder sind als Vision-Blöcke beigefügt)')
+    for (const a of postcardImages) lines.push(`- ${a.file_name}`)
     lines.push('')
   }
 
@@ -91,23 +132,44 @@ function buildUserPrompt(input: NewsletterInput): string {
 
 // ─── Image content blocks for vision ─────────────────────────────────────────
 
-function buildImageBlocks(
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
+async function buildImageBlocks(
   assets: CampaignAsset[],
   postcardAssets: CampaignAsset[]
-): Anthropic.ImageBlockParam[] {
+): Promise<Anthropic.ImageBlockParam[]> {
   const imageAssets = [
     ...assets.filter((a) => a.asset_category === 'image'),
     ...postcardAssets.filter(
       (a) => a.asset_category === 'image' || a.asset_category === 'postcard_pdf'
     ),
   ]
-  return imageAssets.map((a) => ({
-    type: 'image' as const,
-    source: {
-      type: 'url' as const,
-      url: a.file_url,
-    },
-  }))
+
+  const blocks: Anthropic.ImageBlockParam[] = []
+  for (const asset of imageAssets) {
+    const mediaType = SUPPORTED_IMAGE_TYPES.includes(asset.file_type)
+      ? asset.file_type
+      : 'image/jpeg'
+    // Skip PDFs — Claude vision doesn't support them
+    if (asset.file_type === 'application/pdf') continue
+    try {
+      const res = await fetch(asset.file_url)
+      if (!res.ok) continue
+      const buf = await res.arrayBuffer()
+      const b64 = Buffer.from(buf).toString('base64')
+      blocks.push({
+        type: 'image' as const,
+        source: {
+          type: 'base64' as const,
+          media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+          data: b64,
+        },
+      })
+    } catch {
+      // Skip image if download fails — generation continues without it
+    }
+  }
+  return blocks
 }
 
 // ─── ZIP builder ──────────────────────────────────────────────────────────────
@@ -148,7 +210,10 @@ async function buildPreview(html: string, imageAssets: CampaignAsset[]): Promise
       if (!res.ok) continue
       const buf = await res.arrayBuffer()
       const b64 = Buffer.from(buf).toString('base64')
-      preview = preview.split(asset.file_url).join(`data:${asset.file_type};base64,${b64}`)
+      const dataUrl = `data:${asset.file_type};base64,${b64}`
+      // Replace by filename (Claude uses relative paths) AND by URL as fallback
+      preview = preview.split(asset.file_name).join(dataUrl)
+      preview = preview.split(asset.file_url).join(dataUrl)
     } catch {
       // Skip failed image — preview will have broken img
     }
@@ -162,7 +227,7 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const textPrompt = buildUserPrompt(input)
-  const imageBlocks = buildImageBlocks(input.assets, input.postcardAssets)
+  const imageBlocks = await buildImageBlocks(input.assets, input.postcardAssets)
 
   const userContent: Anthropic.ContentBlockParam[] = [
     { type: 'text', text: textPrompt },
@@ -170,7 +235,7 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
   ]
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 16384,
     system: NEWSLETTER_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userContent }],
@@ -182,12 +247,18 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
     throw new Error('INVALID_MJML:' + mjmlSource)
   }
 
-  const { html, errors } = mjml2html(mjmlSource, { validationLevel: 'strict' })
+  let compiled = mjml2html(mjmlSource, { validationLevel: 'strict' })
 
-  if (errors && errors.length > 0) {
-    const msg = errors.map((e: any) => e.formattedMessage ?? e.message).join('; ')
-    throw new Error('MJML_ERROR:' + msg + '|||' + mjmlSource)
+  if (compiled.errors && compiled.errors.length > 0) {
+    // Fallback: retry with soft validation so the user still gets output
+    compiled = mjml2html(mjmlSource, { validationLevel: 'soft' })
+    if (!compiled.html) {
+      const msg = compiled.errors.map((e: any) => e.formattedMessage ?? e.message).join('; ')
+      throw new Error('MJML_ERROR:' + msg + '|||' + mjmlSource)
+    }
   }
+
+  const { html } = compiled
 
   const allImageAssets = [
     ...input.assets.filter((a) => a.asset_category === 'image'),

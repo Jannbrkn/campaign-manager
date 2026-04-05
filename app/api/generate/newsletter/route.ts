@@ -1,10 +1,21 @@
 // app/api/generate/newsletter/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { generateNewsletter } from '@/lib/generate/newsletter'
 import type { CampaignAsset, CampaignWithManufacturer } from '@/lib/supabase/types'
 
 export const maxDuration = 60
+
+// Extracts storage path from a Supabase URL and returns a 1h signed URL
+async function signUrl(supabase: any, url: string): Promise<string> {
+  const marker = '/campaign-assets/'
+  const idx = url.indexOf(marker)
+  if (idx === -1) return url
+  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
+  const { data } = await supabase.storage.from('campaign-assets').createSignedUrl(path, 3600)
+  return data?.signedUrl ?? url
+}
 
 export async function POST(req: NextRequest) {
   const { campaign_id, feedback } = await req.json()
@@ -13,6 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = await createClient()
+  const admin = createAdminClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -47,25 +59,32 @@ export async function POST(req: NextRequest) {
     postcardAssets = (pcRaw ?? []) as CampaignAsset[]
   }
 
-  // Helper: upload to storage and return public URL
+  // Sign all asset URLs so server-side fetches work with private bucket (admin bypasses RLS)
+  const [signedAssets, signedPostcardAssets] = await Promise.all([
+    Promise.all(assets.map(async (a) => ({ ...a, file_url: await signUrl(admin, a.file_url) }))),
+    Promise.all(postcardAssets.map(async (a) => ({ ...a, file_url: await signUrl(admin, a.file_url) }))),
+  ])
+
+  // Helper: upload to storage via admin client (bypasses RLS)
   const uploadAsset = async (
     path: string,
     data: Buffer | Uint8Array,
     contentType: string
   ): Promise<string> => {
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await admin.storage
       .from('campaign-assets')
       .upload(path, data, { upsert: true, contentType })
     if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
-    const { data: urlData } = supabase.storage.from('campaign-assets').getPublicUrl(path)
+    const { data: urlData } = admin.storage.from('campaign-assets').getPublicUrl(path)
     return urlData.publicUrl
   }
 
   try {
     const { mjmlSource, zipBuffer, previewHtml } = await generateNewsletter({
       campaign: campaign as CampaignWithManufacturer,
-      assets,
-      postcardAssets,
+      assets: signedAssets,
+      postcardAssets: signedPostcardAssets,
+      briefing: campaign.briefing ?? undefined,
       feedback: feedback ?? undefined,
     })
 
@@ -88,9 +107,9 @@ export async function POST(req: NextRequest) {
     )
 
     // Replace existing output assets
-    await supabase.from('campaign_assets').delete().eq('campaign_id', campaign_id).eq('is_output', true)
+    await admin.from('campaign_assets').delete().eq('campaign_id', campaign_id).eq('is_output', true)
 
-    await supabase.from('campaign_assets').insert([
+    await admin.from('campaign_assets').insert([
       {
         campaign_id,
         file_name: `newsletter-${dateStr}.zip`,
@@ -120,7 +139,7 @@ export async function POST(req: NextRequest) {
       },
     ])
 
-    await supabase.from('campaigns').update({ status: 'review' }).eq('id', campaign_id)
+    await admin.from('campaigns').update({ status: 'review' }).eq('id', campaign_id)
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
@@ -132,11 +151,11 @@ export async function POST(req: NextRequest) {
       const rawMjml = parts.length > 1 ? parts[1] : err.message.split(':').slice(1).join(':')
       if (rawMjml) {
         const path = `${campaign_id}/newsletter-invalid-${Date.now()}.mjml`
-        await supabase.storage
+        await admin.storage
           .from('campaign-assets')
           .upload(path, new TextEncoder().encode(rawMjml), { upsert: true, contentType: 'text/plain' })
-        const { data: urlData } = supabase.storage.from('campaign-assets').getPublicUrl(path)
-        await supabase.from('campaign_assets').insert({
+        const { data: urlData } = admin.storage.from('campaign-assets').getPublicUrl(path)
+        await admin.from('campaign_assets').insert({
           campaign_id,
           file_name: 'newsletter-invalid.mjml',
           file_type: 'text/plain',
@@ -146,7 +165,7 @@ export async function POST(req: NextRequest) {
           is_output: true,
         })
       }
-      await supabase
+      await admin
         .from('campaigns')
         .update({ status: 'assets_pending', notes: `Generierungsfehler: ${err.message.split('|||')[0]}` })
         .eq('id', campaign_id)

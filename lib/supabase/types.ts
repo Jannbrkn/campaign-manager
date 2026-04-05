@@ -1,7 +1,17 @@
 export type CampaignType = 'postcard' | 'newsletter' | 'report_internal' | 'report_external'
 export type CampaignStatus = 'planned' | 'assets_pending' | 'assets_complete' | 'generating' | 'review' | 'approved' | 'sent'
 export type AssetCategory = 'image' | 'text' | 'logo' | 'cta' | 'link' | 'csv_export' | 'postcard_pdf' | 'newsletter_zip' | 'report_xlsx' | 'newsletter_preview'
-export type AlertType = 'prep_reminder_6w' | 'assets_missing' | 'output_ready' | 'review_needed' | 'auto_send_scheduled'
+export type AlertType =
+  | 'six_week_notice'
+  | 'briefing_missing'
+  | 'assets_missing'
+  | 'chain_blocked'
+  | 'overdue'
+  // Legacy values (kept for DB compatibility)
+  | 'prep_reminder_6w'
+  | 'output_ready'
+  | 'review_needed'
+  | 'auto_send_scheduled'
 
 export interface Agency {
   id: string
@@ -29,6 +39,7 @@ export interface Manufacturer {
   texts_source: string | null
   own_creatives: boolean
   own_texts: boolean
+  contact_email: string | null
   additional_report_email: string | null
   dropbox_link: string | null
   postcard_tags: string | null
@@ -36,6 +47,15 @@ export interface Manufacturer {
   extra_tags: string | null
   print_run: number | null
   created_at: string
+}
+
+export interface NewsletterBriefing {
+  product?: string
+  draft?: string
+  cta_text?: string
+  cta_link?: string
+  extra_links?: { label: string; url: string }[]
+  hints?: string
 }
 
 export interface Campaign {
@@ -50,6 +70,7 @@ export interface Campaign {
   notes: string | null
   review_approved: boolean
   auto_send_emails: string[] | null
+  briefing: NewsletterBriefing | null
   created_at: string
   updated_at: string
 }
@@ -73,6 +94,7 @@ export interface CampaignAlert {
   scheduled_for: string
   sent: boolean
   sent_at: string | null
+  acknowledged_at: string | null
 }
 
 // Joined types

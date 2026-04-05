@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CampaignType, CampaignStatus } from '@/lib/supabase/types'
+import type { CampaignType, CampaignStatus, NewsletterBriefing } from '@/lib/supabase/types'
 
 // ─── Date helpers ────────────────────────────────────────────────────────────
 
@@ -189,6 +189,37 @@ export async function deleteCampaign(campaignId: string) {
 
   revalidatePath('/calendar')
   revalidatePath('/dashboard')
+}
+
+// ─── Update review approval ───────────────────────────────────────────────────
+
+export async function updateReviewApproved(campaignId: string, approved: boolean) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ review_approved: approved })
+    .eq('id', campaignId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/calendar')
+}
+
+// ─── Update auto-send emails ──────────────────────────────────────────────────
+
+export async function updateAutoSendEmails(campaignId: string, emails: string[]) {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ auto_send_emails: emails.length > 0 ? emails : null })
+    .eq('id', campaignId)
+  if (error) throw new Error(error.message)
+}
+
+// ─── Update briefing ──────────────────────────────────────────────────────────
+
+export async function updateCampaignBriefing(campaignId: string, briefing: NewsletterBriefing) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('campaigns').update({ briefing }).eq('id', campaignId)
+  if (error) throw new Error(error.message)
 }
 
 // ─── Update status ────────────────────────────────────────────────────────────
