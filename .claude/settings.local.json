@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills:*)",
+      "Bash(mkdir -p ~/.claude/skills)",
+      "Bash(git clone:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(mv:*)",
+      "Bash(timeout 20 npm run dev)",
+      "Bash(npm run:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -X POST 'https://ytcoouhwbxzfndbvowez.supabase.co/auth/v1/token?grant_type=password' -H 'apikey: sb_publishable_wTdZQp6bMiEUETuw_osO3g_5ebwf2Zo' -H 'Content-Type: application/json' -d '{\"email\":\"test@test.com\",\"password\":\"test\"}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/login)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -s http://localhost:3000/api/create-test-user)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('dependencies',{}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./package.json'\\); console.log\\(JSON.stringify\\(d.dependencies, null, 2\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./package.json'\\); console.log\\(d.dependencies.resend\\)\")",
+      "Bash(node -e \"const d=require\\('./package.json'\\); console.log\\(d.scripts\\)\")",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const xlsx = require\\('./node_modules/xlsx'\\); const wb = xlsx.readFile\\('Herstellerübersicht mit Infos.xlsx'\\); console.log\\('Sheets:', wb.SheetNames\\); wb.SheetNames.forEach\\(name => { const ws = wb.Sheets[name]; const data = xlsx.utils.sheet_to_json\\(ws, { header: 1 }\\); console.log\\('\\\\n=== Sheet:', name, '==='\\); data.forEach\\(row => console.log\\(JSON.stringify\\(row\\)\\)\\); }\\);\")",
+      "Bash(pip install:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(where python:*)",
+      "Bash(where python3:*)",
+      "Bash(where py:*)",
+      "Bash(grep -v \"^'[0-9a-f-]*'$\")",
+      "Bash(node --env-file=.env.local scripts/seed-campaigns.mjs)"
+    ]
+  }
+}

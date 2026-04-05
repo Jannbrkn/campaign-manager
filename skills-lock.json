@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "refactoring-ui": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "e531f4c31d5765b137a0af61e7c99db088b0f91261bd8a50b8f543fd3f619287"
+    },
+    "top-design": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "e7e6f37601cf40473bae67def9c40ac0e45baf3ef25715942ba08befccdd71a9"
+    },
+    "ux-heuristics": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "26ce2a3da2339a95310a15e64e774e5b8f5467cf8cf5960eabbf9aeae6bf4ec2"
+    }
+  }
+}
