@@ -16,6 +16,22 @@ async function signUrl(supabase: any, url: string): Promise<string> {
   return data?.signedUrl ?? url
 }
 
+function parseCsvStats(csvText: string): { total: number; opens: number; clicks: number } {
+  const lines = csvText.trim().split('\n').filter((l) => l.trim())
+  if (lines.length < 2) return { total: 0, opens: 0, clicks: 0 }
+  const header = lines[0].split(',').map((h) => h.replace(/^"|"$/g, '').trim())
+  const opensIdx = header.findIndex((h) => /number.of.opens/i.test(h))
+  const clicksIdx = header.findIndex((h) => /number.of.clicks/i.test(h))
+  let opens = 0
+  let clicks = 0
+  for (const line of lines.slice(1)) {
+    const cols = line.split(',').map((c) => c.replace(/^"|"$/g, '').trim())
+    if (opensIdx >= 0 && Number(cols[opensIdx] ?? 0) > 0) opens++
+    if (clicksIdx >= 0 && Number(cols[clicksIdx] ?? 0) > 0) clicks++
+  }
+  return { total: lines.length - 1, opens, clicks }
+}
+
 export async function POST(req: NextRequest) {
   const { campaign_id } = await req.json()
   if (!campaign_id) {
@@ -192,6 +208,23 @@ export async function POST(req: NextRequest) {
         is_output: true,
       })
       await admin.from('campaigns').update({ status: 'review' }).eq('id', externalId)
+    }
+
+    // Compute and save performance stats on the linked newsletter campaign (or this campaign)
+    if (recipientsCsv) {
+      const { total, opens, clicks } = parseCsvStats(recipientsCsv)
+      if (total > 0) {
+        const statsTargetId = campaign.linked_newsletter_id ?? campaign_id
+        await admin.from('campaigns').update({
+          performance_stats: {
+            open_rate: opens / total,
+            click_rate: clicks / total,
+            emails_sent: total,
+            unsubscribes: null,
+            source: 'csv',
+          },
+        }).eq('id', statsTargetId)
+      }
     }
 
     return NextResponse.json({ success: true })
