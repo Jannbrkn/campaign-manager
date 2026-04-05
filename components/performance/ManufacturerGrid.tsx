@@ -1,8 +1,9 @@
 // components/performance/ManufacturerGrid.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { RefreshCw, Loader2 } from 'lucide-react'
 import type { ManufacturerGroup, Agency } from '@/lib/supabase/types'
 import ManufacturerCard from './ManufacturerCard'
@@ -22,6 +23,9 @@ export default function ManufacturerGrid({
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [refreshing, setRefreshing] = useState(false)
   const [refreshResult, setRefreshResult] = useState<string | null>(null)
+  const router = useRouter()
+
+  useEffect(() => setExpanded(new Set()), [groups])
 
   const year = searchParams.year ?? '2026'
   const agency = searchParams.agency ?? 'alle'
@@ -43,8 +47,9 @@ export default function ManufacturerGrid({
       const res = await fetch('/api/performance/refresh', { method: 'POST' })
       const json = await res.json()
       setRefreshResult(json.updated > 0 ? `${json.updated} Kampagnen aktualisiert` : 'Keine API-Kampagnen gefunden')
-      if (json.updated > 0) window.location.reload()
-    } catch {
+      if (json.updated > 0) router.refresh()
+    } catch (err) {
+      console.error('[ManufacturerGrid] refresh failed', err)
       setRefreshResult('Fehler beim Aktualisieren')
     } finally {
       setRefreshing(false)

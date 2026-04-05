@@ -15,7 +15,9 @@ function fmt(rate: number | null | undefined): string {
 }
 
 function fmtDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: '2-digit' })
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
 export default function DrillDown({

@@ -29,6 +29,7 @@ export default function ManufacturerCard({
   return (
     <button
       onClick={onClick}
+      aria-expanded={isExpanded}
       className={`text-left bg-surface border rounded-sm p-5 transition-all relative w-full ${
         isExpanded
           ? 'border-accent-warm bg-[#EDE8E3]/5'
