@@ -227,6 +227,10 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   )
   const [briefingSaving, setBriefingSaving] = useState(false)
   const isLoadingRef = useRef(false)
+  const [mailchimpSubject, setMailchimpSubject] = useState('')
+  const [sendingMailchimp, setSendingMailchimp] = useState(false)
+  const [mailchimpError, setMailchimpError] = useState<string | null>(null)
+  const [mailchimpUrl, setMailchimpUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const briefingSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const briefingInitialized = useRef(false)
@@ -405,6 +409,27 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       setGenError(e.message)
     } finally {
       setGenerating(false)
+    }
+  }
+
+  async function handleSendToMailchimp() {
+    if (!mailchimpSubject.trim()) return
+    setSendingMailchimp(true)
+    setMailchimpError(null)
+    setMailchimpUrl(null)
+    try {
+      const res = await fetch('/api/send/mailchimp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaign.id, subject: mailchimpSubject.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Fehler beim Erstellen')
+      setMailchimpUrl(json.editUrl)
+    } catch (e: any) {
+      setMailchimpError(e.message)
+    } finally {
+      setSendingMailchimp(false)
     }
   }
 
@@ -705,6 +730,47 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                 </button>
               )}
               {genError && <p className="text-xs text-[#E65100] mt-2">{genError}</p>}
+            </div>
+          </>
+        )}
+
+        {/* Mailchimp — newsletter campaigns with output only */}
+        {campaign.type === 'newsletter' && assets.some((a) => a.is_output) && (
+          <>
+            <div className="border-t border-border" />
+            <div className="space-y-2">
+              <p className="text-xs text-text-secondary uppercase tracking-wider">Mailchimp</p>
+              {mailchimpUrl ? (
+                <a
+                  href={mailchimpUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-[#2E7D32] border border-[#2E7D32]/40 bg-[#2E7D32]/8 rounded-sm hover:bg-[#2E7D32]/15 transition-colors"
+                >
+                  <ExternalLink size={12} />
+                  In Mailchimp öffnen
+                </a>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={mailchimpSubject}
+                    onChange={(e) => setMailchimpSubject(e.target.value)}
+                    placeholder="Betreff der E-Mail…"
+                    disabled={sendingMailchimp}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleSendToMailchimp}
+                    disabled={sendingMailchimp || !mailchimpSubject.trim()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-40"
+                  >
+                    {sendingMailchimp && <Loader2 size={12} className="animate-spin" />}
+                    {sendingMailchimp ? 'Wird erstellt…' : 'Kampagne in Mailchimp erstellen'}
+                  </button>
+                  {mailchimpError && <p className="text-xs text-[#E65100]">{mailchimpError}</p>}
+                </>
+              )}
             </div>
           </>
         )}
