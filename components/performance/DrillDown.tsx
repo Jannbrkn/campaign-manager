@@ -20,9 +20,11 @@ function fmtDate(dateStr: string): string {
 
 export default function DrillDown({
   group,
+  year,
   onClose,
 }: {
   group: ManufacturerGroup
+  year: string
   onClose: () => void
 }) {
   const sorted = [...group.campaigns].sort(
@@ -35,7 +37,7 @@ export default function DrillDown({
       <div className="flex items-start justify-between px-6 py-5 border-b border-border">
         <div>
           <p className="text-sm text-text-primary mb-4">
-            {group.manufacturer.name} · {group.campaigns.length} Kampagnen
+            {group.manufacturer.name} · {group.campaigns.length} Kampagnen · {year}
           </p>
           <div className="flex gap-7">
             {[

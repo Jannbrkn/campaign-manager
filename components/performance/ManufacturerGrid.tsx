@@ -145,7 +145,7 @@ export default function ManufacturerGrid({
       {Array.from(expanded).map((mfgId) => {
         const g = groups.find((x) => x.manufacturer.id === mfgId)
         if (!g) return null
-        return <DrillDown key={mfgId} group={g} onClose={() => toggle(mfgId)} />
+        return <DrillDown key={mfgId} group={g} year={year} onClose={() => toggle(mfgId)} />
       })}
     </div>
   )
