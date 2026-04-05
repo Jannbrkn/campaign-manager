@@ -100,10 +100,11 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < mfgs.length; i++) {
       const mfg = mfgs[i]
-      const postcardDate = fridays[i % fridays.length]
+      const postcardDate = new Date(fridays[i % fridays.length])
       const newsletterDate = addDays(postcardDate, 5)  // Wednesday after
       const reportDate = addDays(newsletterDate, 5)    // Monday after newsletter
 
+      const insertedIds: string[] = []
       try {
         // Insert postcard
         const { data: postcard, error: pcErr } = await admin
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
           .select('id')
           .single()
         if (pcErr || !postcard) throw new Error(pcErr?.message ?? 'postcard insert failed')
+        insertedIds.push(postcard.id)
 
         // Insert newsletter
         const { data: newsletter, error: nlErr } = await admin
@@ -136,9 +138,10 @@ export async function POST(req: NextRequest) {
           .select('id')
           .single()
         if (nlErr || !newsletter) throw new Error(nlErr?.message ?? 'newsletter insert failed')
+        insertedIds.push(newsletter.id)
 
         // Insert internal report
-        const { error: irErr } = await admin
+        const { data: ir, error: irErr } = await admin
           .from('campaigns')
           .insert({
             manufacturer_id: mfg.id,
@@ -149,10 +152,13 @@ export async function POST(req: NextRequest) {
             linked_postcard_id: null,
             linked_newsletter_id: newsletter.id,
           })
-        if (irErr) throw new Error(irErr.message)
+          .select('id')
+          .single()
+        if (irErr || !ir) throw new Error(irErr?.message ?? 'report_internal insert failed')
+        insertedIds.push(ir.id)
 
         // Insert external report
-        const { error: erErr } = await admin
+        const { data: er, error: erErr } = await admin
           .from('campaigns')
           .insert({
             manufacturer_id: mfg.id,
@@ -163,11 +169,17 @@ export async function POST(req: NextRequest) {
             linked_postcard_id: null,
             linked_newsletter_id: newsletter.id,
           })
-        if (erErr) throw new Error(erErr.message)
+          .select('id')
+          .single()
+        if (erErr || !er) throw new Error(erErr?.message ?? 'report_external insert failed')
 
         created += 4
-      } catch (err: any) {
-        errors.push(`${mfg.name} ${monthLabel}: ${err.message}`)
+      } catch (err: unknown) {
+        // Clean up any partially inserted campaigns for this chain
+        if (insertedIds.length > 0) {
+          await admin.from('campaigns').delete().in('id', insertedIds)
+        }
+        errors.push(`${mfg.name} ${monthLabel}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
   }
