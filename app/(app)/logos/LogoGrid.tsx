@@ -20,6 +20,7 @@ function LogoCard({
 }) {
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [fetching, setFetching] = useState(false)
   const [preview, setPreview] = useState<string | null>(currentLogoUrl)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,11 +58,48 @@ function LogoCard({
     }
   }, [id, type, currentLogoUrl])
 
-  function onDrop(e: React.DragEvent) {
+  async function onDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragging(false)
+
+    // Path 1: real File object (local drag, desktop Dropbox app)
     const file = e.dataTransfer.files[0]
-    if (file) upload(file)
+    if (file) {
+      upload(file)
+      return
+    }
+
+    // Path 2: URL from Dropbox web (text/uri-list)
+    const uriList = e.dataTransfer.getData('text/uri-list')
+    const url = uriList.split('\n').map((s) => s.trim()).find((s) => s && !s.startsWith('#'))
+    if (!url) return
+
+    setFetching(true)
+    setError(null)
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('Fetch fehlgeschlagen')
+      const blob = await res.blob()
+
+      // Derive filename from URL, fall back to 'logo'
+      const rawName = url.split('/').pop()?.split('?')[0] ?? 'logo'
+      const name = rawName || 'logo'
+
+      // If content-type is missing/generic, try to infer from extension
+      let type = blob.type
+      if (!type || type === 'application/octet-stream') {
+        const ext = name.split('.').pop()?.toLowerCase()
+        const map: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', svg: 'image/svg+xml', webp: 'image/webp' }
+        type = (ext && map[ext]) ? map[ext] : blob.type
+      }
+
+      const fetchedFile = new File([blob], name, { type })
+      upload(fetchedFile)
+    } catch {
+      setError('Dropbox-Datei konnte nicht geladen werden')
+    } finally {
+      setFetching(false)
+    }
   }
 
   function onFileInput(e: React.ChangeEvent<HTMLInputElement>) {
@@ -112,9 +150,9 @@ function LogoCard({
 
       {/* Status */}
       <div className="h-5 flex items-center justify-center">
-        {uploading && <Loader2 size={12} className="animate-spin text-text-secondary" />}
+        {(uploading || fetching) && <Loader2 size={12} className="animate-spin text-text-secondary" />}
         {success && <CheckCircle2 size={12} className="text-[#2E7D32]" />}
-        {!uploading && !success && (
+        {!uploading && !fetching && !success && (
           <span className="text-[10px] text-text-secondary/50 flex items-center gap-1">
             <Upload size={9} />
             {preview ? 'Ersetzen' : 'Logo ablegen'}
