@@ -14,6 +14,7 @@ export default function PlanningForm() {
   const [result, setResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null)
 
   async function handleGenerate() {
+    if (!window.confirm(`Kampagnenketten für ${year} generieren? Bereits vorhandene Kampagnen werden übersprungen.`)) return
     setLoading(true)
     setResult(null)
     try {
@@ -82,7 +83,7 @@ export default function PlanningForm() {
                 </div>
                 {result.skipped > 0 && (
                   <div>
-                    <p className="text-2xl font-light text-[#555]">{result.skipped}</p>
+                    <p className="text-2xl font-light text-text-secondary">{result.skipped}</p>
                     <p className="text-[11px] text-text-secondary">übersprungen</p>
                   </div>
                 )}
