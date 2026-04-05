@@ -85,6 +85,7 @@ export interface Campaign {
   auto_send_emails: string[] | null
   briefing: NewsletterBriefing | null
   mailchimp_campaign_id: string | null
+  mailchimp_url: string | null
   performance_stats: PerformanceStats | null
   created_at: string
   updated_at: string
