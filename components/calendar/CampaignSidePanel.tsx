@@ -456,22 +456,37 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
         </button>
       </div>
 
-      {/* Delete confirmation bar */}
+      {/* Delete confirmation modal */}
       {confirmDelete && (
-        <div className="flex items-center justify-between px-5 py-3 bg-[#E65100]/5 border-b border-[#E65100]/20 shrink-0">
-          <p className="text-xs text-[#E65100]">Kampagne wirklich löschen?</p>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setConfirmDelete(false)} className="text-xs text-text-secondary hover:text-text-primary transition-colors">
-              Abbrechen
-            </button>
-            <button
-              onClick={handleDeleteCampaign}
-              disabled={deletingCampaign}
-              className="flex items-center gap-1.5 text-xs px-3 py-1 border border-[#E65100]/40 text-[#E65100] rounded-sm hover:bg-[#E65100]/10 transition-colors disabled:opacity-50"
-            >
-              {deletingCampaign && <Loader2 size={11} className="animate-spin" />}
-              Löschen
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface border border-border rounded-sm shadow-2xl w-80 p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-8 h-8 rounded-full bg-[#E65100]/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Trash2 size={14} className="text-[#E65100]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-text-primary mb-1">Kampagne löschen?</p>
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  <span className="text-text-primary">{campaign.title}</span> wird dauerhaft gelöscht — inklusive aller hochgeladenen Assets. Diese Aktion kann nicht rückgängig gemacht werden.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="px-4 py-2 text-xs text-text-secondary hover:text-text-primary border border-border rounded-sm hover:bg-white/5 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleDeleteCampaign}
+                disabled={deletingCampaign}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs text-white bg-[#E65100] rounded-sm hover:bg-[#E65100]/90 transition-colors disabled:opacity-50"
+              >
+                {deletingCampaign && <Loader2 size={11} className="animate-spin" />}
+                Endgültig löschen
+              </button>
+            </div>
           </div>
         </div>
       )}
