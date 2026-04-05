@@ -79,6 +79,12 @@ export async function POST(req: NextRequest) {
     return urlData.publicUrl
   }
 
+  // Sign logo URLs for agency and manufacturer (bucket is private)
+  const mfg = campaign.manufacturers as any
+  const agency = mfg?.agencies as any
+  if (agency?.logo_url) agency.logo_url = await signUrl(admin, agency.logo_url)
+  if (mfg?.logo_url) mfg.logo_url = await signUrl(admin, mfg.logo_url)
+
   try {
     const { mjmlSource, zipBuffer, previewHtml } = await generateNewsletter({
       campaign: campaign as CampaignWithManufacturer,
