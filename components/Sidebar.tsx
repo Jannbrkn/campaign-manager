@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, CalendarDays, Building2, Factory, Settings, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import AlertsPanel from './AlertsPanel'
 
 const navItems = [
   { href: '/dashboard',     label: 'Dashboard',   icon: LayoutDashboard },
@@ -13,7 +14,7 @@ const navItems = [
   { href: '/settings',      label: 'Einstellungen', icon: Settings },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ alertCount }: { alertCount: number }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -54,8 +55,9 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="px-3 py-4 border-t border-border">
+      {/* Alerts + Sign out */}
+      <div className="px-3 py-4 border-t border-border space-y-0.5">
+        <AlertsPanel initialCount={alertCount} />
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-sm text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
