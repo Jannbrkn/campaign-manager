@@ -3,20 +3,13 @@
 // SAFETY: Only campaigns with review_approved = true are ever sent.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { signStorageUrl } from '@/lib/supabase/storage'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
 const APP_URL = process.env.APP_URL ?? 'https://campaign-manager-three.vercel.app'
 
-async function signUrl(admin: any, url: string): Promise<string> {
-  const marker = '/campaign-assets/'
-  const idx = url.indexOf(marker)
-  if (idx === -1) return url
-  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
-  const { data } = await admin.storage.from('campaign-assets').createSignedUrl(path, 3600)
-  return data?.signedUrl ?? url
-}
 
 export interface AutoSendResult {
   sent: number
@@ -67,7 +60,7 @@ export async function runAutoSend(): Promise<AutoSendResult> {
     const attachments: { filename: string; content: Buffer }[] = []
     for (const asset of assets) {
       try {
-        const url = await signUrl(admin, asset.file_url)
+        const url = await signStorageUrl(admin, asset.file_url)
         const res = await fetch(url)
         if (!res.ok) continue
         const buf = await res.arrayBuffer()

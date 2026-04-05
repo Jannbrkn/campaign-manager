@@ -3,18 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateReports, detectCsvType } from '@/lib/generate/report'
+import { signStorageUrl } from '@/lib/supabase/storage'
 import type { CampaignAsset } from '@/lib/supabase/types'
 
 export const maxDuration = 60
-
-async function signUrl(supabase: any, url: string): Promise<string> {
-  const marker = '/campaign-assets/'
-  const idx = url.indexOf(marker)
-  if (idx === -1) return url
-  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
-  const { data } = await supabase.storage.from('campaign-assets').createSignedUrl(path, 3600)
-  return data?.signedUrl ?? url
-}
 
 function parseCsvStats(csvText: string): { total: number; opens: number; clicks: number } {
   const lines = csvText.trim().split('\n').filter((l) => l.trim())
@@ -114,7 +106,7 @@ export async function POST(req: NextRequest) {
   // Download all CSVs and detect their types
   const csvTexts: { asset: CampaignAsset; text: string }[] = []
   for (const asset of allCsvAssets) {
-    const res = await fetch(await signUrl(admin, asset.file_url))
+    const res = await fetch(await signStorageUrl(admin, asset.file_url))
     if (res.ok) csvTexts.push({ asset, text: await res.text() })
   }
 

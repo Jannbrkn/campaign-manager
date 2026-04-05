@@ -6,18 +6,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Resend } from 'resend'
+import { signStorageUrl } from '@/lib/supabase/storage'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
-
-async function signUrl(admin: any, url: string): Promise<string> {
-  const marker = '/campaign-assets/'
-  const idx = url.indexOf(marker)
-  if (idx === -1) return url
-  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
-  const { data } = await admin.storage.from('campaign-assets').createSignedUrl(path, 3600)
-  return data?.signedUrl ?? url
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -68,7 +60,7 @@ export async function POST(req: NextRequest) {
   const attachments: { filename: string; content: Buffer }[] = []
   for (const asset of xlsxAssets) {
     try {
-      const url = await signUrl(admin, asset.file_url)
+      const url = await signStorageUrl(admin, asset.file_url)
       const res = await fetch(url)
       if (!res.ok) continue
       const buf = await res.arrayBuffer()

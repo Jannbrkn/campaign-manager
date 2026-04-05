@@ -3,19 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateNewsletter } from '@/lib/generate/newsletter'
+import { signStorageUrl } from '@/lib/supabase/storage'
 import type { CampaignAsset, CampaignWithManufacturer } from '@/lib/supabase/types'
 
 export const maxDuration = 60
-
-// Extracts storage path from a Supabase URL and returns a 1h signed URL
-async function signUrl(supabase: any, url: string): Promise<string> {
-  const marker = '/campaign-assets/'
-  const idx = url.indexOf(marker)
-  if (idx === -1) return url
-  const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
-  const { data } = await supabase.storage.from('campaign-assets').createSignedUrl(path, 3600)
-  return data?.signedUrl ?? url
-}
 
 export async function POST(req: NextRequest) {
   const { campaign_id, feedback } = await req.json()
@@ -61,8 +52,8 @@ export async function POST(req: NextRequest) {
 
   // Sign all asset URLs so server-side fetches work with private bucket (admin bypasses RLS)
   const [signedAssets, signedPostcardAssets] = await Promise.all([
-    Promise.all(assets.map(async (a) => ({ ...a, file_url: await signUrl(admin, a.file_url) }))),
-    Promise.all(postcardAssets.map(async (a) => ({ ...a, file_url: await signUrl(admin, a.file_url) }))),
+    Promise.all(assets.map(async (a) => ({ ...a, file_url: await signStorageUrl(admin, a.file_url) }))),
+    Promise.all(postcardAssets.map(async (a) => ({ ...a, file_url: await signStorageUrl(admin, a.file_url) }))),
   ])
 
   // Helper: upload to storage via admin client (bypasses RLS)
@@ -82,8 +73,8 @@ export async function POST(req: NextRequest) {
   // Sign logo URLs for agency and manufacturer (bucket is private)
   const mfg = campaign.manufacturers as any
   const agency = mfg?.agencies as any
-  if (agency?.logo_url) agency.logo_url = await signUrl(admin, agency.logo_url)
-  if (mfg?.logo_url) mfg.logo_url = await signUrl(admin, mfg.logo_url)
+  if (agency?.logo_url) agency.logo_url = await signStorageUrl(admin, agency.logo_url)
+  if (mfg?.logo_url) mfg.logo_url = await signStorageUrl(admin, mfg.logo_url)
 
   try {
     const { mjmlSource, zipBuffer, previewHtml } = await generateNewsletter({
