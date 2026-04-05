@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['mjml', 'exceljs'],
+  experimental: {
+    serverComponentsExternalPackages: ['mjml', 'exceljs'],
+  },
 }
 
 export default nextConfig
