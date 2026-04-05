@@ -230,7 +230,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   const [mailchimpSubject, setMailchimpSubject] = useState('')
   const [sendingMailchimp, setSendingMailchimp] = useState(false)
   const [mailchimpError, setMailchimpError] = useState<string | null>(null)
-  const [mailchimpUrl, setMailchimpUrl] = useState<string | null>(null)
+  const [mailchimpUrl, setMailchimpUrl] = useState<string | null>(campaign.mailchimp_url ?? null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const briefingSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const briefingInitialized = useRef(false)
@@ -280,6 +280,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     setReviewApproved(campaign.review_approved)
     setAutoSendEmails(campaign.auto_send_emails ?? [])
     setNewEmail('')
+    setMailchimpUrl(campaign.mailchimp_url ?? null)
   }, [campaign.id])
 
   // Autosave briefing with 800ms debounce (newsletter campaigns only)
@@ -748,7 +749,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-[#2E7D32] border border-[#2E7D32]/40 bg-[#2E7D32]/8 rounded-sm hover:bg-[#2E7D32]/15 transition-colors"
                 >
                   <ExternalLink size={12} />
-                  In Mailchimp öffnen
+                  In Mailchimp ansehen
                 </a>
               ) : (
                 <>
