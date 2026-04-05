@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { data: campaign } = await supabase
     .from('campaigns')
     .select('*, manufacturers(*, agencies(*))')
@@ -50,9 +53,10 @@ export async function POST(req: NextRequest) {
     data: Buffer | Uint8Array,
     contentType: string
   ): Promise<string> => {
-    await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('campaign-assets')
       .upload(path, data, { upsert: true, contentType })
+    if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
     const { data: urlData } = supabase.storage.from('campaign-assets').getPublicUrl(path)
     return urlData.publicUrl
   }
@@ -101,7 +105,7 @@ export async function POST(req: NextRequest) {
         file_name: 'newsletter.mjml',
         file_type: 'text/plain',
         file_url: mjmlUrl,
-        file_size: mjmlSource.length,
+        file_size: Buffer.byteLength(mjmlSource, 'utf8'),
         asset_category: 'text',
         is_output: true,
       },
@@ -110,7 +114,7 @@ export async function POST(req: NextRequest) {
         file_name: 'newsletter-preview.html',
         file_type: 'text/html',
         file_url: previewUrl,
-        file_size: previewHtml.length,
+        file_size: Buffer.byteLength(previewHtml, 'utf8'),
         asset_category: 'newsletter_preview',
         is_output: true,
       },

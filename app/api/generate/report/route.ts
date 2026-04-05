@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
 
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   // Load the triggering campaign
   const { data: campaign } = await supabase
     .from('campaigns')
@@ -40,6 +43,13 @@ export async function POST(req: NextRequest) {
 
   const internalId = siblings?.find((s: any) => s.type === 'report_internal')?.id
   const externalId = siblings?.find((s: any) => s.type === 'report_external')?.id
+
+  if (!internalId && !externalId) {
+    return NextResponse.json(
+      { error: 'Keine Report-Kampagnen (intern/extern) für diesen Newsletter gefunden.' },
+      { status: 400 }
+    )
+  }
 
   // Find CSV asset — search chain: own → newsletter → postcard
   let csvAsset: CampaignAsset | null = null
