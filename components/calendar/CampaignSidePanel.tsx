@@ -209,6 +209,10 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   const [showEdit, setShowEdit] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deletingCampaign, setDeletingCampaign] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState('')
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null)
   const isLoadingRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -221,6 +225,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     const { data } = await supabase
       .from('campaign_assets').select('*')
       .eq('campaign_id', campaign.id)
+      .order('is_output', { ascending: false })
       .order('created_at', { ascending: false })
     setAssets((data as CampaignAsset[]) ?? [])
     setLoadingAssets(false)
@@ -234,6 +239,29 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
 
   // Reset status when campaign prop changes (navigation)
   useEffect(() => { setStatus(campaign.status) }, [campaign.id])
+
+  // Load newsletter preview as Blob URL for the iframe
+  useEffect(() => {
+    const previewAsset = assets.find(
+      (a) => a.asset_category === 'newsletter_preview' && a.is_output
+    )
+    if (!previewAsset) {
+      setPreviewSrc(null)
+      return
+    }
+    let blobUrl: string
+    fetch(previewAsset.file_url)
+      .then((r) => r.text())
+      .then((html) => {
+        const blob = new Blob([html], { type: 'text/html' })
+        blobUrl = URL.createObjectURL(blob)
+        setPreviewSrc(blobUrl)
+      })
+      .catch(() => setPreviewSrc(null))
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl)
+    }
+  }, [assets])
 
   async function handleNavigate(linkedId: string) {
     setNavigatingId(linkedId)
@@ -273,6 +301,36 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     } catch {
       setDeletingCampaign(false)
       setConfirmDelete(false)
+    }
+  }
+
+  async function handleGenerate() {
+    setGenerating(true)
+    setGenError(null)
+    try {
+      const endpoint =
+        campaign.type === 'newsletter'
+          ? '/api/generate/newsletter'
+          : '/api/generate/report'
+      const body: Record<string, string> = { campaign_id: campaign.id }
+      if (campaign.type === 'newsletter' && feedback.trim()) {
+        body.feedback = feedback.trim()
+      }
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Generierung fehlgeschlagen')
+      isLoadingRef.current = false
+      await loadAssets()
+      onRefresh()
+      setFeedback('')
+    } catch (e: any) {
+      setGenError(e.message)
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -374,6 +432,51 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           )}
         </div>
 
+        {/* Generation */}
+        {(campaign.type === 'newsletter' ||
+          campaign.type === 'report_internal' ||
+          campaign.type === 'report_external') && (
+          <>
+            <div className="border-t border-border" />
+            <div>
+              {campaign.type === 'newsletter' && assets.some((a) => a.is_output) ? (
+                <>
+                  <textarea
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Feedback zur vorherigen Version (optional)…"
+                    rows={2}
+                    disabled={generating}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none mb-2 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                  >
+                    {generating && <Loader2 size={12} className="animate-spin" />}
+                    {generating ? 'Wird generiert…' : 'Neu generieren'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                >
+                  {generating && <Loader2 size={12} className="animate-spin" />}
+                  {generating
+                    ? 'Wird generiert…'
+                    : campaign.type === 'newsletter'
+                    ? 'Newsletter generieren'
+                    : 'Report generieren'}
+                </button>
+              )}
+              {genError && <p className="text-xs text-[#E65100] mt-2">{genError}</p>}
+            </div>
+          </>
+        )}
+
         {/* Linked campaigns */}
         {linked.length > 0 && (
           <>
@@ -403,6 +506,23 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                   </button>
                 ))}
               </div>
+            </div>
+          </>
+        )}
+
+        {/* Newsletter preview */}
+        {previewSrc && campaign.type === 'newsletter' && (
+          <>
+            <div className="border-t border-border" />
+            <div>
+              <p className="text-xs text-text-secondary uppercase tracking-wider mb-2">Newsletter-Vorschau</p>
+              <iframe
+                src={previewSrc}
+                className="w-full rounded-sm border border-border"
+                style={{ height: '400px' }}
+                title="Newsletter Vorschau"
+                sandbox="allow-same-origin"
+              />
             </div>
           </>
         )}
@@ -450,7 +570,11 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                 return (
                   <div
                     key={asset.id}
-                    className="flex items-center gap-2.5 bg-background border border-border rounded-sm overflow-hidden group hover:border-text-secondary/30 transition-colors"
+                    className={`flex items-center gap-2.5 bg-background border rounded-sm overflow-hidden group transition-colors ${
+                      asset.is_output
+                        ? 'border-accent-warm/30 hover:border-accent-warm/60'
+                        : 'border-border hover:border-text-secondary/30'
+                    }`}
                   >
                     {isImage ? (
                       <div className="w-10 h-10 shrink-0 bg-border overflow-hidden">
