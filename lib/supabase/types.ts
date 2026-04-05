@@ -59,11 +59,15 @@ export interface NewsletterBriefing {
   hints?: string
 }
 
+/**
+ * All rates are stored as fractions 0–1 (e.g. 0.46 = 46%).
+ * Never store percentages (e.g. 46) — use rate / 100 if needed.
+ */
 export interface PerformanceStats {
-  open_rate: number    // 0–1, e.g. 0.46 = 46%
-  click_rate: number   // 0–1
+  open_rate: number    // fraction 0–1, e.g. 0.46 = 46%
+  click_rate: number   // fraction 0–1
   emails_sent: number
-  unsubscribes: number
+  unsubscribes: number | null  // null when not available (e.g. CSV exports)
   source: 'api' | 'csv'
 }
 
