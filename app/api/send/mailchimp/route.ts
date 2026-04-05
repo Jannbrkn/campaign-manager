@@ -74,9 +74,13 @@ export async function POST(req: NextRequest) {
 
   await mcFetch(`/campaigns/${created.id}/content`, 'PUT', { html: htmlContent })
 
-  // Save Mailchimp campaign ID for later stats refresh
-  await admin.from('campaigns').update({ mailchimp_campaign_id: created.id }).eq('id', campaign_id)
-
   const editUrl = `https://us19.admin.mailchimp.com/campaigns/edit?id=${created.web_id}`
+
+  // Save Mailchimp campaign ID and edit URL for persistent link
+  await admin.from('campaigns').update({
+    mailchimp_campaign_id: created.id,
+    mailchimp_url: editUrl,
+  }).eq('id', campaign_id)
+
   return NextResponse.json({ success: true, campaignId: created.id, editUrl })
 }
