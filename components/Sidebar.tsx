@@ -2,17 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Building2, Factory, Settings, LogOut, ImageIcon, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Building2, Factory, Settings, LogOut, ImageIcon, BarChart2, CalendarPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AlertsPanel from './AlertsPanel'
 
 const navItems = [
-  { href: '/dashboard',     label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/performance',   label: 'Performance',  icon: BarChart2 },
-  { href: '/calendar',      label: 'Kalender',     icon: CalendarDays },
-  { href: '/agencies',      label: 'Agenturen',    icon: Building2 },
-  { href: '/manufacturers', label: 'Hersteller',   icon: Factory },
-  { href: '/logos',         label: 'Logos',        icon: ImageIcon },
+  { href: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/performance',   label: 'Performance',   icon: BarChart2 },
+  { href: '/planning',      label: 'Jahresplanung', icon: CalendarPlus },
+  { href: '/calendar',      label: 'Kalender',      icon: CalendarDays },
+  { href: '/agencies',      label: 'Agenturen',     icon: Building2 },
+  { href: '/manufacturers', label: 'Hersteller',    icon: Factory },
+  { href: '/logos',         label: 'Logos',         icon: ImageIcon },
   { href: '/settings',      label: 'Einstellungen', icon: Settings },
 ]
 
