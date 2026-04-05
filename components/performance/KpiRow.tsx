@@ -27,9 +27,7 @@ export default function KpiRow({
     ? allWithStats.reduce((s, c) => s + c.performance_stats!.click_rate, 0) / withDataCount
     : null
 
-  const best = groups
-    .filter((g) => g.avgOpenRate !== null)
-    .sort((a, b) => (b.avgOpenRate ?? 0) - (a.avgOpenRate ?? 0))[0]
+  const best = groups.find((g) => g.avgOpenRate !== null) ?? null
 
   const kpis = [
     {

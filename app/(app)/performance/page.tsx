@@ -14,7 +14,7 @@ function groupCampaigns(
 
   const filtered = campaigns.filter((c) => {
     if (year && year !== 'alle' && !c.scheduled_date.startsWith(year)) return false
-    if (agencyFilter && agencyFilter !== 'alle' && (c.manufacturers as any)?.agencies?.id !== agencyFilter) return false
+    if (agencyFilter && agencyFilter !== 'alle' && c.manufacturers?.agencies?.id !== agencyFilter) return false
     if (typeFilter && typeFilter !== 'alle' && c.type !== typeFilter) return false
     return true
   })
@@ -38,7 +38,7 @@ function groupCampaigns(
     g.campaigns.push(c)
     if (c.performance_stats) {
       g.totalSent += c.performance_stats.emails_sent
-      if (c.performance_stats.unsubscribes) {
+      if (c.performance_stats.unsubscribes !== null) {
         g.totalUnsubscribes += c.performance_stats.unsubscribes
       }
       const src = c.performance_stats.source

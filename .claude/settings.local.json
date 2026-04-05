@@ -29,7 +29,11 @@
       "Bash(where python3:*)",
       "Bash(where py:*)",
       "Bash(grep -v \"^'[0-9a-f-]*'$\")",
-      "Bash(node --env-file=.env.local scripts/seed-campaigns.mjs)"
+      "Bash(node --env-file=.env.local scripts/seed-campaigns.mjs)",
+      "Bash(rm:*)",
+      "Bash(node --env-file=.env.local scripts/seed-manufacturer-tags.mjs)",
+      "Bash(bash:*)",
+      "Bash(xargs cat:*)"
     ]
   }
 }
