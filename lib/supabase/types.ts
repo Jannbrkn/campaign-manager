@@ -1,6 +1,6 @@
 export type CampaignType = 'postcard' | 'newsletter' | 'report_internal' | 'report_external'
 export type CampaignStatus = 'planned' | 'assets_pending' | 'assets_complete' | 'generating' | 'review' | 'approved' | 'sent'
-export type AssetCategory = 'image' | 'text' | 'logo' | 'cta' | 'link' | 'csv_export' | 'postcard_pdf' | 'newsletter_zip' | 'report_xlsx'
+export type AssetCategory = 'image' | 'text' | 'logo' | 'cta' | 'link' | 'csv_export' | 'postcard_pdf' | 'newsletter_zip' | 'report_xlsx' | 'newsletter_preview'
 export type AlertType = 'prep_reminder_6w' | 'assets_missing' | 'output_ready' | 'review_needed' | 'auto_send_scheduled'
 
 export interface Agency {
