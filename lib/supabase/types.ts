@@ -59,6 +59,14 @@ export interface NewsletterBriefing {
   hints?: string
 }
 
+export interface PerformanceStats {
+  open_rate: number    // 0–1, e.g. 0.46 = 46%
+  click_rate: number   // 0–1
+  emails_sent: number
+  unsubscribes: number
+  source: 'api' | 'csv'
+}
+
 export interface Campaign {
   id: string
   manufacturer_id: string
@@ -72,6 +80,8 @@ export interface Campaign {
   review_approved: boolean
   auto_send_emails: string[] | null
   briefing: NewsletterBriefing | null
+  mailchimp_campaign_id: string | null
+  performance_stats: PerformanceStats | null
   created_at: string
   updated_at: string
 }
@@ -105,6 +115,16 @@ export interface ManufacturerWithAgency extends Manufacturer {
 
 export interface CampaignWithManufacturer extends Campaign {
   manufacturers: ManufacturerWithAgency
+}
+
+export interface ManufacturerGroup {
+  manufacturer: ManufacturerWithAgency
+  campaigns: CampaignWithManufacturer[]
+  avgOpenRate: number | null
+  avgClickRate: number | null
+  totalSent: number
+  totalUnsubscribes: number
+  sources: ('api' | 'csv')[]
 }
 
 export type Database = {
