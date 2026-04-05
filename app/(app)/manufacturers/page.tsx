@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
 import ContactEmailBulkEditor from '@/components/manufacturers/ContactEmailBulkEditor'
+import TagsBulkEditor from '@/components/manufacturers/TagsBulkEditor'
 
 interface ManufacturerWithAgency extends Manufacturer {
   agencies: Agency
@@ -23,7 +24,7 @@ export default async function ManufacturersPage({
   const agencies = (agencyData ?? []) as Agency[]
   const manufacturers = (mfgData ?? []) as unknown as ManufacturerWithAgency[]
 
-  const activeTab = searchParams.tab === 'emails' ? 'emails' : 'list'
+  const activeTab = searchParams.tab === 'emails' ? 'emails' : searchParams.tab === 'tags' ? 'tags' : 'list'
 
   // Filter by agency if param set (list tab only)
   const filtered = searchParams.agency
@@ -63,6 +64,16 @@ export default async function ManufacturersPage({
           }`}
         >
           Kontakt-Mails
+        </Link>
+        <Link
+          href="/manufacturers?tab=tags"
+          className={`px-4 py-2.5 text-sm border-b-2 transition-colors -mb-px ${
+            activeTab === 'tags'
+              ? 'border-accent-warm text-accent-warm'
+              : 'border-transparent text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Mailchimp-Tags
         </Link>
       </div>
 
@@ -160,6 +171,11 @@ export default async function ManufacturersPage({
           </p>
           <ContactEmailBulkEditor manufacturers={manufacturers} agencies={agencies} />
         </div>
+      )}
+
+      {/* ── Mailchimp tags tab ────────────────────────────────────────────────── */}
+      {activeTab === 'tags' && (
+        <TagsBulkEditor manufacturers={manufacturers} agencies={agencies} />
       )}
     </div>
   )
