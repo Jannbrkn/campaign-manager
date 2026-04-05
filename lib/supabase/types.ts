@@ -39,6 +39,7 @@ export interface Manufacturer {
   texts_source: string | null
   own_creatives: boolean
   own_texts: boolean
+  logo_url: string | null
   contact_email: string | null
   additional_report_email: string | null
   dropbox_link: string | null

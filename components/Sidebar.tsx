@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Building2, Factory, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Building2, Factory, Settings, LogOut, ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import AlertsPanel from './AlertsPanel'
 
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/calendar',      label: 'Kalender',    icon: CalendarDays },
   { href: '/agencies',      label: 'Agenturen',   icon: Building2 },
   { href: '/manufacturers', label: 'Hersteller',  icon: Factory },
+  { href: '/logos',         label: 'Logos',        icon: ImageIcon },
   { href: '/settings',      label: 'Einstellungen', icon: Settings },
 ]
 
