@@ -162,7 +162,7 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 | Sub-Headlines | Light (300) | 12–13px | Versalien, Laufweite 3px |
 | Fließtext | Light (300) | 14px | Zeilenhöhe 1.85 |
 | Buttons | Medium (500) | 10–11px | Versalien, Laufweite 2.5px |
-| Footer | Light (300) | 9–10px | #cccccc auf #1a1a1a Hintergrund — immer dunkel |
+| Footer | Light (300) | 9–10px | #999999 auf #f5f3ef Hintergrund — immer warm-hell |
 
 #### Layout-Regeln
 - Hero-Bild: Full-Width, ganz oben nach der Topbar
@@ -172,17 +172,25 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 - **Mindestens 2 CTAs pro Newsletter** (siehe CTA-Pflicht unten)
 - CTAs kontextuell eingebettet — neben dem passenden Inhalt, NICHT als Block am Ende
 
-#### CTA-Pflicht — MINDESTENS 2 CTAs (KRITISCH)
+#### CTA-Strategie (KRITISCH)
 
-Jeder Newsletter MUSS mindestens zwei CTAs enthalten:
+**Regel: Immer mindestens 2 CTAs — Strategie abhängig vom Thema des Newsletters.**
 
-1. **Haupt-CTA** (prominenter Button): aus dem Briefing-Feld \`cta_text\` / \`cta_link\`
-   - Beispiele: "Preisliste herunterladen", "Termin vereinbaren", "Einladung bestätigen"
-2. **Sekundärer CTA** (kontextuell, im Body eingebettet): ein weiterer klickbarer Link oder Button
-   - Quelle: \`extra_links\` aus dem Briefing, oder \`website_url\` des Herstellers als Fallback
-   - Wenn kein zweiter Link vorhanden: zweiten CTA mit ⚠️ LINK FEHLT markieren, aber trotzdem die MJML-Struktur ausgeben
+**Single-Topic-Newsletter** (1 Thema: Messe-Einladung, Event, exklusiver Launch, einzelne Aktion):
+- Denselben CTA ZWEIMAL einbauen — oben und unten
+- **CTA 1:** Nach dem Hero-Bild / der Einleitung — direkt, z.B. „Persönliche Einladung bestätigen"
+- **CTA 2:** Am Ende des Inhalts, vor dem Footer — verstärkend, z.B. „Platz sichern" oder „Jetzt anmelden"
+- Beide CTAs zeigen auf denselben Link, dürfen aber unterschiedlich formuliert sein
 
-Niemals einen Newsletter mit nur einem CTA ausliefern.
+**Multi-Topic-Newsletter** (mehrere Themen: Produktvorstellung + Event + News):
+- Jedes Thema bekommt seinen eigenen CTA direkt beim jeweiligen Inhalt
+- Kein doppelter CTA nötig
+
+**CTA-Texte — konkret benennen:**
+- ✅ „Preisliste herunterladen", „Termin vereinbaren", „Einladung bestätigen", „Platz sichern"
+- ❌ „Mehr erfahren", „Jetzt entdecken", „Kontakt aufnehmen"
+
+Wenn kein zweiter Link vorhanden: CTA mit ⚠️ LINK FEHLT markieren, aber MJML-Struktur trotzdem ausgeben.
 
 #### Logo-Platzierung — DYNAMISCH (KRITISCH)
 
@@ -190,11 +198,13 @@ Niemals einen Newsletter mit nur einem CTA ausliefern.
 
 | Logo | Position | Breite | Klickbar |
 |---|---|---|---|
-| **Hersteller-Logo** | **Header (oben, zentriert)** | 180–220px | **Ja → Website des Herstellers** |
-| Agentur-Logo | Footer (neben Adressdaten) | 80–100px | Nein |
+| **Hersteller-Logo** | **Header (oben, zentriert)** | 160–220px | **Ja → website_url des Herstellers** |
+| Agentur-Logo | Footer (zentriert, über Adressdaten) | 140–160px | Ja → website_url der Agentur |
 
 - Das Hersteller-Logo im Header MUSS in \`<mj-image>\` mit \`href="[website_url]"\` eingebettet sein.
-- Wenn keine \`website_url\` vorhanden: Logo anzeigen, aber kein \`href\` setzen.
+- Logos OHNE \`href\` sind ein Fehler — immer prüfen.
+- Wenn keine \`website_url\` vorhanden: Logo anzeigen, aber kein \`href\` setzen (und in Checkliste markieren).
+- Kein Text neben oder unter dem Hersteller-Logo im Header.
 - Das Agentur-Logo erscheint **ausschließlich im Footer** — niemals im Header oder Body.
 
 #### Footer — DYNAMISCH (PFLICHT-DESIGN)
@@ -202,21 +212,56 @@ Niemals einen Newsletter mit nur einem CTA ausliefern.
 Der Footer ist der rechtliche Absender-Block der Agentur. Er folgt einem festen Design — keine Abweichungen.
 
 **Struktur (von oben nach unten):**
-1. \`mj-divider\` als visuelle Trennung vom Body (Farbe: #2a2a2a)
-2. Agentur-Logo (80–100px, zentriert) — falls \`logo_url\` vorhanden
-3. Agentur-Name
-4. Agentur-Adresse
-5. Kontakt-E-Mail der Agentur (\`contact_email\` — NICHT \`order_email\`) — weglassen wenn nicht vorhanden
-6. Agentur-Telefon
-7. Mailchimp-Pflicht-Links: \`<a href="*|UNSUB|*">Abmelden</a>\` · \`<a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>\`
+1. Agentur-Logo (140–160px, zentriert), verlinkt auf Agentur-Website (\`website_url\`) — falls vorhanden
+2. Agentur-Name (Versalien, #999999)
+3. E-Mail · Telefon (eine Zeile)
+4. Straße · PLZ Stadt (eine Zeile)
+5. Mailchimp-Pflicht-Links: Abmelden | Einstellungen ändern
 
-**Design (nicht verhandelbar):**
-- Hintergrund: \`#1a1a1a\`
-- Haupttext: \`#cccccc\`, 9–10px, Light (300)
-- Links (Abmelden etc.): \`#888888\`, unterstrichen
-- Agentur-Name: \`#999999\`, etwas größer (10–11px)
-- NIEMALS heller Hintergrund im Footer — weder weiß noch hellgrau.
-- NIEMALS \`order_email\` der Agentur im Footer oder im Body verwenden.
+**MJML-Struktur (exakt so verwenden):**
+
+\`\`\`xml
+<!-- === FOOTER === -->
+<mj-section background-color="#f5f3ef" padding="30px 20px 20px">
+  <mj-column>
+    <mj-image
+      src="[AGENTUR_LOGO_URL]"
+      alt="[AGENTUR_NAME]"
+      href="[AGENTUR_WEBSITE_URL]"
+      width="150px"
+      padding-bottom="15px"
+    />
+    <mj-text
+      align="center"
+      font-size="11px"
+      font-weight="400"
+      letter-spacing="2px"
+      text-transform="uppercase"
+      color="#999999"
+      padding-bottom="5px"
+    >[AGENTUR_NAME]</mj-text>
+    <mj-text align="center" font-size="10px" color="#999999" line-height="1.8" padding-bottom="15px">
+      [AGENTUR_MAIL] · [AGENTUR_TELEFON]<br/>
+      [AGENTUR_STRASSE] · [AGENTUR_PLZ] [AGENTUR_STADT]
+    </mj-text>
+    <mj-text align="center" font-size="9px" color="#bbbbbb" padding-bottom="10px">
+      <a href="*|UNSUB|*" style="color:#bbbbbb;text-decoration:none;">Abmelden</a>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      <a href="*|UPDATE_PROFILE|*" style="color:#bbbbbb;text-decoration:none;">Einstellungen ändern</a>
+    </mj-text>
+  </mj-column>
+</mj-section>
+\`\`\`
+
+**Pflichtfelder im Footer — alle aus Backend:**
+- Agentur-Logo (mit href auf Agentur-Website)
+- Agentur-Name
+- Kontakt-E-Mail (\`contact_email\` — NIEMALS \`order_email\`)
+- Telefon
+- Postanschrift: Straße, PLZ, Stadt getrennt aus \`address\`-Feld extrahieren
+- Abmelden + Einstellungen (Mailchimp Merge-Tags)
+
+Wenn \`website_url\` der Agentur fehlt: Logo ohne \`href\` einbinden und in Checkliste mit ⚠️ markieren.
 
 #### Kompilierung
 
@@ -242,19 +287,54 @@ Nach dem Bauen IMMER auflisten:
 
 \`\`\`
 CHECKLISTE
-✅/❌ Hersteller-Logo im Header (klickbar auf website_url)?
-✅/❌ Agentur-Logo NUR im Footer (nicht im Header/Body)?
-✅/❌ Mindestens 2 CTAs vorhanden?
+✅/❌ Hersteller-Logo im Header (zentriert, 160–220px, klickbar auf website_url)?
+✅/❌ Kein Text neben/unter dem Hersteller-Logo im Header?
+✅/❌ Agentur-Logo NUR im Footer (140–160px, klickbar auf Agentur-website_url)?
+✅/❌ Kein Agentur-Logo oder Agentur-Name im Header oder Body?
+✅/❌ Mindestens 2 CTAs vorhanden (Single-Topic: gleicher Link 2×, Multi-Topic: je Thema 1×)?
 ✅/❌ Alle Produktbilder klickbar (href auf Produkt-URL)?
 ✅/❌ Alle CTA-Buttons mit finalem Link?
-✅/❌ Footer: Agentur-Name, Adresse, Kontakt-Mail, Telefon?
-✅/❌ Footer: dunkler Hintergrund (#1a1a1a), helle Schrift (#cccccc)?
+✅/❌ Footer: Agentur-Name, E-Mail, Telefon, Postanschrift (Straße + PLZ + Stadt)?
+✅/❌ Footer: Hintergrund #f5f3ef, Text #999999?
 ✅/❌ Subject Line + Preview Text vorgeschlagen?
 ✅/❌ ZIP-Datei erstellt und ausgeliefert?
-⚠️  Fehlende Links: [auflisten oder „keine"]
+⚠️  Fehlende Links / fehlende website_url: [auflisten oder „keine"]
 \`\`\`
 
 Schlage 2–3 Subject-Line-Varianten mit Preview-Text vor. Mit kurzer Begründung und einer klaren Empfehlung.
+
+---
+
+## NARROWING — Was NIEMALS getan werden soll
+
+- ❌ Agentur-Logo im Header platzieren
+- ❌ Agentur-Name im Header oder oberhalb des Hero-Bilds
+- ❌ Footer ohne vollständige Postanschrift (Straße + PLZ + Stadt)
+- ❌ Logos ohne \`href\`-Verlinkung (weder Hersteller- noch Agentur-Logo)
+- ❌ Bei Single-Topic-Mails nur einen CTA einbauen
+- ❌ CTA-Buttons generisch texten („Mehr erfahren", „Jetzt entdecken", „Kontakt aufnehmen")
+- ❌ \`order_email\` der Agentur irgendwo im Newsletter verwenden
+
+---
+
+## END GOAL — Visuelle Hierarchie
+
+Jeder Newsletter folgt dieser Struktur von oben nach unten:
+
+\`\`\`
+[Hersteller-Logo]              ← Header: Der Hersteller ist der Star
+[Hero-Bild]
+[CTA 1 bei Single-Topic]
+[Inhalt]
+[CTA 2 bei Single-Topic]
+[Agentur-Logo]                 ← Footer: Wir sind der professionelle Absender
+[Agentur-Name]
+[E-Mail · Telefon]
+[Straße · PLZ Stadt]
+[Abmelden | Einstellungen]
+\`\`\`
+
+Der Empfänger soll sofort wissen, von welcher Marke diese Mail kommt — nicht von welcher Agentur.
 
 ---
 
