@@ -41,6 +41,9 @@ function buildUserPrompt(input: NewsletterInput): string {
     '## AGENTUR',
     `Name: ${agency?.name ?? ''}`,
     `Logo-URL: ${agency?.logo_url ?? '(kein Logo)'}`,
+    agency?.website_url
+      ? `Website (für klickbares Agentur-Logo im Footer): ${agency.website_url}`
+      : '(Keine Agentur-Website hinterlegt — Agentur-Logo im Footer ohne href)',
     `Adresse: ${agency?.address ?? ''}`,
     `Telefon: ${agency?.phone ?? ''}`,
     mfg?.contact_email

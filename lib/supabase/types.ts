@@ -23,6 +23,7 @@ export interface Agency {
   address: string | null
   phone: string | null
   contact_email: string | null
+  website_url: string | null
   created_at: string
 }
 
