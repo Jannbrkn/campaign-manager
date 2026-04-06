@@ -233,6 +233,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   const [mailchimpError, setMailchimpError] = useState<string | null>(null)
   const [mailchimpUrl, setMailchimpUrl] = useState<string | null>(campaign.mailchimp_url ?? null)
   const [checkingMailchimp, setCheckingMailchimp] = useState(false)
+  const [sizeWarnings, setSizeWarnings] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const briefingSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const briefingInitialized = useRef(false)
@@ -285,6 +286,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     setMailchimpUrl(campaign.mailchimp_url ?? null)
     setMailchimpSubject(campaign.mailchimp_subject ?? '')
     setMailchimpPreviewText(campaign.mailchimp_preview_text ?? '')
+    setSizeWarnings([])
   }, [campaign.id])
 
   // Autosave briefing with 800ms debounce (newsletter campaigns only)
@@ -440,6 +442,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Fehler beim Erstellen')
       setMailchimpUrl(json.editUrl)
+      setSizeWarnings(json.warnings ?? [])
     } catch (e: any) {
       setMailchimpError(e.message)
     } finally {
@@ -471,6 +474,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       const createJson = await createRes.json()
       if (!createRes.ok) throw new Error(createJson.error ?? 'Fehler beim Erstellen')
       setMailchimpUrl(createJson.editUrl)
+      setSizeWarnings(createJson.warnings ?? [])
       window.open(createJson.editUrl, '_blank', 'noopener,noreferrer')
     } catch (e: any) {
       setMailchimpError(e.message)
@@ -797,6 +801,13 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     {checkingMailchimp ? 'Wird geprüft…' : 'In Mailchimp ansehen'}
                   </button>
                   {mailchimpError && <p className="text-xs text-[#E65100]">{mailchimpError}</p>}
+                  {sizeWarnings.length > 0 && (
+                    <div className="space-y-1">
+                      {sizeWarnings.map((w, i) => (
+                        <p key={i} className="text-xs text-[#C4A87C]">{w}</p>
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
