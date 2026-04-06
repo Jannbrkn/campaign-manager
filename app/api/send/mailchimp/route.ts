@@ -9,7 +9,13 @@ import { validateNewsletterHtml } from '@/lib/mailchimp/size-guard'
 import mjml2html from 'mjml'
 
 export async function POST(req: NextRequest) {
-  const { campaign_id, subject, preview_text } = await req.json()
+  let body: { campaign_id?: string; subject?: string; preview_text?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const { campaign_id, subject, preview_text } = body
   if (!campaign_id || !subject) {
     return NextResponse.json({ error: 'campaign_id and subject required' }, { status: 400 })
   }
@@ -23,12 +29,13 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient()
 
-  const { data: campaign } = await supabase
+  const { data: campaign, error: campaignError } = await supabase
     .from('campaigns')
     .select('*, manufacturers(*, agencies(*))')
     .eq('id', campaign_id)
     .single()
 
+  if (campaignError) return NextResponse.json({ error: 'DB-Fehler beim Laden der Kampagne' }, { status: 500 })
   if (!campaign || campaign.type !== 'newsletter') {
     return NextResponse.json({ error: 'Newsletter campaign not found' }, { status: 404 })
   }
@@ -104,12 +111,16 @@ export async function POST(req: NextRequest) {
         reply_to: fromEmail,
       },
     })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message ?? 'Mailchimp API-Fehler' }, { status: 502 })
+  }
+
+  try {
     await mcFetch(`/campaigns/${created.id}/content`, 'PUT', { html: htmlContent })
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message ?? 'Mailchimp API-Fehler' },
-      { status: 502 }
-    )
+    // Best-effort cleanup of the empty campaign
+    mcFetch(`/campaigns/${created.id}`, 'DELETE').catch(() => undefined)
+    return NextResponse.json({ error: err.message ?? 'Mailchimp Inhalt-Upload fehlgeschlagen' }, { status: 502 })
   }
 
   const editUrl = `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${created.web_id}`
