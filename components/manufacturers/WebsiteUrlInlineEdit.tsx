@@ -16,6 +16,14 @@ export default function WebsiteUrlInlineEdit({ manufacturerId, initialValue, onS
   const [error, setError] = useState<string | null>(null)
 
   async function handleSave() {
+    if (value.trim()) {
+      try {
+        new URL(value.trim())
+      } catch {
+        setError('Bitte eine gültige URL eingeben (z.B. https://www.hersteller.com)')
+        return
+      }
+    }
     setSaving(true)
     setError(null)
     try {
@@ -37,7 +45,7 @@ export default function WebsiteUrlInlineEdit({ manufacturerId, initialValue, onS
   if (!editing) {
     return (
       <div className="flex items-center gap-2 justify-end">
-        <span className="text-sm text-text-primary break-all text-right">{initialValue ?? '—'}</span>
+        <span className="text-sm text-text-primary break-all text-right">{value || '—'}</span>
         <button
           onClick={() => setEditing(true)}
           className="text-text-secondary hover:text-text-primary transition-colors shrink-0"

@@ -33,7 +33,7 @@ AGENTUR:
 - Name: [z.B. "Exclusive Collection"]
 - Logo-URL: [Supabase Storage URL]
 - Adresse: [Volle Postanschrift]
-- E-Mail: [z.B. "order@exclusive-collection.eu"]
+- Kontakt-E-Mail (Footer): [z.B. "info@exclusive-collection.eu"]
 - Telefon: [z.B. "+49 40 123456"]
 
 HERSTELLER:

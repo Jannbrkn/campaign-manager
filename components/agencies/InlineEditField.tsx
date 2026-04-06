@@ -38,7 +38,7 @@ export default function InlineEditField({ agencyId, initialValue, onSave, placeh
   if (!editing) {
     return (
       <div className="flex items-center gap-2 justify-end">
-        <span className="text-sm text-text-primary">{initialValue ?? '—'}</span>
+        <span className="text-sm text-text-primary">{value || '—'}</span>
         <button
           onClick={() => setEditing(true)}
           className="text-text-secondary hover:text-text-primary transition-colors"

@@ -36,7 +36,7 @@ export async function updateManufacturerContactEmail(id: string, contact_email: 
     .update({ contact_email: contact_email.trim() || null })
     .eq('id', id)
   if (error) throw new Error(error.message)
-  revalidatePath('/manufacturers')
+  revalidatePath(`/manufacturers/${id}`)
 }
 
 export async function updateManufacturerWebsiteUrl(id: string, website_url: string) {
