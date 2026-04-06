@@ -231,6 +231,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   const [sendingMailchimp, setSendingMailchimp] = useState(false)
   const [mailchimpError, setMailchimpError] = useState<string | null>(null)
   const [mailchimpUrl, setMailchimpUrl] = useState<string | null>(campaign.mailchimp_url ?? null)
+  const [checkingMailchimp, setCheckingMailchimp] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const briefingSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const briefingInitialized = useRef(false)
@@ -440,6 +441,26 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       setMailchimpError(e.message)
     } finally {
       setSendingMailchimp(false)
+    }
+  }
+
+  async function handleOpenMailchimp() {
+    setCheckingMailchimp(true)
+    setMailchimpError(null)
+    try {
+      const res = await fetch(`/api/send/mailchimp/check?campaign_id=${campaign.id}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Fehler beim Prüfen')
+      if (json.exists) {
+        window.open(json.editUrl, '_blank', 'noopener,noreferrer')
+      } else {
+        setMailchimpUrl(null)
+        setMailchimpError('Kampagne nicht mehr in Mailchimp vorhanden — bitte neu erstellen.')
+      }
+    } catch (e: any) {
+      setMailchimpError(e.message)
+    } finally {
+      setCheckingMailchimp(false)
     }
   }
 
@@ -751,15 +772,17 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             <div className="space-y-2">
               <p className="text-xs text-text-secondary uppercase tracking-wider">Mailchimp</p>
               {mailchimpUrl ? (
-                <a
-                  href={mailchimpUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-[#2E7D32] border border-[#2E7D32]/40 bg-[#2E7D32]/8 rounded-sm hover:bg-[#2E7D32]/15 transition-colors"
-                >
-                  <ExternalLink size={12} />
-                  In Mailchimp ansehen
-                </a>
+                <>
+                  <button
+                    onClick={handleOpenMailchimp}
+                    disabled={checkingMailchimp}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-[#2E7D32] border border-[#2E7D32]/40 bg-[#2E7D32]/8 rounded-sm hover:bg-[#2E7D32]/15 transition-colors disabled:opacity-50"
+                  >
+                    {checkingMailchimp ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
+                    {checkingMailchimp ? 'Wird geprüft…' : 'In Mailchimp ansehen'}
+                  </button>
+                  {mailchimpError && <p className="text-xs text-[#E65100]">{mailchimpError}</p>}
+                </>
               ) : (
                 <>
                   <input
