@@ -24,7 +24,7 @@ export function validateNewsletterHtml(html: string, filename?: string): SizeGua
   const errors: string[] = []
 
   // 1. Size check
-  const htmlSizeKB = Buffer.byteLength(html, 'utf8') / 1024
+  const htmlSizeKB = new TextEncoder().encode(html).byteLength / 1024
 
   if (htmlSizeKB > GMAIL_CLIP_KB) {
     errors.push(
@@ -41,7 +41,7 @@ export function validateNewsletterHtml(html: string, filename?: string): SizeGua
 
   if (hasBase64Images) {
     errors.push(
-      `Diese Datei enthält eingebettete Base64-Bilder (${base64Matches.length} gefunden) und ist für die ` +
+      `Diese Datei enthält eingebettete Base64-Inhalte (${base64Matches.length} gefunden) und ist für die ` +
       `lokale Vorschau gedacht — nicht für Mailchimp. Verwende die Production-HTML ohne eingebettete Bilder.`
     )
   }
