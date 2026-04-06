@@ -22,6 +22,7 @@ export interface Agency {
   logo_url: string | null
   address: string | null
   phone: string | null
+  contact_email: string | null
   created_at: string
 }
 
@@ -41,6 +42,7 @@ export interface Manufacturer {
   own_texts: boolean
   logo_url: string | null
   contact_email: string | null
+  website_url: string | null
   additional_report_email: string | null
   dropbox_link: string | null
   postcard_tags: string | null
