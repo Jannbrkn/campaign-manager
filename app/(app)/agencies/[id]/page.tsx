@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
+import InlineEditField from '@/components/agencies/InlineEditField'
+import { updateAgencyContactEmail } from '../actions'
 
 export default async function AgencyDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -17,12 +19,12 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
   const agency = agencyData as Agency
   const manufacturers = (mfgData ?? []) as Manufacturer[]
 
-  const fields = [
-    { label: 'Kostenstelle',    value: agency.cost_center },
-    { label: 'Ident-Nummer',    value: agency.ident_number },
-    { label: 'Order-E-Mail',    value: agency.order_email },
-    { label: 'Adresse',         value: agency.address },
-    { label: 'Telefon',         value: agency.phone },
+  const readonlyFields = [
+    { label: 'Kostenstelle',  value: agency.cost_center },
+    { label: 'Ident-Nummer', value: agency.ident_number },
+    { label: 'Order-E-Mail', value: agency.order_email },
+    { label: 'Adresse',      value: agency.address },
+    { label: 'Telefon',      value: agency.phone },
   ]
 
   return (
@@ -45,12 +47,24 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
           <h2 className="text-xs tracking-wider uppercase text-text-secondary">Details</h2>
         </div>
         <div className="divide-y divide-border">
-          {fields.map(({ label, value }) => (
+          {readonlyFields.map(({ label, value }) => (
             <div key={label} className="px-6 py-4 flex items-center justify-between">
               <span className="text-xs text-text-secondary w-40">{label}</span>
               <span className="text-sm text-text-primary flex-1 text-right">{value ?? '—'}</span>
             </div>
           ))}
+          {/* Editable: contact_email */}
+          <div className="px-6 py-4 flex items-center justify-between">
+            <span className="text-xs text-text-secondary w-40">Kontakt-E-Mail (Footer)</span>
+            <div className="flex-1 flex justify-end">
+              <InlineEditField
+                agencyId={agency.id}
+                initialValue={agency.contact_email}
+                onSave={updateAgencyContactEmail}
+                placeholder="info@agentur.eu"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
