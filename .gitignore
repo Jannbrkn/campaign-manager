@@ -25,3 +25,6 @@ yarn-error.log*
 
 # Superpowers brainstorming sessions
 .superpowers/
+
+# Git worktrees
+.worktrees/
