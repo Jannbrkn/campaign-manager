@@ -187,6 +187,21 @@ CTA-Texte konkret: ✅ „Preisliste herunterladen", „Termin vereinbaren" — 
 - Logos OHNE `href` sind ein Fehler
 - Agentur-Logo erscheint **ausschließlich im Footer**
 
+#### Logo-Auswahl — Einzellogo-Regel (KRITISCH)
+
+Pro Hersteller immer **genau eine Logo-Datei** — die **Wortmarke** (ausgeschriebener Markenname).
+
+Signet erkennen (NICHT verwenden): quadratisch, Einzelbuchstabe/Symbol, Dateiname enthält „icon"/„signet"/„favicon"/„symbol"
+
+Entscheidungsbaum:
+1. Wortmarke vorhanden → diese verwenden
+2. Nur Kombinationslogo → dieses verwenden
+3. Nur Signet → User fragen, nicht raten
+
+- ❌ Niemals Signet + Wortmarke als zwei separate Elemente
+- ❌ Nicht raten welche Datei die Wortmarke ist
+- **Sonderfall:** Hero-Bild enthält Logo → Header-Logo weglassen (kein Duplikat)
+
 #### Footer — DYNAMISCH (PFLICHT-DESIGN)
 
 ```xml

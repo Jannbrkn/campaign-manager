@@ -207,6 +207,34 @@ Wenn kein zweiter Link vorhanden: CTA mit ⚠️ LINK FEHLT markieren, aber MJML
 - Kein Text neben oder unter dem Hersteller-Logo im Header.
 - Das Agentur-Logo erscheint **ausschließlich im Footer** — niemals im Header oder Body.
 
+#### Logo-Auswahl — Einzellogo-Regel (KRITISCH)
+
+Pro Hersteller können mehrere Logo-Dateien existieren (Wortmarke, Signet/Icon, Kombinationslogo). Verwende **genau eine Datei** — immer die **Wortmarke**.
+
+**Erkennungsmerkmale Signet (NICHT verwenden):**
+- Quadratisches Seitenverhältnis
+- Einzelner Buchstabe oder abstraktes Symbol
+- Dateiname enthält „icon", „signet", „favicon", „symbol"
+
+**Entscheidungsbaum:**
+1. Wortmarke vorhanden → diese verwenden
+2. Nur Kombinationslogo (Signet + Name in einer Datei) → dieses verwenden
+3. Nur Signet vorhanden → User nach Wortmarke fragen, NICHT raten
+
+**DO:**
+- ✅ Ausschließlich die Wortmarke (ausgeschriebener Markenname) im Header einbinden
+- ✅ Einmal einbinden — kein zweites Logo-Element desselben Herstellers
+
+**DON'T:**
+- ❌ Niemals Signet + Wortmarke als zwei separate Elemente
+- ❌ Niemals Signet als eigenständiges Element im Newsletter
+- ❌ Nicht die kleinste oder quadratischste Datei nehmen — das ist fast immer das Signet
+- ❌ Nicht raten — wenn unklar welche Datei die Wortmarke ist, fragen
+
+**Sonderfall Hero-Duplikat:** Wenn das Hero-Bild selbst das Hersteller-Logo enthält, entfällt das Header-Logo komplett. Kein Logo doppelt zeigen.
+
+**Gilt für:** Header UND alle Content-Bereiche. Pro Hersteller maximal ein Logo-Element im gesamten Newsletter.
+
 #### Footer — DYNAMISCH (PFLICHT-DESIGN)
 
 Der Footer ist der rechtliche Absender-Block der Agentur. Er folgt einem festen Design — keine Abweichungen.
