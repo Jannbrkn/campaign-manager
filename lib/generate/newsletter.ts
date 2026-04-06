@@ -21,6 +21,8 @@ export interface NewsletterOutput {
   mjmlSource: string
   zipBuffer: Buffer
   previewHtml: string
+  subjectLine: string
+  previewText: string
 }
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
@@ -229,6 +231,43 @@ async function buildPreview(html: string, imageAssets: CampaignAsset[]): Promise
   return preview
 }
 
+// ─── Subject line + preview text generator ────────────────────────────────────
+
+async function generateSubjectAndPreview(
+  input: NewsletterInput,
+  client: Anthropic
+): Promise<{ subjectLine: string; previewText: string }> {
+  const { campaign, briefing } = input
+  const mfg = campaign.manufacturers as any
+
+  const lines = [
+    `Hersteller: ${mfg?.name ?? ''}`,
+    `Kampagne: ${campaign.title}`,
+  ]
+  if (briefing?.product) lines.push(`Produkt/Thema: ${briefing.product}`)
+  if (briefing?.draft)   lines.push(`Textentwurf (Auszug): ${briefing.draft.slice(0, 400)}`)
+  if (briefing?.cta_text) lines.push(`CTA: ${briefing.cta_text}`)
+
+  try {
+    const res = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 256,
+      system: `Du generierst E-Mail-Betreffs und Preview-Texte für B2B-Newsletter an Architekten und Designer im Luxusmöbelbereich.
+Antworte ausschließlich mit einem JSON-Objekt (kein Markdown-Wrapper): {"subject_line": "...", "preview_text": "..."}
+- subject_line: max. 60 Zeichen, konkret, kein Clickbait
+- preview_text: max. 100 Zeichen, ergänzt den Betreff, zeigt konkreten Mehrwert`,
+      messages: [{ role: 'user', content: lines.join('\n') }],
+    })
+    const parsed = JSON.parse((res.content[0] as Anthropic.TextBlock).text.trim())
+    return {
+      subjectLine: parsed.subject_line ?? campaign.title,
+      previewText: parsed.preview_text ?? '',
+    }
+  } catch {
+    return { subjectLine: campaign.title, previewText: '' }
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function generateNewsletter(input: NewsletterInput): Promise<NewsletterOutput> {
@@ -273,10 +312,11 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
     ...input.postcardAssets.filter((a) => a.asset_category === 'image'),
   ]
 
-  const [{ zipBuffer }, previewHtml] = await Promise.all([
+  const [{ zipBuffer }, previewHtml, { subjectLine, previewText }] = await Promise.all([
     buildZip(html, allImageAssets),
     buildPreview(html, allImageAssets),
+    generateSubjectAndPreview(input, client),
   ])
 
-  return { mjmlSource, zipBuffer, previewHtml }
+  return { mjmlSource, zipBuffer, previewHtml, subjectLine, previewText }
 }

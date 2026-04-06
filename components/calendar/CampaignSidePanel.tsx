@@ -227,7 +227,8 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
   )
   const [briefingSaving, setBriefingSaving] = useState(false)
   const isLoadingRef = useRef(false)
-  const [mailchimpSubject, setMailchimpSubject] = useState('')
+  const [mailchimpSubject, setMailchimpSubject] = useState(campaign.mailchimp_subject ?? '')
+  const [mailchimpPreviewText, setMailchimpPreviewText] = useState(campaign.mailchimp_preview_text ?? '')
   const [sendingMailchimp, setSendingMailchimp] = useState(false)
   const [mailchimpError, setMailchimpError] = useState<string | null>(null)
   const [mailchimpUrl, setMailchimpUrl] = useState<string | null>(campaign.mailchimp_url ?? null)
@@ -282,6 +283,8 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     setAutoSendEmails(campaign.auto_send_emails ?? [])
     setNewEmail('')
     setMailchimpUrl(campaign.mailchimp_url ?? null)
+    setMailchimpSubject(campaign.mailchimp_subject ?? '')
+    setMailchimpPreviewText(campaign.mailchimp_preview_text ?? '')
   }, [campaign.id])
 
   // Autosave briefing with 800ms debounce (newsletter campaigns only)
@@ -432,7 +435,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       const res = await fetch('/api/send/mailchimp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id, subject: mailchimpSubject.trim() }),
+        body: JSON.stringify({ campaign_id: campaign.id, subject: mailchimpSubject.trim(), preview_text: mailchimpPreviewText.trim() }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Fehler beim Erstellen')
@@ -463,7 +466,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
       const createRes = await fetch('/api/send/mailchimp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id, subject }),
+        body: JSON.stringify({ campaign_id: campaign.id, subject, preview_text: mailchimpPreviewText.trim() }),
       })
       const createJson = await createRes.json()
       if (!createRes.ok) throw new Error(createJson.error ?? 'Fehler beim Erstellen')
@@ -802,6 +805,14 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     value={mailchimpSubject}
                     onChange={(e) => setMailchimpSubject(e.target.value)}
                     placeholder="Betreff der E-Mail…"
+                    disabled={sendingMailchimp}
+                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 disabled:opacity-50"
+                  />
+                  <input
+                    type="text"
+                    value={mailchimpPreviewText}
+                    onChange={(e) => setMailchimpPreviewText(e.target.value)}
+                    placeholder="Preview-Text (erscheint nach dem Betreff)…"
                     disabled={sendingMailchimp}
                     className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 disabled:opacity-50"
                   />

@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { mcFetch, mcConfigured } from '@/lib/mailchimp'
 
 export async function POST(req: NextRequest) {
-  const { campaign_id, subject } = await req.json()
+  const { campaign_id, subject, preview_text } = await req.json()
   if (!campaign_id || !subject) {
     return NextResponse.json({ error: 'campaign_id and subject required' }, { status: 400 })
   }
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     type: 'regular',
     settings: {
       subject_line: subject,
+      preview_text: preview_text ?? '',
       title: `${campaign.title} — ${new Date().toISOString().split('T')[0]}`,
       from_name: fromName,
       reply_to: fromEmail,

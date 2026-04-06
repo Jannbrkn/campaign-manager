@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   if (mfg?.logo_url) mfg.logo_url = await signStorageUrl(admin, mfg.logo_url)
 
   try {
-    const { mjmlSource, zipBuffer, previewHtml } = await generateNewsletter({
+    const { mjmlSource, zipBuffer, previewHtml, subjectLine, previewText } = await generateNewsletter({
       campaign: campaign as CampaignWithManufacturer,
       assets: signedAssets,
       postcardAssets: signedPostcardAssets,
@@ -137,7 +137,11 @@ export async function POST(req: NextRequest) {
       },
     ])
 
-    await admin.from('campaigns').update({ status: 'review' }).eq('id', campaign_id)
+    await admin.from('campaigns').update({
+      status: 'review',
+      mailchimp_subject: subjectLine,
+      mailchimp_preview_text: previewText,
+    }).eq('id', campaign_id)
 
     return NextResponse.json({ success: true })
   } catch (err: any) {

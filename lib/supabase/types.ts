@@ -89,6 +89,8 @@ export interface Campaign {
   briefing: NewsletterBriefing | null
   mailchimp_campaign_id: string | null
   mailchimp_url: string | null
+  mailchimp_subject: string | null
+  mailchimp_preview_text: string | null
   performance_stats: PerformanceStats | null
   created_at: string
   updated_at: string
