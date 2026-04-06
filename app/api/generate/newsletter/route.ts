@@ -174,6 +174,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: err.message }, { status: 422 })
     }
 
+    if (err.message?.startsWith('SIZE_GUARD_ERROR:')) {
+      await admin
+        .from('campaigns')
+        .update({ status: 'assets_pending', notes: `Export blockiert: ${err.message.replace('SIZE_GUARD_ERROR:', '')}` })
+        .eq('id', campaign_id)
+      return NextResponse.json({ error: err.message.replace('SIZE_GUARD_ERROR:', '') }, { status: 422 })
+    }
+
     return NextResponse.json({ error: err.message ?? 'Generierung fehlgeschlagen' }, { status: 500 })
   }
   } catch (outerErr: any) {

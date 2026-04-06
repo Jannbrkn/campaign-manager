@@ -7,6 +7,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import mjml2html from 'mjml'
 import JSZip from 'jszip'
 import { NEWSLETTER_SYSTEM_PROMPT } from './newsletter-prompt'
+import { validateNewsletterHtml } from '@/lib/mailchimp/size-guard'
 import type { CampaignWithManufacturer, CampaignAsset, NewsletterBriefing } from '@/lib/supabase/types'
 
 export interface NewsletterInput {
@@ -204,6 +205,13 @@ async function buildZip(
       warnings.push(`Bild übersprungen: ${asset.file_name} (${e.message})`)
     }
   }
+
+  // Validate before packaging — catches accidental Base64 leakage and size issues
+  const guard = validateNewsletterHtml(htmlWithRelativePaths, 'newsletter.html')
+  if (!guard.passed) {
+    throw new Error('SIZE_GUARD_ERROR:' + guard.errors.join(' | '))
+  }
+  for (const w of guard.warnings) warnings.push(`[Size Guard] ${w}`)
 
   zip.file('newsletter.html', htmlWithRelativePaths)
   const buf = await zip.generateAsync({ type: 'arraybuffer' })
