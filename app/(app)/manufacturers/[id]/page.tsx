@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
+import WebsiteUrlInlineEdit from '@/components/manufacturers/WebsiteUrlInlineEdit'
+import { updateManufacturerWebsiteUrl } from '../actions'
 
 interface ManufacturerWithAgency extends Manufacturer {
   agencies: Agency | null
@@ -21,7 +23,7 @@ export default async function ManufacturerDetailPage({ params }: { params: { id:
 
   const manufacturer = data as unknown as ManufacturerWithAgency
 
-  const fields = [
+  const readonlyFields = [
     { label: 'Agentur',                value: manufacturer.agencies?.name },
     { label: 'Kategorie',              value: manufacturer.category },
     { label: 'Kontaktperson',          value: manufacturer.contact_person },
@@ -65,12 +67,23 @@ export default async function ManufacturerDetailPage({ params }: { params: { id:
           <h2 className="text-xs tracking-wider uppercase text-text-secondary">Details</h2>
         </div>
         <div className="divide-y divide-border">
-          {fields.map(({ label, value }) => (
+          {readonlyFields.map(({ label, value }) => (
             <div key={label} className="px-6 py-4 flex items-start justify-between gap-4">
               <span className="text-xs text-text-secondary w-48 shrink-0">{label}</span>
               <span className="text-sm text-text-primary text-right break-all">{value ?? '—'}</span>
             </div>
           ))}
+          {/* Editable: website_url */}
+          <div className="px-6 py-4 flex items-start justify-between gap-4">
+            <span className="text-xs text-text-secondary w-48 shrink-0">Website</span>
+            <div className="flex-1 flex justify-end">
+              <WebsiteUrlInlineEdit
+                manufacturerId={manufacturer.id}
+                initialValue={manufacturer.website_url}
+                onSave={updateManufacturerWebsiteUrl}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

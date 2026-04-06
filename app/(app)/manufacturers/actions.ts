@@ -38,3 +38,17 @@ export async function updateManufacturerContactEmail(id: string, contact_email: 
   if (error) throw new Error(error.message)
   revalidatePath('/manufacturers')
 }
+
+export async function updateManufacturerWebsiteUrl(id: string, website_url: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('manufacturers')
+    .update({ website_url: website_url.trim() || null })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath(`/manufacturers/${id}`)
+}
