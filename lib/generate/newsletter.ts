@@ -42,12 +42,17 @@ function buildUserPrompt(input: NewsletterInput): string {
     `Name: ${agency?.name ?? ''}`,
     `Logo-URL: ${agency?.logo_url ?? '(kein Logo)'}`,
     `Adresse: ${agency?.address ?? ''}`,
-    `E-Mail: ${agency?.order_email ?? ''}`,
     `Telefon: ${agency?.phone ?? ''}`,
+    agency?.contact_email
+      ? `Kontakt-E-Mail (Footer): ${agency.contact_email}`
+      : '(Keine öffentliche Kontakt-Mail hinterlegt — E-Mail im Footer weglassen)',
     '',
     '## HERSTELLER',
     `Name: ${mfg?.name ?? ''}`,
     `Kategorie: ${mfg?.category ?? ''}`,
+    mfg?.website_url
+      ? `Website (für klickbares Logo + CTAs verwenden): ${mfg.website_url}`
+      : '(Keine Website hinterlegt — Logo nicht verlinken)',
     mfg?.contact_email
       ? `Kontakt-Mail (Hersteller, für CTA/Kontaktzeile im Body verwenden): ${mfg.contact_email}`
       : '(Keine Hersteller-Kontaktmail — keine Kontaktadresse im Newsletter-Body nennen)',
