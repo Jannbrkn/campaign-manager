@@ -385,7 +385,16 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const json = await res.json()
+      let json: any
+      try {
+        json = await res.json()
+      } catch {
+        throw new Error(
+          res.status === 504 || res.status === 502
+            ? 'Generierung hat zu lange gedauert (Timeout). Bitte erneut versuchen.'
+            : `Server-Fehler (${res.status}) — bitte erneut versuchen.`
+        )
+      }
       if (!res.ok) throw new Error(json.error ?? 'Generierung fehlgeschlagen')
       isLoadingRef.current = false
       await loadAssets()
