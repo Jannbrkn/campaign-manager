@@ -9,6 +9,7 @@ import type { CampaignAsset, CampaignWithManufacturer } from '@/lib/supabase/typ
 export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
+  try {
   const { campaign_id, feedback } = await req.json()
   if (!campaign_id) {
     return NextResponse.json({ error: 'campaign_id required' }, { status: 400 })
@@ -170,5 +171,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: err.message ?? 'Generierung fehlgeschlagen' }, { status: 500 })
+  }
+  } catch (outerErr: any) {
+    console.error('Unhandled newsletter route error:', outerErr)
+    return NextResponse.json({ error: outerErr.message ?? 'Unerwarteter Fehler' }, { status: 500 })
   }
 }
