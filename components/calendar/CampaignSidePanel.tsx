@@ -448,15 +448,27 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     setCheckingMailchimp(true)
     setMailchimpError(null)
     try {
-      const res = await fetch(`/api/send/mailchimp/check?campaign_id=${campaign.id}`)
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Fehler beim Prüfen')
-      if (json.exists) {
-        window.open(json.editUrl, '_blank', 'noopener,noreferrer')
-      } else {
-        setMailchimpUrl(null)
-        setMailchimpError('Kampagne nicht mehr in Mailchimp vorhanden — bitte neu erstellen.')
+      const checkRes = await fetch(`/api/send/mailchimp/check?campaign_id=${campaign.id}`)
+      const checkJson = await checkRes.json()
+      if (!checkRes.ok) throw new Error(checkJson.error ?? 'Fehler beim Prüfen')
+
+      if (checkJson.exists) {
+        window.open(checkJson.editUrl, '_blank', 'noopener,noreferrer')
+        return
       }
+
+      // Campaign gone — recreate automatically using the campaign title as subject
+      setMailchimpUrl(null)
+      const subject = mailchimpSubject.trim() || campaign.title
+      const createRes = await fetch('/api/send/mailchimp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaign.id, subject }),
+      })
+      const createJson = await createRes.json()
+      if (!createRes.ok) throw new Error(createJson.error ?? 'Fehler beim Erstellen')
+      setMailchimpUrl(createJson.editUrl)
+      window.open(createJson.editUrl, '_blank', 'noopener,noreferrer')
     } catch (e: any) {
       setMailchimpError(e.message)
     } finally {
