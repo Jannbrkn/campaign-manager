@@ -36,7 +36,7 @@ export function validateNewsletterHtml(html: string, filename?: string): SizeGua
   }
 
   // 2. Base64 detection
-  const base64Matches = html.match(/data:(image|application)\/[^;]+;base64,/g) ?? []
+  const base64Matches = html.match(/data:(image|application)\/[^"'\s>]+/g) ?? []
   const hasBase64Images = base64Matches.length > 0
 
   if (hasBase64Images) {
@@ -53,7 +53,7 @@ export function validateNewsletterHtml(html: string, filename?: string): SizeGua
 
   // 4. Image URL analysis
   const imgSrcMatches: RegExpExecArray[] = []
-  const imgRegex = /<img[^>]+src="([^"]+)"/gi
+  const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi
   let match: RegExpExecArray | null
   while ((match = imgRegex.exec(html)) !== null) {
     imgSrcMatches.push(match)
