@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "npx tsx --test lib/mailchimp/size-guard.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
