@@ -3,8 +3,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
-import InlineEditField from '@/components/agencies/InlineEditField'
-import { updateAgencyContactEmail } from '../actions'
 
 export default async function AgencyDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -53,18 +51,6 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
               <span className="text-sm text-text-primary flex-1 text-right">{value ?? '—'}</span>
             </div>
           ))}
-          {/* Editable: contact_email */}
-          <div className="px-6 py-4 flex items-center justify-between">
-            <span className="text-xs text-text-secondary w-40">Kontakt-E-Mail (Footer)</span>
-            <div className="flex-1 flex justify-end">
-              <InlineEditField
-                agencyId={agency.id}
-                initialValue={agency.contact_email}
-                onSave={updateAgencyContactEmail}
-                placeholder="info@agentur.eu"
-              />
-            </div>
-          </div>
         </div>
       </div>
 

@@ -43,8 +43,8 @@ function buildUserPrompt(input: NewsletterInput): string {
     `Logo-URL: ${agency?.logo_url ?? '(kein Logo)'}`,
     `Adresse: ${agency?.address ?? ''}`,
     `Telefon: ${agency?.phone ?? ''}`,
-    agency?.contact_email
-      ? `Kontakt-E-Mail (Footer): ${agency.contact_email}`
+    mfg?.contact_email
+      ? `Kontakt-E-Mail (Footer): ${mfg.contact_email}`
       : '(Keine öffentliche Kontakt-Mail hinterlegt — E-Mail im Footer weglassen)',
     '',
     '## HERSTELLER',
