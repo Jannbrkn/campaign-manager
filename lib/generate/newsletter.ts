@@ -207,7 +207,7 @@ async function buildZip(
   }
 
   // Validate before packaging — catches accidental Base64 leakage and size issues
-  const guard = validateNewsletterHtml(htmlWithRelativePaths, 'newsletter.html')
+  const guard = validateNewsletterHtml(htmlWithRelativePaths, 'newsletter.html', { allowRelativePaths: true })
   if (!guard.passed) {
     throw new Error('SIZE_GUARD_ERROR:' + guard.errors.join(' | '))
   }
@@ -320,11 +320,15 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
     ...input.postcardAssets.filter((a) => a.asset_category === 'image'),
   ]
 
-  const [{ zipBuffer }, previewHtml, { subjectLine, previewText }] = await Promise.all([
+  const [{ zipBuffer, warnings: zipWarnings }, previewHtml, { subjectLine, previewText }] = await Promise.all([
     buildZip(html, allImageAssets),
     buildPreview(html, allImageAssets),
     generateSubjectAndPreview(input, client),
   ])
+
+  if (zipWarnings.length > 0) {
+    console.warn('[buildZip warnings]', zipWarnings)
+  }
 
   return { mjmlSource, zipBuffer, previewHtml, subjectLine, previewText }
 }

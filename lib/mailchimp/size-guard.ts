@@ -19,7 +19,11 @@ const GMAIL_CLIP_KB = 102
 const GMAIL_WARN_KB = 80
 const MAILCHIMP_CDN = ['mcusercontent.com', 'gallery.mailchimp.com']
 
-export function validateNewsletterHtml(html: string, filename?: string): SizeGuardResult {
+export function validateNewsletterHtml(
+  html: string,
+  filename?: string,
+  options?: { allowRelativePaths?: boolean }
+): SizeGuardResult {
   const warnings: string[] = []
   const errors: string[] = []
 
@@ -69,7 +73,9 @@ export function validateNewsletterHtml(html: string, filename?: string): SizeGua
     if (MAILCHIMP_CDN.some((cdn) => src.includes(cdn))) {
       mailchimpCdnUrls++
     } else if (!src.startsWith('http://') && !src.startsWith('https://')) {
-      unresolvedUrls.push(src)
+      if (!options?.allowRelativePaths) {
+        unresolvedUrls.push(src)
+      }
     }
   }
 
