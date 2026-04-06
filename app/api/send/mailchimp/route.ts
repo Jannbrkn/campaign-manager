@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { mcFetch, mcConfigured } from '@/lib/mailchimp'
+import { signStorageUrl } from '@/lib/supabase/storage'
+import { validateNewsletterHtml } from '@/lib/mailchimp/size-guard'
+// @ts-ignore
+import mjml2html from 'mjml'
 
 export async function POST(req: NextRequest) {
   const { campaign_id, subject, preview_text } = await req.json()
@@ -29,33 +33,54 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Newsletter campaign not found' }, { status: 404 })
   }
 
-  const { data: previewAsset } = await supabase
-    .from('campaign_assets')
-    .select('file_url')
-    .eq('campaign_id', campaign_id)
-    .eq('asset_category', 'newsletter_preview')
-    .eq('is_output', true)
-    .single()
+  // Load MJML source and image assets in parallel
+  const [{ data: mjmlAsset }, { data: rawImageAssets }] = await Promise.all([
+    supabase
+      .from('campaign_assets')
+      .select('file_url, file_name')
+      .eq('campaign_id', campaign_id)
+      .eq('asset_category', 'text')
+      .eq('is_output', true)
+      .eq('file_name', 'newsletter.mjml')
+      .single(),
+    supabase
+      .from('campaign_assets')
+      .select('file_name, file_url, file_type')
+      .eq('campaign_id', campaign_id)
+      .eq('asset_category', 'image')
+      .eq('is_output', false),
+  ])
 
-  if (!previewAsset) {
+  if (!mjmlAsset) {
     return NextResponse.json({ error: 'Kein generierter Newsletter gefunden. Bitte zuerst generieren.' }, { status: 422 })
   }
 
-  const marker = '/campaign-assets/'
-  const idx = previewAsset.file_url.indexOf(marker)
-  let htmlContent = ''
+  // Fetch MJML source with a fresh signed URL
+  const mjmlSignedUrl = await signStorageUrl(admin, mjmlAsset.file_url)
+  const mjmlRes = await fetch(mjmlSignedUrl)
+  if (!mjmlRes.ok) {
+    return NextResponse.json({ error: 'MJML-Quelle konnte nicht geladen werden.' }, { status: 500 })
+  }
+  let mjmlSource = await mjmlRes.text()
 
-  if (idx !== -1) {
-    const path = decodeURIComponent(previewAsset.file_url.slice(idx + marker.length).split('?')[0])
-    const { data: signed } = await admin.storage.from('campaign-assets').createSignedUrl(path, 300)
-    if (signed?.signedUrl) {
-      const htmlRes = await fetch(signed.signedUrl)
-      if (htmlRes.ok) htmlContent = await htmlRes.text()
-    }
+  // Replace relative filenames in MJML with fresh signed image URLs
+  const imageAssets = rawImageAssets ?? []
+  for (const asset of imageAssets) {
+    const signedUrl = await signStorageUrl(admin, asset.file_url)
+    mjmlSource = mjmlSource.split(asset.file_name).join(signedUrl)
   }
 
-  if (!htmlContent) {
-    return NextResponse.json({ error: 'Newsletter-HTML konnte nicht geladen werden' }, { status: 500 })
+  // Compile MJML → production HTML
+  const compiled = mjml2html(mjmlSource, { validationLevel: 'soft' })
+  if (!compiled.html) {
+    return NextResponse.json({ error: 'MJML konnte nicht kompiliert werden.' }, { status: 500 })
+  }
+  const htmlContent = compiled.html
+
+  // Guard: block Base64 or oversized HTML before uploading to Mailchimp
+  const guard = validateNewsletterHtml(htmlContent, 'newsletter-mailchimp.html')
+  if (!guard.passed) {
+    return NextResponse.json({ error: guard.errors.join(' | ') }, { status: 422 })
   }
 
   const mfg = campaign.manufacturers as any
@@ -83,5 +108,5 @@ export async function POST(req: NextRequest) {
     mailchimp_url: editUrl,
   }).eq('id', campaign_id)
 
-  return NextResponse.json({ success: true, campaignId: created.id, editUrl })
+  return NextResponse.json({ success: true, campaignId: created.id, editUrl, warnings: guard.warnings })
 }
