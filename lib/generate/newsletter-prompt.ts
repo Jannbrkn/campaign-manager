@@ -13,11 +13,12 @@ Build versandfertige Produkt-Newsletter für Luxusmöbelmarken. Output ist immer
 
 ## ABSENDER-LOGIK (KRITISCH — immer beachten)
 
-**Der Newsletter wird im Namen des HERSTELLERS geschrieben, nicht im Namen der Agentur.**
+**Der Newsletter wird im Namen des HERSTELLERS geschrieben. Die Hersteller-Marke steht im Vordergrund.**
 
-- Sign-off/Unterschrift: "Ihr [Herstellername]-Team" — niemals "Ihr Collezioni-Team", "Ihr Exclusive Collection-Team" o.ä.
-- Die Agentur ist der rechtliche Absender und erscheint NUR im Footer (Adressdaten) — sie tritt inhaltlich nicht in Erscheinung.
-- **Die order@-E-Mail der Agentur darf NIEMALS als Kontaktadresse im Newsletter-Inhalt stehen.** Diese Adressen sind interne Bestelladressen, keine Kundenpost-Adressen.
+- **Header**: Hersteller-Logo oben, zentriert, klickbar (→ website_url). Kein Agentur-Logo im Header.
+- **Body**: Im Namen des Herstellers geschrieben. Sign-off: "Ihr [Herstellername]-Team" — niemals "Ihr Collezioni-Team" o.ä.
+- **Footer**: Agentur erscheint NUR hier — mit Logo (klein), Name, Adresse, Kontakt-Mail, Telefon.
+- **Die order@-E-Mail der Agentur darf NIEMALS im Newsletter erscheinen** (weder Header, Body noch Footer). Nur \`contact_email\` der Agentur ist für den Footer erlaubt.
 - Wenn im Input eine "Kontakt-Mail (Hersteller)" angegeben ist → diese für CTA / Kontaktzeile im Body verwenden.
 - Wenn KEINE Hersteller-Kontaktmail vorhanden → keine Kontaktadresse im Body nennen.
 
@@ -161,46 +162,61 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 | Sub-Headlines | Light (300) | 12–13px | Versalien, Laufweite 3px |
 | Fließtext | Light (300) | 14px | Zeilenhöhe 1.85 |
 | Buttons | Medium (500) | 10–11px | Versalien, Laufweite 2.5px |
-| Footer | Light (300) | 9–10px | Dunkelgrau (#3a3a3a) auf hellem Hintergrund ODER #cccccc auf dunklem (#1a1a1a) |
+| Footer | Light (300) | 9–10px | #cccccc auf #1a1a1a Hintergrund — immer dunkel |
 
 #### Layout-Regeln
 - Hero-Bild: Full-Width, ganz oben nach der Topbar
+- **Hersteller-Logo im Header ist klickbar** → \`href\` auf \`website_url\` des Herstellers
 - Alle Produktbilder MÜSSEN klickbar sein (\`href\` auf Produkt-URL)
 - Alle CTA-Buttons MÜSSEN auf angegebene Links zeigen
+- **Mindestens 2 CTAs pro Newsletter** (siehe CTA-Pflicht unten)
 - CTAs kontextuell eingebettet — neben dem passenden Inhalt, NICHT als Block am Ende
 
-#### Logo-Platzierung — DYNAMISCH
+#### CTA-Pflicht — MINDESTENS 2 CTAs (KRITISCH)
 
-| Logo | Position | Breite |
-|---|---|---|
-| **Agentur-Logo** | Header (oben, zentriert) | 200–220px |
-| Hersteller-Logo | Über der Headline, nach dem Hero | 120–160px |
-| **Agentur-Logo** | Closing (unter Signatur) | 140–160px |
+Jeder Newsletter MUSS mindestens zwei CTAs enthalten:
 
-#### Footer — DYNAMISCH
+1. **Haupt-CTA** (prominenter Button): aus dem Briefing-Feld \`cta_text\` / \`cta_link\`
+   - Beispiele: "Preisliste herunterladen", "Termin vereinbaren", "Einladung bestätigen"
+2. **Sekundärer CTA** (kontextuell, im Body eingebettet): ein weiterer klickbarer Link oder Button
+   - Quelle: \`extra_links\` aus dem Briefing, oder \`website_url\` des Herstellers als Fallback
+   - Wenn kein zweiter Link vorhanden: zweiten CTA mit ⚠️ LINK FEHLT markieren, aber trotzdem die MJML-Struktur ausgeben
 
-Der Footer enthält die Agentur-Adressdaten (rechtlicher Absender) — **aber keine order@-Mail**.
+Niemals einen Newsletter mit nur einem CTA ausliefern.
 
-Pflichtinhalt:
-\`\`\`
-[Agentur-Name]
-[Agentur-Adresse]
-[Agentur-Telefon]
-\`\`\`
+#### Logo-Platzierung — DYNAMISCH (KRITISCH)
 
-Plus Mailchimp-Merge-Tags:
-\`\`\`html
-<a href="*|UNSUB|*">Abmelden</a>
-<a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>
-\`\`\`
+**Der Newsletter wird im Namen des HERSTELLERS versandt — die Hersteller-Marke steht im Vordergrund.**
 
-**Footer-Kontrast (PFLICHT):**
-- Hintergrund: #1a1a1a oder #2c2c2c (dunkel)
-- Haupttext: #999999
-- Adressen/Details: #777777
-- Links (Abmelden etc.): #888888, underline
-- NIEMALS: hellgrauer Text auf weißem oder hellgrauem Hintergrund — das ist nicht lesbar.
-- Der Footer-Hintergrund muss sich klar vom Rest der Mail abheben.
+| Logo | Position | Breite | Klickbar |
+|---|---|---|---|
+| **Hersteller-Logo** | **Header (oben, zentriert)** | 180–220px | **Ja → Website des Herstellers** |
+| Agentur-Logo | Footer (neben Adressdaten) | 80–100px | Nein |
+
+- Das Hersteller-Logo im Header MUSS in \`<mj-image>\` mit \`href="[website_url]"\` eingebettet sein.
+- Wenn keine \`website_url\` vorhanden: Logo anzeigen, aber kein \`href\` setzen.
+- Das Agentur-Logo erscheint **ausschließlich im Footer** — niemals im Header oder Body.
+
+#### Footer — DYNAMISCH (PFLICHT-DESIGN)
+
+Der Footer ist der rechtliche Absender-Block der Agentur. Er folgt einem festen Design — keine Abweichungen.
+
+**Struktur (von oben nach unten):**
+1. \`mj-divider\` als visuelle Trennung vom Body (Farbe: #2a2a2a)
+2. Agentur-Logo (80–100px, zentriert) — falls \`logo_url\` vorhanden
+3. Agentur-Name
+4. Agentur-Adresse
+5. Kontakt-E-Mail der Agentur (\`contact_email\` — NICHT \`order_email\`) — weglassen wenn nicht vorhanden
+6. Agentur-Telefon
+7. Mailchimp-Pflicht-Links: \`<a href="*|UNSUB|*">Abmelden</a>\` · \`<a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>\`
+
+**Design (nicht verhandelbar):**
+- Hintergrund: \`#1a1a1a\`
+- Haupttext: \`#cccccc\`, 9–10px, Light (300)
+- Links (Abmelden etc.): \`#888888\`, unterstrichen
+- Agentur-Name: \`#999999\`, etwas größer (10–11px)
+- NIEMALS heller Hintergrund im Footer — weder weiß noch hellgrau.
+- NIEMALS \`order_email\` der Agentur im Footer oder im Body verwenden.
 
 #### Kompilierung
 
@@ -226,10 +242,13 @@ Nach dem Bauen IMMER auflisten:
 
 \`\`\`
 CHECKLISTE
+✅/❌ Hersteller-Logo im Header (klickbar auf website_url)?
+✅/❌ Agentur-Logo NUR im Footer (nicht im Header/Body)?
+✅/❌ Mindestens 2 CTAs vorhanden?
 ✅/❌ Alle Produktbilder klickbar (href auf Produkt-URL)?
 ✅/❌ Alle CTA-Buttons mit finalem Link?
-✅/❌ Logos eingebunden (Agentur + Hersteller)?
-✅/❌ Footer mit korrekten Agentur-Daten?
+✅/❌ Footer: Agentur-Name, Adresse, Kontakt-Mail, Telefon?
+✅/❌ Footer: dunkler Hintergrund (#1a1a1a), helle Schrift (#cccccc)?
 ✅/❌ Subject Line + Preview Text vorgeschlagen?
 ✅/❌ ZIP-Datei erstellt und ausgeliefert?
 ⚠️  Fehlende Links: [auflisten oder „keine"]
