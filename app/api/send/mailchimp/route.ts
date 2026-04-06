@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mcFetch, mcConfigured } from '@/lib/mailchimp'
+import { mcFetch, mcConfigured, MC_SERVER } from '@/lib/mailchimp'
 import { signStorageUrl } from '@/lib/supabase/storage'
 import { validateNewsletterHtml } from '@/lib/mailchimp/size-guard'
 // @ts-ignore
@@ -65,13 +65,18 @@ export async function POST(req: NextRequest) {
 
   // Replace relative filenames in MJML with fresh signed image URLs
   const imageAssets = rawImageAssets ?? []
-  for (const asset of imageAssets) {
-    const signedUrl = await signStorageUrl(admin, asset.file_url)
-    mjmlSource = mjmlSource.split(asset.file_name).join(signedUrl)
+  const signedImageUrls = await Promise.all(
+    imageAssets.map((asset) => signStorageUrl(admin, asset.file_url))
+  )
+  for (let i = 0; i < imageAssets.length; i++) {
+    mjmlSource = mjmlSource.split(imageAssets[i].file_name).join(signedImageUrls[i])
   }
 
   // Compile MJML → production HTML
   const compiled = mjml2html(mjmlSource, { validationLevel: 'soft' })
+  if (compiled.errors?.length > 0) {
+    console.warn('[mailchimp/send] MJML soft errors:', compiled.errors.map((e: any) => e.formattedMessage ?? e.message))
+  }
   if (!compiled.html) {
     return NextResponse.json({ error: 'MJML konnte nicht kompiliert werden.' }, { status: 500 })
   }
@@ -87,26 +92,43 @@ export async function POST(req: NextRequest) {
   const fromName = mfg?.agencies?.name ?? 'Collezioni Design Syndicate'
   const fromEmail = mfg?.agencies?.order_email ?? 'newsletter@collezioni.eu'
 
-  const created = await mcFetch('/campaigns', 'POST', {
-    type: 'regular',
-    settings: {
-      subject_line: subject,
-      preview_text: preview_text ?? '',
-      title: `${campaign.title} — ${new Date().toISOString().split('T')[0]}`,
-      from_name: fromName,
-      reply_to: fromEmail,
-    },
-  })
+  let created: { id: string; web_id: number }
+  try {
+    created = await mcFetch('/campaigns', 'POST', {
+      type: 'regular',
+      settings: {
+        subject_line: subject,
+        preview_text: preview_text ?? '',
+        title: `${campaign.title} — ${new Date().toISOString().split('T')[0]}`,
+        from_name: fromName,
+        reply_to: fromEmail,
+      },
+    })
+    await mcFetch(`/campaigns/${created.id}/content`, 'PUT', { html: htmlContent })
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message ?? 'Mailchimp API-Fehler' },
+      { status: 502 }
+    )
+  }
 
-  await mcFetch(`/campaigns/${created.id}/content`, 'PUT', { html: htmlContent })
-
-  const editUrl = `https://us19.admin.mailchimp.com/campaigns/edit?id=${created.web_id}`
+  const editUrl = `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${created.web_id}`
 
   // Save Mailchimp campaign ID and edit URL for persistent link
-  await admin.from('campaigns').update({
-    mailchimp_campaign_id: created.id,
-    mailchimp_url: editUrl,
-  }).eq('id', campaign_id)
+  try {
+    await admin.from('campaigns').update({
+      mailchimp_campaign_id: created.id,
+      mailchimp_url: editUrl,
+    }).eq('id', campaign_id)
+  } catch {
+    // Campaign was created in Mailchimp — return success but warn about DB sync failure
+    return NextResponse.json({
+      success: true,
+      campaignId: created.id,
+      editUrl,
+      warnings: [...guard.warnings, 'DB-Sync fehlgeschlagen — Campaign-ID manuell notieren.'],
+    })
+  }
 
   return NextResponse.json({ success: true, campaignId: created.id, editUrl, warnings: guard.warnings })
 }

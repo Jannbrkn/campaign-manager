@@ -1,6 +1,6 @@
 // lib/mailchimp.ts — Shared Mailchimp API v3 client used by send and refresh routes
 const MC_API_KEY = process.env.MAILCHIMP_API_KEY ?? ''
-const MC_SERVER = MC_API_KEY.split('-').at(-1) || 'us19'
+export const MC_SERVER = MC_API_KEY.split('-').at(-1) || 'us19'
 export const MC_BASE = `https://${MC_SERVER}.api.mailchimp.com/3.0`
 
 function mcAuthHeader() {
