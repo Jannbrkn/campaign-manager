@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// NextRequest is intentionally imported and used to strongly type the incoming request object
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
