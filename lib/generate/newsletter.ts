@@ -28,7 +28,7 @@ export interface NewsletterOutput {
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
-function buildUserPrompt(input: NewsletterInput): string {
+async function buildUserPrompt(input: NewsletterInput): Promise<string> {
   const { campaign, assets, postcardAssets, briefing, feedback } = input
   const mfg = campaign.manufacturers as any
   const agency = mfg?.agencies as any
@@ -49,15 +49,18 @@ function buildUserPrompt(input: NewsletterInput): string {
       : '(Keine Agentur-Website hinterlegt — Agentur-Logo im Footer ohne href)',
     `Adresse: ${agency?.address ?? ''}`,
     `Telefon: ${agency?.phone ?? ''}`,
-    mfg?.contact_email
-      ? `Kontakt-E-Mail (Footer): ${mfg.contact_email}`
-      : '(Keine öffentliche Kontakt-Mail hinterlegt — E-Mail im Footer weglassen)',
+    agency?.contact_email
+      ? `Kontakt-E-Mail (Footer): ${agency.contact_email}`
+      : '(Keine Agentur-Kontakt-Mail hinterlegt — E-Mail im Footer weglassen)',
     '',
     '## HERSTELLER',
     `Name: ${mfg?.name ?? ''}`,
     `Kategorie: ${mfg?.category ?? ''}`,
+    mfg?.logo_url
+      ? `Logo-URL (Header — zentriert, klickbar auf website_url): ${mfg.logo_url}`
+      : '(Kein Hersteller-Logo vorhanden — Header ohne Logo aufbauen)',
     mfg?.website_url
-      ? `Website (für klickbares Logo + CTAs verwenden): ${mfg.website_url}`
+      ? `Website (für klickbares Hersteller-Logo im Header + CTAs): ${mfg.website_url}`
       : '(Keine Website hinterlegt — Logo nicht verlinken)',
     mfg?.contact_email
       ? `Kontakt-Mail (Hersteller, für CTA/Kontaktzeile im Body verwenden): ${mfg.contact_email}`
@@ -105,10 +108,24 @@ function buildUserPrompt(input: NewsletterInput): string {
     lines.push('')
   }
 
+  // Fetch text asset content — URLs alone are not readable by the model
   if (textAssets.length > 0) {
     lines.push('## TEXTENTWURF (hochgeladene Assets)')
     lines.push('(Als zusätzliche Basis verwenden, humanisieren)')
-    for (const a of textAssets) lines.push(`- ${a.file_name}: ${a.file_url}`)
+    for (const a of textAssets) {
+      try {
+        const res = await fetch(a.file_url)
+        if (res.ok) {
+          const content = await res.text()
+          lines.push(`--- ${a.file_name} ---`)
+          lines.push(content)
+        } else {
+          lines.push(`- ${a.file_name}: (Nicht abrufbar — HTTP ${res.status})`)
+        }
+      } catch {
+        lines.push(`- ${a.file_name}: (Fehler beim Laden)`)
+      }
+    }
     lines.push('')
   }
 
@@ -281,7 +298,7 @@ Antworte ausschließlich mit einem JSON-Objekt (kein Markdown-Wrapper): {"subjec
 export async function generateNewsletter(input: NewsletterInput): Promise<NewsletterOutput> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const textPrompt = buildUserPrompt(input)
+  const textPrompt = await buildUserPrompt(input)
   const imageBlocks = await buildImageBlocks(input.assets, input.postcardAssets)
 
   const userContent: Anthropic.ContentBlockParam[] = [

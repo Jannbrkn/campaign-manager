@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
   if (!recipientsFile) {
     return NextResponse.json(
-      { error: 'Die Rezipienten-Auswertung fehlt für den vollständigen Report. Bitte den Mailchimp Audience-Export (mit Phone-Spalte) hochladen.' },
+      { error: 'Die Rezipienten-Auswertung fehlt für den vollständigen Report. Bitte den Mailchimp Audience-Export hochladen.' },
       { status: 400 }
     )
   }
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   if (recipientsType === 'campaign' || recipientsType === 'unknown') {
     return NextResponse.json(
-      { error: 'Die erste Datei scheint kein Rezipienten-Export zu sein. Bitte den Mailchimp Audience-Export (mit Phone-Spalte) als Rezipienten hochladen.' },
+      { error: 'Die erste Datei scheint kein Rezipienten-Export zu sein. Bitte den Mailchimp Audience-Export (mit E-Mail-Spalte) als Rezipienten hochladen.' },
       { status: 400 }
     )
   }

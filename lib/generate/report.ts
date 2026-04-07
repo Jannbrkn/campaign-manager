@@ -27,12 +27,12 @@ export function detectCsvType(csvText: string): CsvFileType {
   })
   if (!data.length) return 'unknown'
   const keys = Object.keys(data[0]).map((k) => k.toLowerCase().replace(/[\s_-]/g, ''))
-  const hasPhone = keys.some((k) => k.includes('phone'))
+  const hasEmail = keys.some((k) => k.includes('email'))
   const hasOpens = keys.some((k) => k === 'opens')
   const hasClicks = keys.some((k) => k === 'clicks')
-  if ((hasOpens || hasClicks) && hasPhone) return 'combined'
+  if ((hasOpens || hasClicks) && hasEmail) return 'combined'
   if (hasOpens || hasClicks) return 'campaign'
-  if (hasPhone) return 'recipients'
+  if (hasEmail) return 'recipients'
   return 'unknown'
 }
 
