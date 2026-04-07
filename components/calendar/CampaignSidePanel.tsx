@@ -516,17 +516,17 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-2 px-5 py-4 border-b border-border shrink-0">
-        <button onClick={onBack} className="text-text-secondary hover:text-text-primary transition-colors shrink-0">
+        <button onClick={onBack} className="text-text-secondary hover:text-text-primary transition-colors shrink-0" aria-label="Zurück" title="Zurück">
           <ChevronLeft size={16} />
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`w-2 h-2 rounded-full shrink-0 ${TYPE_DOT[campaign.type]}`} />
           <span className="text-sm text-text-primary truncate">{campaign.title}</span>
         </div>
-        <button onClick={() => setShowEdit(true)} className="p-1.5 text-text-secondary hover:text-text-primary transition-colors shrink-0">
+        <button onClick={() => setShowEdit(true)} className="p-1.5 text-text-secondary hover:text-text-primary transition-colors shrink-0" aria-label="Bearbeiten" title="Bearbeiten">
           <Pencil size={13} />
         </button>
-        <button onClick={() => setConfirmDelete(true)} className="p-1.5 text-text-secondary hover:text-[#E65100] transition-colors shrink-0">
+        <button onClick={() => setConfirmDelete(true)} className="p-1.5 text-text-secondary hover:text-[#E65100] transition-colors shrink-0" aria-label="Löschen" title="Löschen">
           <Trash2 size={13} />
         </button>
       </div>
@@ -1247,7 +1247,7 @@ export default function CampaignSidePanel({ campaigns, selectedDate, onClose, on
             {campaigns.length} Kampagne{campaigns.length !== 1 ? 'n' : ''}
           </p>
         </div>
-        <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
+        <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors" aria-label="Schließen" title="Schließen">
           <X size={16} />
         </button>
       </div>

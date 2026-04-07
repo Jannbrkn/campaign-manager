@@ -373,13 +373,13 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
               {toolbarLabel()}
             </h1>
             <div className="flex items-center gap-1">
-              <button onClick={() => navigate(-1)} className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-sm transition-colors">
+              <button onClick={() => navigate(-1)} className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-sm transition-colors" aria-label="Vorherige" title="Vorherige">
                 <ChevronLeft size={16} />
               </button>
               <button onClick={goToday} className="px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary border border-border hover:border-text-secondary/40 rounded-sm transition-colors">
                 Heute
               </button>
-              <button onClick={() => navigate(1)} className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-sm transition-colors">
+              <button onClick={() => navigate(1)} className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-sm transition-colors" aria-label="Nächste" title="Nächste">
                 <ChevronRight size={16} />
               </button>
             </div>
