@@ -9,15 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#0A0A0A',
-        surface: '#1A1A1A',
-        border: '#2A2A2A',
-        'text-primary': '#FFFFFF',
-        'text-secondary': '#999999',
-        'accent-warm': '#EDE8E3',
-        'accent-gold': '#C4A87C',
-        success: '#2E7D32',
-        warning: '#E65100',
+        background:       'var(--color-background)',
+        surface:          'var(--color-surface)',
+        border:           'var(--color-border)',
+        'text-primary':   'var(--color-text-primary)',
+        'text-secondary': 'var(--color-text-secondary)',
+        'accent-warm':    'var(--color-accent-warm)',
+        'accent-gold':    'var(--color-accent-gold)',
+        success:          'var(--color-success)',
+        warning:          'var(--color-warning)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
