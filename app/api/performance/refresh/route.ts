@@ -28,6 +28,7 @@ export async function POST(_req: NextRequest) {
   }
 
   let updated = 0
+  const updates: { id: string; performance_stats: any }[] = []
   const errors: string[] = []
 
   for (const campaign of campaigns) {
@@ -40,10 +41,18 @@ export async function POST(_req: NextRequest) {
         unsubscribes: report.unsubscribed ?? null,
         source: 'api' as const,
       }
-      await admin.from('campaigns').update({ performance_stats: stats }).eq('id', campaign.id)
-      updated++
+      updates.push({ id: campaign.id, performance_stats: stats })
     } catch (err: any) {
       errors.push(`${campaign.id}: ${err.message}`)
+    }
+  }
+
+  if (updates.length > 0) {
+    const { error: upsertError } = await admin.from('campaigns').upsert(updates)
+    if (upsertError) {
+      errors.push(`Bulk update failed: ${upsertError.message}`)
+    } else {
+      updated = updates.length
     }
   }
 
