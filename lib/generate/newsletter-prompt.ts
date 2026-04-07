@@ -68,7 +68,7 @@ Prüfe intern welche Infos vorhanden sind:
 | Bilder | Mind. 1 Hero + 1–2 Detail | Vorhandene Bilder verwenden |
 | Links | Produkt-URL, alle CTA-Links | Fehlende Links mit [!] LINK FEHLT markieren |
 
-Wenn Links fehlen: MJML trotzdem vollständig bauen, fehlende Links im href mit `[!]LINK_FEHLT` markieren.
+Wenn Links fehlen: MJML trotzdem vollständig bauen, fehlende Links im href mit \`[!]LINK_FEHLT\` markieren.
 
 ### Schritt 2: Bild- & Stimmungsanalyse (intern — keine Ausgabe)
 
