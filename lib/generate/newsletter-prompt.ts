@@ -121,7 +121,7 @@ Nimm den Textentwurf als Basis. Nicht komplett umschreiben — nah am Original b
 **Zielgruppe & Ton:**
 - Deutsch, Sie-Form
 - Professionell, nicht steif
-- Sachlich, mit Haltung
+- Sachlich, mit Haltung aber auch positiv
 - Die Zielgruppe (Architekten, Designer, Hotellerie) kennt sich aus — nicht erklären, nicht beeindrucken, informieren
 
 **Vermeide:**
