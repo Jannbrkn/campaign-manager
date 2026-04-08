@@ -385,7 +385,10 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
   ]
 
   const [{ zipBuffer, warnings: zipWarnings }, previewHtml, { subjectLine, previewText }] = await Promise.all([
-    buildZip(html, allImageAssets),
+    buildZip(html, allImageAssets, {
+      manufacturerLogo: mfg?.logo_url,
+      agencyLogo: agency?.logo_url,
+    }),
     buildPreview(html, allImageAssets),
     generateSubjectAndPreview(input, client),
   ])
