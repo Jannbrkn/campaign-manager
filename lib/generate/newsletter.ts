@@ -204,12 +204,14 @@ async function buildImageBlocks(
 
 async function buildZip(
   html: string,
-  imageAssets: CampaignAsset[]
+  imageAssets: CampaignAsset[],
+  logoUrls?: { manufacturerLogo?: string; agencyLogo?: string }
 ): Promise<{ zipBuffer: Buffer; warnings: string[] }> {
   const zip = new JSZip()
   const warnings: string[] = []
   let htmlWithRelativePaths = html
 
+  // --- Handle campaign image assets ---
   for (const asset of imageAssets) {
     try {
       const res = await fetch(asset.file_url)
@@ -217,27 +219,49 @@ async function buildZip(
       const buf = await res.arrayBuffer()
       zip.file(asset.file_name, buf)
 
-      // 1. Replace exact signed URL (existing logic)
       htmlWithRelativePaths = htmlWithRelativePaths.split(asset.file_url).join(asset.file_name)
 
-      // 2. Replace URL without token (in case token was stripped)
       const urlWithoutToken = asset.file_url.split('?')[0]
       htmlWithRelativePaths = htmlWithRelativePaths.split(urlWithoutToken).join(asset.file_name)
 
-      // 3. Replace any remaining Supabase URL referencing this file
       const encodedName = encodeURIComponent(asset.file_name)
       const supabasePattern = new RegExp(
         `https?://[^"'\\s]*?/${encodedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^"'\\s]*`,
         'g'
       )
       htmlWithRelativePaths = htmlWithRelativePaths.replace(supabasePattern, asset.file_name)
-
     } catch (e: any) {
       warnings.push(`Bild übersprungen: ${asset.file_name} (${e.message})`)
     }
   }
 
-  // 4. Catch-all: replace ANY remaining Supabase storage URLs with filename
+  // --- Handle logo URLs (unique filenames to avoid collision) ---
+  const logoMap: { url: string; filename: string }[] = []
+  if (logoUrls?.manufacturerLogo) {
+    logoMap.push({ url: logoUrls.manufacturerLogo, filename: 'manufacturer-logo.png' })
+  }
+  if (logoUrls?.agencyLogo) {
+    logoMap.push({ url: logoUrls.agencyLogo, filename: 'agency-logo.png' })
+  }
+
+  for (const logo of logoMap) {
+    try {
+      const res = await fetch(logo.url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const buf = await res.arrayBuffer()
+      zip.file(logo.filename, buf)
+
+      // Replace full signed URL
+      htmlWithRelativePaths = htmlWithRelativePaths.split(logo.url).join(logo.filename)
+      // Replace URL without token
+      const urlWithoutToken = logo.url.split('?')[0]
+      htmlWithRelativePaths = htmlWithRelativePaths.split(urlWithoutToken).join(logo.filename)
+    } catch (e: any) {
+      warnings.push(`Logo übersprungen: ${logo.filename} (${e.message})`)
+    }
+  }
+
+  // Catch-all: replace ANY remaining Supabase storage URLs
   htmlWithRelativePaths = htmlWithRelativePaths.replace(
     /https?:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/sign\/[^"'\s]+/g,
     (match) => {
