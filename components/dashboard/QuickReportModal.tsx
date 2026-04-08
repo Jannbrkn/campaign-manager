@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { X, Upload, Loader2, Download, FileSpreadsheet, Users, BarChart2 } from 'lucide-react'
+import { X, Loader2, Download, FileSpreadsheet, Users, BarChart2 } from 'lucide-react'
 import type { Manufacturer, Agency } from '@/lib/supabase/types'
 
 interface ManufacturerWithAgency extends Manufacturer {
