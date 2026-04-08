@@ -43,7 +43,7 @@ async function buildUserPrompt(input: NewsletterInput): Promise<string> {
   const lines: string[] = [
     '## AGENTUR',
     `Name: ${agency?.name ?? ''}`,
-    `Logo-URL: ${agency?.logo_url ?? '(kein Logo)'}`,
+    `Logo-URL: ${agency?.logo_url ? 'agency-logo.png' : '(kein Logo)'}`,
     agency?.website_url
       ? `Website (für klickbares Agentur-Logo im Footer): ${agency.website_url}`
       : '(Keine Agentur-Website hinterlegt — Agentur-Logo im Footer ohne href)',
@@ -57,7 +57,7 @@ async function buildUserPrompt(input: NewsletterInput): Promise<string> {
     `Name: ${mfg?.name ?? ''}`,
     `Kategorie: ${mfg?.category ?? ''}`,
     mfg?.logo_url
-      ? `Logo-URL (Header — zentriert, klickbar auf website_url): ${mfg.logo_url}`
+      ? `Logo-URL (Header — zentriert, klickbar auf website_url): manufacturer-logo.png`
       : '(Kein Hersteller-Logo vorhanden — Header ohne Logo aufbauen)',
     mfg?.website_url
       ? `Website (für klickbares Hersteller-Logo im Header + CTAs): ${mfg.website_url}`
