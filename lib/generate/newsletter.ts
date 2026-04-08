@@ -258,18 +258,6 @@ async function buildZip(
   return { zipBuffer: Buffer.from(buf), warnings }
 }
 
-  // Validate before packaging — catches accidental Base64 leakage and size issues
-  const guard = validateNewsletterHtml(htmlWithRelativePaths, 'newsletter.html', { allowRelativePaths: true })
-  if (!guard.passed) {
-    throw new Error('SIZE_GUARD_ERROR:' + guard.errors.join(' | '))
-  }
-  for (const w of guard.warnings) warnings.push(`[Size Guard] ${w}`)
-
-  zip.file('newsletter.html', htmlWithRelativePaths)
-  const buf = await zip.generateAsync({ type: 'arraybuffer' })
-  return { zipBuffer: Buffer.from(buf), warnings }
-}
-
 // ─── Base64 preview builder ───────────────────────────────────────────────────
 
 async function buildPreview(html: string, imageAssets: CampaignAsset[]): Promise<string> {
