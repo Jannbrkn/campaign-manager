@@ -216,12 +216,47 @@ async function buildZip(
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const buf = await res.arrayBuffer()
       zip.file(asset.file_name, buf)
-      // Replace all occurrences of the absolute URL with the relative filename
+
+      // 1. Replace exact signed URL (existing logic)
       htmlWithRelativePaths = htmlWithRelativePaths.split(asset.file_url).join(asset.file_name)
+
+      // 2. Replace URL without token (in case token was stripped)
+      const urlWithoutToken = asset.file_url.split('?')[0]
+      htmlWithRelativePaths = htmlWithRelativePaths.split(urlWithoutToken).join(asset.file_name)
+
+      // 3. Replace any remaining Supabase URL referencing this file
+      const encodedName = encodeURIComponent(asset.file_name)
+      const supabasePattern = new RegExp(
+        `https?://[^"'\\s]*?/${encodedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^"'\\s]*`,
+        'g'
+      )
+      htmlWithRelativePaths = htmlWithRelativePaths.replace(supabasePattern, asset.file_name)
+
     } catch (e: any) {
       warnings.push(`Bild übersprungen: ${asset.file_name} (${e.message})`)
     }
   }
+
+  // 4. Catch-all: replace ANY remaining Supabase storage URLs with filename
+  htmlWithRelativePaths = htmlWithRelativePaths.replace(
+    /https?:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/sign\/[^"'\s]+/g,
+    (match) => {
+      const decoded = decodeURIComponent(match.split('/').pop()?.split('?')[0] ?? '')
+      warnings.push(`[Catch-all] Supabase URL ersetzt → ${decoded}`)
+      return decoded
+    }
+  )
+
+  const guard = validateNewsletterHtml(htmlWithRelativePaths, 'newsletter.html', { allowRelativePaths: true })
+  if (!guard.passed) {
+    throw new Error('SIZE_GUARD_ERROR:' + guard.errors.join(' | '))
+  }
+  for (const w of guard.warnings) warnings.push(`[Size Guard] ${w}`)
+
+  zip.file('newsletter.html', htmlWithRelativePaths)
+  const buf = await zip.generateAsync({ type: 'arraybuffer' })
+  return { zipBuffer: Buffer.from(buf), warnings }
+}
 
   // Validate before packaging — catches accidental Base64 leakage and size issues
   const guard = validateNewsletterHtml(htmlWithRelativePaths, 'newsletter.html', { allowRelativePaths: true })
