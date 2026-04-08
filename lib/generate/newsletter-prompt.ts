@@ -241,6 +241,39 @@ Wenn kein zweiter Link vorhanden: CTA mit [!] LINK FEHLT markieren, aber MJML-St
 - Kein Text neben oder unter dem Hersteller-Logo im Header.
 - Das Agentur-Logo erscheint **ausschließlich im Footer** — niemals im Header oder Body.
 
+#### Button-Design (KRITISCH — exakt einhalten)
+
+Buttons müssen großzügig, klickbar und visuell klar sein. Keine dünnen Outline-Boxen.
+
+**MJML-Pflichtattribute für jeden \`<mj-button>\`:**
+
+\`\`\`xml
+<mj-button
+  inner-padding="14px 45px"
+  border-radius="0px"
+  font-size="10px"
+  font-weight="500"
+  letter-spacing="2.5px"
+  text-transform="uppercase"
+  font-family="'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+>
+\`\`\`
+
+**Stil-Varianten (eine pro Button wählen):**
+
+| Variante | background-color | color | border | Wann |
+|---|---|---|---|---|
+| Filled (Standard) | [accent] | [Kontrastfarbe] | none | Primärer CTA |
+| Filled Dark | #1a1a1a | #ffffff | none | Auf hellem Hintergrund |
+| Filled Light | #ffffff | #1a1a1a | none | Auf dunklem Hintergrund |
+| Outline (selten) | transparent | [accent] | 2px solid [accent] | Nur als sekundärer CTA neben Filled |
+
+**NIEMALS:**
+- inner-padding weglassen oder unter 12px setzen
+- Outline als einzigen Button-Stil verwenden
+- border unter 2px bei Outline-Variante
+- Button ohne explizites inner-padding
+
 #### Logo-Auswahl — Einzellogo-Regel (KRITISCH)
 
 Pro Hersteller können mehrere Logo-Dateien existieren (Wortmarke, Signet/Icon, Kombinationslogo). Verwende **genau eine Datei** — immer die **Wortmarke**.
