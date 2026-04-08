@@ -384,6 +384,9 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
     ...input.postcardAssets.filter((a) => a.asset_category === 'image'),
   ]
 
+  const mfg = input.campaign.manufacturers as any
+  const agency = mfg?.agencies as any
+
   const [{ zipBuffer, warnings: zipWarnings }, previewHtml, { subjectLine, previewText }] = await Promise.all([
     buildZip(html, allImageAssets, {
       manufacturerLogo: mfg?.logo_url,
