@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useTransition, useEffect, useCallback } from 'react'
-import { X, Upload, FileText, ImageIcon, Loader2, ChevronLeft, ExternalLink, Trash2, Pencil, Link2, ChevronRight, Plus, Maximize2, Mail, CheckCircle2 } from 'lucide-react'
+import { X, Upload, FileText, Loader2, ChevronLeft, ExternalLink, Trash2, Pencil, Link2, ChevronRight, Plus, Maximize2, Mail, CheckCircle2 } from 'lucide-react'
 import { uploadCampaignAsset, deleteCampaignAsset, updateCampaignStatus, deleteCampaign, updateCampaignBriefing, updateReviewApproved, updateAutoSendEmails } from '@/app/(app)/calendar/actions'
 import type { CampaignWithManufacturer, CampaignAsset, CampaignStatus, CampaignType, NewsletterBriefing } from '@/lib/supabase/types'
 import EditCampaignModal from './EditCampaignModal'
