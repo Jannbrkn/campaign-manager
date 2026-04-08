@@ -181,7 +181,7 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 | Sub-Headlines | Light (300) | 12–13px | Versalien, Laufweite 3px |
 | Fließtext | Light (300) | 14px | Zeilenhöhe 1.85 |
 | Buttons | Medium (500) | 10–11px | Versalien, Laufweite 2.5px |
-| Footer | Light (300) | 9–10px | #999999 auf #f5f3ef Hintergrund — immer warm-hell |
+| Footer | Light (300) | 9–10px | #999999 auf #ffffff Hintergrund — immer weiß |
 
 #### Layout-Entscheidung (aktiv wählen — kein Standard)
 
@@ -240,6 +240,13 @@ Wenn kein zweiter Link vorhanden: CTA mit [!] LINK FEHLT markieren, aber MJML-St
 - Wenn keine \`website_url\` vorhanden: Logo anzeigen, aber kein \`href\` setzen (und in Checkliste markieren).
 - Kein Text neben oder unter dem Hersteller-Logo im Header.
 - Das Agentur-Logo erscheint **ausschließlich im Footer** — niemals im Header oder Body.
+
+**Logo-Hintergrund (KRITISCH):**
+Logos haben fast immer einen transparenten oder weißen Hintergrund. Auf getönten Hintergründen (#f2f0eb, #f5f3ef etc.) entsteht ein sichtbarer weißer Kasten oder das Logo wird unleserlich.
+
+**Regel:** Jede mj-section die ein Logo enthält (Header UND Footer) MUSS \`background-color="#ffffff"\` haben. Das gilt unabhängig vom gewählten Design-Approach (Dark/Light/Mixed).
+
+**NIEMALS** ein Logo auf einen farbigen oder getönten Hintergrund (#f2f0eb, #f5f3ef, #1a1a1a) setzen — immer #ffffff.
 
 #### Button-Design (KRITISCH — exakt einhalten)
 
@@ -317,7 +324,7 @@ Der Footer ist der rechtliche Absender-Block der Agentur. Er folgt einem festen 
 
 \`\`\`xml
 <!-- === FOOTER === -->
-<mj-section background-color="#f5f3ef" padding="30px 20px 20px">
+<mj-section background-color="#ffffff" padding="30px 20px 20px">
   <mj-column>
     <mj-image
       src="[AGENTUR_LOGO_URL]"
@@ -380,13 +387,14 @@ HTML mit Base64-eingebetteten Bildern für lokale Vorschau.
 
 Vor dem Abschluss intern prüfen (kein Text ausgeben — nur MJML):
 - Hersteller-Logo im Header (160–220px, klickbar auf website_url)?
+- Header-Section (Logo): Hintergrund #ffffff?
 - Agentur-Logo NUR im Footer (140–160px, klickbar auf Agentur-website_url)?
 - Kein Agentur-Logo oder Agentur-Name im Header oder Body?
 - Mindestens 2 CTAs (Single-Topic: gleicher Link 2×, Multi-Topic: je Thema 1×)?
 - Alle Produktbilder klickbar (href auf Produkt-URL)?
 - Alle CTA-Buttons mit finalem Link?
 - Footer: Agentur-Name, contact_email (NIEMALS order_email), Telefon, Straße + PLZ + Stadt?
-- Footer: Hintergrund #f5f3ef, Text #999999?
+- Footer: Hintergrund #ffffff, Text #999999?
 
 Subject Lines werden separat generiert — hier nicht ausgeben.
 
@@ -398,6 +406,7 @@ Subject Lines werden separat generiert — hier nicht ausgeben.
 - ❌ Agentur-Name im Header oder oberhalb des Hero-Bilds
 - ❌ Footer ohne vollständige Postanschrift (Straße + PLZ + Stadt)
 - ❌ Logos ohne \`href\`-Verlinkung (weder Hersteller- noch Agentur-Logo)
+- ❌ Logos auf getönten oder farbigen Hintergründen — Logo-Sections immer #ffffff
 - ❌ Bei Single-Topic-Mails nur einen CTA einbauen
 - ❌ CTA-Buttons generisch texten („Mehr erfahren", „Jetzt entdecken", „Kontakt aufnehmen")
 - ❌ \`order_email\` der Agentur irgendwo im Newsletter verwenden
@@ -409,12 +418,12 @@ Subject Lines werden separat generiert — hier nicht ausgeben.
 Jeder Newsletter folgt dieser Struktur von oben nach unten:
 
 \`\`\`
-[Hersteller-Logo]              ← Header: Der Hersteller ist der Star
+[Hersteller-Logo]              ← Header: Der Hersteller ist der Star (immer auf #ffffff)
 [Hero-Bild]
 [CTA 1 bei Single-Topic]
 [Inhalt]
 [CTA 2 bei Single-Topic]
-[Agentur-Logo]                 ← Footer: Wir sind der professionelle Absender
+[Agentur-Logo]                 ← Footer: Wir sind der professionelle Absender (immer auf #ffffff)
 [Agentur-Name]
 [E-Mail · Telefon]
 [Straße · PLZ Stadt]
@@ -458,9 +467,10 @@ Das Design muss eine Emotion auslösen. Es soll sich anfühlen wie ein hochwerti
 Haupthintergrund und Palette werden aus der Bildanalyse (Schritt 2) abgeleitet — nicht fest vorgegeben.
 
 **Fixpunkte (immer einhalten):**
-- Footer: bg \`#f5f3ef\`, Text \`#999999\` — bleibt immer warm-hell, unabhängig vom Rest
+- Footer: bg \`#ffffff\`, Text \`#999999\` — bleibt immer weiß, unabhängig vom Rest
+- Logo-Sections (Header + Footer): bg immer \`#ffffff\` — Logos brauchen neutralen Hintergrund
 - Schriftfarbe: ausreichend Kontrast auf dem gewählten Hintergrund (Zielgruppe 35–65 Jahre)
-- Hersteller-Logo im Header: auf dem jeweiligen bg der Header-Section sichtbar
+- Hersteller-Logo im Header: auf weißem Hintergrund, immer sichtbar
 
 **Dark-Approach:**
 - Haupthintergrund: \`#111111\`–\`#1e1e1e\`
@@ -473,7 +483,7 @@ Haupthintergrund und Palette werden aus der Bildanalyse (Schritt 2) abgeleitet �
 - Akzent: aus Bild — kann kräftiger sein als Beige-Töne
 
 **Sektionswechsel erlaubt und erwünscht:**
-Innerhalb einer Mail können verschiedene Sections unterschiedliche Hintergründe haben — z.B. weißer Content-Bereich → getönter Zwischenblock → dunkler CTA-Block → warmer Footer.
+Innerhalb einer Mail können verschiedene Sections unterschiedliche Hintergründe haben — z.B. weißer Content-Bereich → getönter Zwischenblock → dunkler CTA-Block → weißer Footer.
 
 ### Layout-Varianten (alle gleichwertig — kein Standard)
 - Einspalter editorial — Text führt, atmosphärische Bilder
