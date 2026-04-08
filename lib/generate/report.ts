@@ -5,7 +5,8 @@
 
 import ExcelJS from 'exceljs'
 import Papa from 'papaparse'
-import { filterAndScore, type ScoredContact } from './scoring'
+import type { ScoredContact } from './scoring'
+import { filterAndScore } from './scoring'
 
 export interface ReportParams {
   recipientsCsv: string  // Mailchimp audience/members export (has Phone, Name)
