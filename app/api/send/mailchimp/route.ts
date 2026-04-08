@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
   // Compile MJML → production HTML
   const compiled = mjml2html(mjmlSource, { validationLevel: 'soft' })
   if (compiled.errors?.length > 0) {
-    console.warn('[mailchimp/send] MJML soft errors:', compiled.errors.map((e: any) => e.formattedMessage ?? e.message))
+    console.warn('[mailchimp/send] MJML soft errors:', compiled.errors.map((e: { formattedMessage?: string; message?: string }) => e.formattedMessage ?? e.message))
   }
   if (!compiled.html) {
     return NextResponse.json({ error: 'MJML konnte nicht kompiliert werden.' }, { status: 500 })
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: guard.errors.join(' | ') }, { status: 422 })
   }
 
-  const mfg = campaign.manufacturers as any
+  const mfg = campaign.manufacturers as { agencies?: { name?: string; order_email?: string } | null } | null | undefined
   const fromName = mfg?.agencies?.name ?? 'Collezioni Design Syndicate'
   const fromEmail = mfg?.agencies?.order_email ?? 'newsletter@collezioni.eu'
 
@@ -111,16 +111,18 @@ export async function POST(req: NextRequest) {
         reply_to: fromEmail,
       },
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'Mailchimp API-Fehler' }, { status: 502 })
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : 'Mailchimp API-Fehler'
+    return NextResponse.json({ error: errorMsg }, { status: 502 })
   }
 
   try {
     await mcFetch(`/campaigns/${created.id}/content`, 'PUT', { html: htmlContent })
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Best-effort cleanup of the empty campaign
     mcFetch(`/campaigns/${created.id}`, 'DELETE').catch(() => undefined)
-    return NextResponse.json({ error: err.message ?? 'Mailchimp Inhalt-Upload fehlgeschlagen' }, { status: 502 })
+    const errorMsg = err instanceof Error ? err.message : 'Mailchimp Inhalt-Upload fehlgeschlagen'
+    return NextResponse.json({ error: errorMsg }, { status: 502 })
   }
 
   const editUrl = `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${created.web_id}`
