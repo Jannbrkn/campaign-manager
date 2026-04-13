@@ -11,8 +11,9 @@ async function fetchAllMailchimpCampaigns() {
   let offset = 0
   const count = 200
   while (true) {
+    // Kein status-Filter — alle Kampagnen holen (sent, draft, etc.)
     const res = await mcFetch(
-      `/campaigns?count=${count}&offset=${offset}&status=sent&fields=campaigns.id,campaigns.web_id,campaigns.settings,campaigns.send_time`,
+      `/campaigns?count=${count}&offset=${offset}&fields=campaigns.id,campaigns.web_id,campaigns.settings,campaigns.send_time,campaigns.status`,
       'GET'
     )
     const batch = res.campaigns ?? []
@@ -34,13 +35,14 @@ export async function POST(_req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // ── Phase 1: Mailchimp-Kampagnen holen und per Datum matchen ─────────────
+  // ── Phase 1: Mailchimp-Kampagnen holen und matchen ───────────────────────
 
   const [mcCampaigns, { data: dbCampaigns }] = await Promise.all([
     fetchAllMailchimpCampaigns(),
     admin
       .from('campaigns')
-      .select('id, title, scheduled_date, mailchimp_campaign_id, manufacturers(agencies(name))')
+      // manufacturers(name) ist neu — brauchen wir für den Titel-Match
+      .select('id, title, scheduled_date, mailchimp_campaign_id, manufacturers(name, agencies(name))')
       .eq('type', 'newsletter'),
   ])
 
@@ -52,25 +54,57 @@ export async function POST(_req: NextRequest) {
       if (!db.scheduled_date) continue
 
       const dbTime = new Date(db.scheduled_date).getTime()
-      const agencyName = (db.manufacturers as any)?.agencies?.name?.toLowerCase() ?? null
+      const mfgName = (db.manufacturers as any)?.name?.toLowerCase() ?? ''
+      // Ersten Wortteil des Herstellernamens als Suchbegriff (z.B. "salvatori", "lodes", "b&b")
+      const firstWord = mfgName.split(' ')[0]
 
-      // Match: Sendedatum ±3 Tage + optionaler from_name-Check auf Agentur
-      const match = mcCampaigns.find((mc) => {
-        if (!mc.send_time) return false
-        const diffDays = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
-        if (diffDays > 3) return false
-        if (agencyName && mc.settings?.from_name) {
-          return mc.settings.from_name.toLowerCase().includes(agencyName)
+      // Schritt 1: Kandidaten über Herstellername im MC-Titel filtern
+      const candidates = firstWord
+        ? mcCampaigns.filter((mc) => {
+            const mcTitle = (
+              mc.settings?.title ?? mc.settings?.subject_line ?? ''
+            ).toLowerCase()
+            return mcTitle.includes(firstWord)
+          })
+        : []
+
+      let best: any = null
+      let bestDiff = Infinity
+
+      // Schritt 2a: Unter Kandidaten — nächste per Sendedatum (±14 Tage)
+      for (const mc of candidates) {
+        if (!mc.send_time) continue
+        const diff = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
+        if (diff <= 14 && diff < bestDiff) {
+          bestDiff = diff
+          best = mc
         }
-        return true
-      })
+      }
 
-      if (match) {
+      // Schritt 2b: Genau ein Kandidat ohne send_time (Draft) → direkt nehmen
+      if (!best && candidates.length === 1) {
+        best = candidates[0]
+      }
+
+      // Schritt 3: Fallback — nur Datum ±3 Tage über alle MC-Kampagnen
+      // (greift wenn Hersteller-Name in MC-Titel nicht vorkommt)
+      if (!best) {
+        for (const mc of mcCampaigns) {
+          if (!mc.send_time) continue
+          const diff = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
+          if (diff <= 3 && diff < bestDiff) {
+            bestDiff = diff
+            best = mc
+          }
+        }
+      }
+
+      if (best) {
         await admin
           .from('campaigns')
           .update({
-            mailchimp_campaign_id: match.id,
-            mailchimp_url: `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${match.web_id}`,
+            mailchimp_campaign_id: best.id,
+            mailchimp_url: `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${best.web_id}`,
           })
           .eq('id', db.id)
         linked++
@@ -107,6 +141,7 @@ export async function POST(_req: NextRequest) {
       updated++
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
+      // 404 = Kampagne noch nicht versendet → kein Report vorhanden, kein echter Fehler
       if (!msg.includes('404')) errors.push(`${campaign.id}: ${msg}`)
     }
   }
