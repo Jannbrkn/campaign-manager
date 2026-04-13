@@ -162,6 +162,14 @@ async function buildUserPrompt(input: NewsletterInput): Promise<string> {
 
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
+function isGif(asset: CampaignAsset): boolean {
+  return (
+    asset.file_type === 'image/gif' ||
+    asset.file_url?.toLowerCase().endsWith('.gif') ||
+    asset.file_name?.toLowerCase().endsWith('.gif')
+  )
+}
+
 async function buildImageBlocks(
   assets: CampaignAsset[],
   postcardAssets: CampaignAsset[]
@@ -171,7 +179,9 @@ async function buildImageBlocks(
     ...postcardAssets.filter(
       (a) => a.asset_category === 'image' || a.asset_category === 'postcard_pdf'
     ),
-  ]
+  // GIFs werden nicht als Vision-Block geladen (zu groß für Token-Limit).
+  // Die GIF-URL ist aber im Text-Prompt enthalten — Claude baut das src-Attribut trotzdem korrekt.
+  ].filter((a) => !isGif(a))
 
   const blocks: Anthropic.ImageBlockParam[] = []
   for (const asset of imageAssets) {
@@ -341,6 +351,7 @@ Antworte ausschließlich mit einem JSON-Objekt (kein Markdown-Wrapper): {"subjec
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
+
 export async function generateNewsletter(input: NewsletterInput): Promise<NewsletterOutput> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
