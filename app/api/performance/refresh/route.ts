@@ -20,7 +20,8 @@ async function fetchAllMailchimpCampaigns() {
     if (batch.length < count) break
     offset += count
   }
-  return all
+  // Nur gesendete Kampagnen für Matching nutzen — Drafts haben keinen Report
+  return all.filter((mc) => mc.status === 'sent')
 }
 
 export async function POST(_req: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(_req: NextRequest) {
 
   const admin = createAdminClient()
 
-  // ── Phase 1: Mailchimp-Kampagnen holen und matchen ───────────────────────
+  // ── Phase 1: Matching ────────────────────────────────────────────────────
 
   const [mcCampaigns, { data: dbCampaigns }] = await Promise.all([
     fetchAllMailchimpCampaigns(),
@@ -45,7 +46,8 @@ export async function POST(_req: NextRequest) {
   ])
 
   let linked = 0
-  const linkedDetails: { db_title: string; mc_title: string; mc_id: string }[] = []
+  const linkedDetails: { db_title: string; mc_title: string; diff_days: number }[] = []
+  const noMatch: string[] = []
 
   if (dbCampaigns) {
     for (const db of dbCampaigns) {
@@ -56,36 +58,30 @@ export async function POST(_req: NextRequest) {
       const mfgName = (db.manufacturers as any)?.name?.toLowerCase() ?? ''
       const firstWord = mfgName.split(' ')[0]
 
-      // Schritt 1: Kandidaten über Herstellername im MC-Titel
+      // Kandidaten: MC-Kampagnen deren Titel den Herstellernamen enthält
       const candidates = firstWord
         ? mcCampaigns.filter((mc) => {
             const mcTitle = (mc.settings?.title ?? mc.settings?.subject_line ?? '').toLowerCase()
             return mcTitle.includes(firstWord)
           })
-        : []
+        : mcCampaigns
 
+      // Besten Match per Sendedatum (±7 Tage) finden
       let best: any = null
       let bestDiff = Infinity
 
-      // Schritt 2a: Unter Kandidaten — nächste per Sendedatum (±14 Tage)
       for (const mc of candidates) {
-        if (!mc.send_time) continue
+        // send_time ist garantiert vorhanden (nur status=sent gefiltert)
         const diff = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
-        if (diff <= 14 && diff < bestDiff) {
+        if (diff <= 7 && diff < bestDiff) {
           bestDiff = diff
           best = mc
         }
       }
 
-      // Schritt 2b: Genau ein Kandidat ohne send_time (Draft) → direkt nehmen
-      if (!best && candidates.length === 1) {
-        best = candidates[0]
-      }
-
-      // Schritt 3: Fallback — nur Datum ±3 Tage über alle MC-Kampagnen
-      if (!best) {
+      // Fallback: kein Namens-Match → alle gesendeten MC-Kampagnen, ±3 Tage
+      if (!best && firstWord) {
         for (const mc of mcCampaigns) {
-          if (!mc.send_time) continue
           const diff = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
           if (diff <= 3 && diff < bestDiff) {
             bestDiff = diff
@@ -105,14 +101,17 @@ export async function POST(_req: NextRequest) {
         linked++
         linkedDetails.push({
           db_title: db.title,
-          mc_title: best.settings?.title ?? best.settings?.subject_line ?? best.id,
-          mc_id: best.id,
+          mc_title: best.settings?.title ?? best.id,
+          diff_days: Math.round(bestDiff * 10) / 10,
         })
+      } else {
+        // Kein Match — wahrscheinlich noch nicht versendet
+        noMatch.push(db.title)
       }
     }
   }
 
-  // ── Phase 2: Stats für alle verknüpften Kampagnen fetchen ────────────────
+  // ── Phase 2: Stats fetchen ───────────────────────────────────────────────
 
   const { data: toRefresh } = await admin
     .from('campaigns')
@@ -121,16 +120,21 @@ export async function POST(_req: NextRequest) {
 
   let updated = 0
   const errors: string[] = []
-  const statsDetails: { title: string; open_rate: number; click_rate: number; emails_sent: number }[] = []
+  const statsDetails: {
+    title: string
+    open_rate: number
+    click_rate: number
+    emails_sent: number
+  }[] = []
 
   for (const campaign of toRefresh ?? []) {
     try {
       const report = await mcFetch(`/reports/${campaign.mailchimp_campaign_id}`, 'GET')
 
-      // report_summary ist der korrekte Pfad in der Mailchimp Reports API v3
-      // report.opens / report.clicks sind Objekte mit Rohdaten, NICHT mit den rate-Feldern
-      const open_rate = report.report_summary?.open_rate ?? 0
-      const click_rate = report.report_summary?.click_rate ?? 0
+      // report.opens.open_rate und report.clicks.click_rate sind die korrekten Felder
+      // in der Mailchimp Reports API v3 für reguläre Kampagnen
+      const open_rate = report.opens?.open_rate ?? report.report_summary?.open_rate ?? 0
+      const click_rate = report.clicks?.click_rate ?? report.report_summary?.click_rate ?? 0
       const emails_sent = report.emails_sent ?? 0
       const unsubscribes = report.unsubscribes?.count ?? report.unsubscribed ?? 0
 
@@ -151,13 +155,12 @@ export async function POST(_req: NextRequest) {
       updated++
       statsDetails.push({
         title: (campaign as any).title ?? campaign.id,
-        open_rate,
-        click_rate,
+        open_rate: Math.round(open_rate * 1000) / 10, // als Prozent für Lesbarkeit
+        click_rate: Math.round(click_rate * 1000) / 10,
         emails_sent,
       })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      // 404 = noch nicht versendet → kein Report vorhanden, kein echter Fehler
       if (!msg.includes('404')) errors.push(`${(campaign as any).title ?? campaign.id}: ${msg}`)
     }
   }
@@ -166,7 +169,8 @@ export async function POST(_req: NextRequest) {
     linked,
     updated,
     errors,
-    linkedDetails,   // zeigt welche DB-Kampagnen neu mit welchem MC-Titel gematcht wurden
-    statsDetails,    // zeigt die gezogenen Stats pro Kampagne — hier siehst du sofort ob die Zahlen stimmen
+    linkedDetails,  // neue Matches dieser Session
+    noMatch,        // DB-Kampagnen ohne MC-Match (wahrscheinlich noch nicht versendet)
+    statsDetails,   // Stats als Prozentwerte — sofort lesbar
   })
 }
