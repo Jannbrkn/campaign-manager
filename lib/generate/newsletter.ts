@@ -346,8 +346,20 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const textPrompt = await buildUserPrompt(input)
-  const imageBlocks = await buildImageBlocks(input.assets, input.postcardAssets)
 
+// Bilder auf max. 4 begrenzen (Token-Limit)
+const limitedAssets = input.assets
+  .filter((a) => a.asset_category === 'image')
+  .slice(0, 3)
+
+const limitedPostcardAssets = input.postcardAssets
+  .filter((a) => a.asset_category === 'image')
+  .slice(0, 1)
+
+const imageBlocks = await buildImageBlocks(
+  { ...input, assets: limitedAssets },
+  limitedPostcardAssets
+)
   const userContent: Anthropic.ContentBlockParam[] = [
     { type: 'text', text: textPrompt },
     ...imageBlocks,
