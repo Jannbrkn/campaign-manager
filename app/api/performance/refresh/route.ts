@@ -11,7 +11,6 @@ async function fetchAllMailchimpCampaigns() {
   let offset = 0
   const count = 200
   while (true) {
-    // Kein status-Filter — alle Kampagnen holen (sent, draft, etc.)
     const res = await mcFetch(
       `/campaigns?count=${count}&offset=${offset}&fields=campaigns.id,campaigns.web_id,campaigns.settings,campaigns.send_time,campaigns.status`,
       'GET'
@@ -41,12 +40,12 @@ export async function POST(_req: NextRequest) {
     fetchAllMailchimpCampaigns(),
     admin
       .from('campaigns')
-      // manufacturers(name) ist neu — brauchen wir für den Titel-Match
       .select('id, title, scheduled_date, mailchimp_campaign_id, manufacturers(name, agencies(name))')
       .eq('type', 'newsletter'),
   ])
 
   let linked = 0
+  const linkedDetails: { db_title: string; mc_title: string; mc_id: string }[] = []
 
   if (dbCampaigns) {
     for (const db of dbCampaigns) {
@@ -55,15 +54,12 @@ export async function POST(_req: NextRequest) {
 
       const dbTime = new Date(db.scheduled_date).getTime()
       const mfgName = (db.manufacturers as any)?.name?.toLowerCase() ?? ''
-      // Ersten Wortteil des Herstellernamens als Suchbegriff (z.B. "salvatori", "lodes", "b&b")
       const firstWord = mfgName.split(' ')[0]
 
-      // Schritt 1: Kandidaten über Herstellername im MC-Titel filtern
+      // Schritt 1: Kandidaten über Herstellername im MC-Titel
       const candidates = firstWord
         ? mcCampaigns.filter((mc) => {
-            const mcTitle = (
-              mc.settings?.title ?? mc.settings?.subject_line ?? ''
-            ).toLowerCase()
+            const mcTitle = (mc.settings?.title ?? mc.settings?.subject_line ?? '').toLowerCase()
             return mcTitle.includes(firstWord)
           })
         : []
@@ -87,7 +83,6 @@ export async function POST(_req: NextRequest) {
       }
 
       // Schritt 3: Fallback — nur Datum ±3 Tage über alle MC-Kampagnen
-      // (greift wenn Hersteller-Name in MC-Titel nicht vorkommt)
       if (!best) {
         for (const mc of mcCampaigns) {
           if (!mc.send_time) continue
@@ -108,6 +103,11 @@ export async function POST(_req: NextRequest) {
           })
           .eq('id', db.id)
         linked++
+        linkedDetails.push({
+          db_title: db.title,
+          mc_title: best.settings?.title ?? best.settings?.subject_line ?? best.id,
+          mc_id: best.id,
+        })
       }
     }
   }
@@ -116,35 +116,57 @@ export async function POST(_req: NextRequest) {
 
   const { data: toRefresh } = await admin
     .from('campaigns')
-    .select('id, mailchimp_campaign_id')
+    .select('id, title, mailchimp_campaign_id')
     .not('mailchimp_campaign_id', 'is', null)
 
   let updated = 0
   const errors: string[] = []
+  const statsDetails: { title: string; open_rate: number; click_rate: number; emails_sent: number }[] = []
 
   for (const campaign of toRefresh ?? []) {
     try {
       const report = await mcFetch(`/reports/${campaign.mailchimp_campaign_id}`, 'GET')
+
+      // report_summary ist der korrekte Pfad in der Mailchimp Reports API v3
+      // report.opens / report.clicks sind Objekte mit Rohdaten, NICHT mit den rate-Feldern
+      const open_rate = report.report_summary?.open_rate ?? 0
+      const click_rate = report.report_summary?.click_rate ?? 0
+      const emails_sent = report.emails_sent ?? 0
+      const unsubscribes = report.unsubscribes?.count ?? report.unsubscribed ?? 0
+
       const { error } = await admin
         .from('campaigns')
         .update({
           performance_stats: {
-            open_rate: report.opens?.open_rate ?? report.report_summary?.open_rate ?? 0,
-            click_rate: report.clicks?.click_rate ?? report.report_summary?.click_rate ?? 0,
-            emails_sent: report.emails_sent ?? 0,
-            unsubscribes: report.unsubscribed ?? 0,
+            open_rate,
+            click_rate,
+            emails_sent,
+            unsubscribes,
             source: 'api',
           },
         })
         .eq('id', campaign.id)
+
       if (error) throw new Error(error.message)
       updated++
+      statsDetails.push({
+        title: (campaign as any).title ?? campaign.id,
+        open_rate,
+        click_rate,
+        emails_sent,
+      })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      // 404 = Kampagne noch nicht versendet → kein Report vorhanden, kein echter Fehler
-      if (!msg.includes('404')) errors.push(`${campaign.id}: ${msg}`)
+      // 404 = noch nicht versendet → kein Report vorhanden, kein echter Fehler
+      if (!msg.includes('404')) errors.push(`${(campaign as any).title ?? campaign.id}: ${msg}`)
     }
   }
 
-  return NextResponse.json({ linked, updated, errors })
+  return NextResponse.json({
+    linked,
+    updated,
+    errors,
+    linkedDetails,   // zeigt welche DB-Kampagnen neu mit welchem MC-Titel gematcht wurden
+    statsDetails,    // zeigt die gezogenen Stats pro Kampagne — hier siehst du sofort ob die Zahlen stimmen
+  })
 }
