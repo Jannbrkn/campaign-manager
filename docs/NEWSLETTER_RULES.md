@@ -73,7 +73,7 @@ Footer-Hintergrund: **#ffffff**, Text: **#999999**
 - Google Fonts **v1 API** Format: `css?family=FontName:200,300,400,500` — NICHT css2/wght@
 - ZIP: Flat (keine Unterordner), alle `src`-Attribute = relative Dateinamen
 - Production-HTML < 102KB (Gmail Clipping-Limit)
-- Preview-HTML (Base64) = NUR lokale Ansicht, NIEMALS an Mailchimp senden
+- Preview-HTML (signed URLs) = NUR Vorschau im Campaign Manager, NIEMALS an Mailchimp senden
 - Alle Produktbilder klickbar (`href` auf Produkt- oder Aktions-URL)
 - Text: Deutsch, Sie-Form
 

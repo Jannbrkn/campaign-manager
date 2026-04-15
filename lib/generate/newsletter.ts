@@ -188,7 +188,6 @@ const MAX_SINGLE_IMAGE_BYTES = 300 * 1024   // 300KB per image after compression
 function isGif(asset: CampaignAsset): boolean {
   return (
     asset.file_type === 'image/gif' ||
-    asset.file_url?.toLowerCase().endsWith('.gif') ||
     asset.file_name?.toLowerCase().endsWith('.gif')
   )
 }
@@ -249,11 +248,20 @@ async function buildImageBlocks(
         compressed = await compressImage(rawBuf, asset.file_name)
       }
 
-      // Enforce per-image limit
+      // Enforce per-image limit — re-compress with lower quality if needed
       if (compressed.length > MAX_SINGLE_IMAGE_BYTES) {
         compressed = await sharp(compressed)
+          .resize({ width: 600, withoutEnlargement: true })
           .jpeg({ quality: 50 })
           .toBuffer()
+        console.log(`[Vision] ${asset.file_name}: re-compressed → ${Math.round(compressed.length / 1024)}kB`)
+      }
+
+      // Skip if still too large after re-compression
+      if (compressed.length > MAX_SINGLE_IMAGE_BYTES) {
+        console.warn(`[Vision] ${asset.file_name} still ${Math.round(compressed.length / 1024)}kB after re-compression — skipping`)
+        skippedFiles.add(asset.file_name)
+        continue
       }
 
       // Check total budget before adding
@@ -373,11 +381,19 @@ async function buildPreview(
   const admin = createAdminClient()
   let preview = html
 
-  // Replace campaign image filenames with signed URLs
+  // Replace campaign image filenames in src/href attributes only (not in alt text etc.)
+  const replaceSrcOnly = (html: string, filename: string, url: string): string => {
+    const escaped = filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return html.replace(
+      new RegExp(`((?:src|href)=["'])${escaped}(["'])`, 'g'),
+      `$1${url}$2`
+    )
+  }
+
   for (const asset of imageAssets) {
     try {
       const signedUrl = await signStorageUrl(admin, asset.file_url)
-      preview = preview.split(asset.file_name).join(signedUrl)
+      preview = replaceSrcOnly(preview, asset.file_name, signedUrl)
     } catch {
       // Skip failed image — preview will have broken img
     }
@@ -395,7 +411,7 @@ async function buildPreview(
   for (const logo of logoMap) {
     try {
       const signedUrl = await signStorageUrl(admin, logo.url)
-      preview = preview.split(logo.filename).join(signedUrl)
+      preview = replaceSrcOnly(preview, logo.filename, signedUrl)
     } catch {
       // Skip failed logo
     }

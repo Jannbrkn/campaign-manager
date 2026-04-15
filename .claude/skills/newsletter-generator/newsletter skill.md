@@ -151,7 +151,7 @@ Auch die CSS2-API (`css2?family=...wght@200;300`) wird von Mailchimp NICHT akzep
 | Sub-Headlines | Light (300) | 12–13px | Versalien, Laufweite 3px |
 | Fließtext | Light (300) | 14px | Zeilenhöhe 1.85 |
 | Buttons | Medium (500) | 10–11px | Versalien, Laufweite 2.5px |
-| Footer | Light (300) | 9–10px | #999999 auf #f5f3ef Hintergrund — immer warm-hell |
+| Footer | Light (300) | 9–10px | #999999 auf #ffffff Hintergrund — immer weiß |
 
 #### Layout-Regeln
 - Hero-Bild: Full-Width, ganz oben nach der Topbar
@@ -205,7 +205,7 @@ Entscheidungsbaum:
 #### Footer — DYNAMISCH (PFLICHT-DESIGN)
 
 ```xml
-<mj-section background-color="#f5f3ef" padding="30px 20px 20px">
+<mj-section background-color="#ffffff" padding="30px 20px 20px">
   <mj-column>
     <mj-image src="[LOGO]" alt="[NAME]" href="[WEBSITE]" width="150px" padding-bottom="15px" />
     <mj-text align="center" font-size="11px" letter-spacing="2px" text-transform="uppercase" color="#999999" padding-bottom="5px">[AGENTUR_NAME]</mj-text>
@@ -238,7 +238,7 @@ npx mjml newsletter.mjml -o newsletter.html --config.minify=true --config.valida
 
 #### Preview erstellen
 
-HTML mit Base64-eingebetteten Bildern für lokale Vorschau.
+HTML mit signed Supabase URLs für die Vorschau im Campaign Manager.
 **NIEMALS in Mailchimp hochladen** — nur zur Ansicht.
 
 ### Schritt 6: Checkliste + Subject Lines
@@ -255,7 +255,7 @@ CHECKLISTE
 ✅/❌ Alle Produktbilder klickbar (href auf Produkt-URL)?
 ✅/❌ Alle CTA-Buttons mit finalem Link?
 ✅/❌ Footer: Name, E-Mail, Telefon, Straße + PLZ + Stadt?
-✅/❌ Footer: #f5f3ef Hintergrund, #999999 Text?
+✅/❌ Footer: #ffffff Hintergrund, #999999 Text?
 ✅/❌ Subject Line + Preview Text vorgeschlagen?
 ✅/❌ ZIP-Datei erstellt und ausgeliefert?
 ⚠️  Fehlende Links / fehlende website_url: [auflisten oder „keine"]
@@ -302,7 +302,7 @@ Der Empfänger soll sofort wissen, von welcher Marke diese Mail kommt — nicht 
 |---|---|
 | `newsletter.mjml` | Editierbare Quelle |
 | `newsletter.html` | Kompiliertes HTML |
-| `newsletter-preview.html` | Preview mit Base64-Bildern |
+| `newsletter-preview.html` | Preview mit signed Supabase URLs |
 | **`newsletter.zip`** | **Primärer Output** — Mailchimp-ready ZIP |
 
 **Die ZIP ist das Wichtigste.** Import in Mailchimp: Saved Templates → Create Template → Code your own → Import ZIP.

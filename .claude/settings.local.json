@@ -35,7 +35,24 @@
       "Bash(bash:*)",
       "Bash(xargs cat:*)",
       "Bash(npm test:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npx pnpm:*)",
+      "Bash(npm exec:*)",
+      "Bash(where pnpm:*)",
+      "Bash(corepack enable:*)",
+      "Bash(npx -y pnpm@latest install)",
+      "Bash(node -e \"const {execSync} = require\\('child_process'\\); console.log\\(execSync\\('npx -y pnpm@10 install', {timeout: 120000, encoding: 'utf8'}\\)\\)\")",
+      "Bash(cat .npmrc)",
+      "Bash(ls package-lock.json)",
+      "Bash(rm -f package-lock.json)",
+      "Bash(npx -y pnpm@10 install --lockfile-only)",
+      "Bash(npx -y pnpm@10 exec next lint)",
+      "Bash(npx -y pnpm@10 exec tsc --noEmit)",
+      "Bash(npx tsx:*)",
+      "Bash(npx -y pnpm@10 exec node --import tsx --test lib/mailchimp/fetch-report-data.test.ts)",
+      "Bash(npx -y pnpm@10 exec node --test lib/mailchimp/fetch-report-data.test.ts)",
+      "Bash(npx -y pnpm@10 exec node --test lib/mailchimp/size-guard.test.ts)"
     ]
   }
 }

@@ -387,7 +387,7 @@ npx mjml newsletter.mjml -o newsletter.html --config.minify=true --config.valida
 
 #### Preview erstellen
 
-HTML mit Base64-eingebetteten Bildern für lokale Vorschau.
+HTML mit signed URLs für die Vorschau im Campaign Manager.
 **NIEMALS in Mailchimp hochladen** — nur zur Ansicht.
 
 ### Schritt 6: Interne Qualitätsprüfung (keine Ausgabe)
@@ -447,7 +447,7 @@ Der Empfänger soll sofort wissen, von welcher Marke diese Mail kommt — nicht 
 |---|---|
 | \`newsletter.mjml\` | Editierbare Quelle |
 | \`newsletter.html\` | Kompiliertes HTML |
-| \`newsletter-preview.html\` | Preview mit Base64-Bildern |
+| \`newsletter-preview.html\` | Preview mit signed URLs |
 | **\`newsletter.zip\`** | **Primärer Output** — Mailchimp-ready ZIP |
 
 **Die ZIP ist das Wichtigste.** Import in Mailchimp: Saved Templates → Create Template → Code your own → Import ZIP.
