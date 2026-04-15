@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/campaign-alerts",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/auto-reports",
+      "schedule": "0 9 * * *"
     }
   ],
   "functions": {
@@ -11,6 +15,9 @@
     },
     "app/api/generate/report/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/cron/auto-reports/route.ts": {
+      "maxDuration": 120
     }
   }
 }
