@@ -785,7 +785,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                 <>
                   {(campaign.type === 'report_internal' || campaign.type === 'report_external') &&
                     !assets.some((a) => a.is_output) && (() => {
-                      const linkedNl = linkedCampaigns.find((lc) => lc.type === 'newsletter')
+                      const linkedNl = linked.find((lc: LinkedCampaign) => lc.type === 'newsletter')
                       if (!linkedNl || !linkedNl.mailchimp_campaign_id) return null
                       const dueDate = getAutoReportDate(linkedNl)
                       if (!dueDate) return null
