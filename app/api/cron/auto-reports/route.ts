@@ -3,6 +3,7 @@
 // Secured with CRON_SECRET bearer token.
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { mcFetch, mcConfigured } from '@/lib/mailchimp'
 import { fetchMailchimpReportData } from '@/lib/mailchimp/fetch-report-data'
@@ -48,9 +49,13 @@ interface ProcessResult {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  // Auth: accept CRON_SECRET (for external triggers) OR logged-in Supabase user (for UI button)
   const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const cronOk = auth === `Bearer ${process.env.CRON_SECRET}`
+  if (!cronOk) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (!mcConfigured()) {
