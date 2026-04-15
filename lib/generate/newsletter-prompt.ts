@@ -70,49 +70,47 @@ Prüfe intern welche Infos vorhanden sind:
 
 Wenn Links fehlen: MJML trotzdem vollständig bauen, fehlende Links im href mit \`[!]LINK_FEHLT\` markieren.
 
-### Schritt 2: Bild- & Stimmungsanalyse (intern — keine Ausgabe)
+### Schritt 2: Farbwelt ableiten (intern — keine Ausgabe)
 
-Analysiere alle vorliegenden Bilder (Hero + Postkarte wenn vorhanden):
+**Leite die Akzentfarbe aus den hochgeladenen Bildern ab.** Analysiere:
 
-1. **Dominanter Hintergrundton** — Ist das Bild hell, dunkel, warm, kühl, natürlich?
+1. **Dominanter Hintergrundton** — Hell, dunkel, warm, kühl, natürlich?
 2. **Akzentfarbe** — Welche Farbe sticht hervor? (Materialton, Lichtakzent, Markenfarbe im Bild)
-3. **Kontrast** — Welcher Textton passt dazu? (Dunkel auf Hell / Hell auf Dunkel)
-4. **Stimmung** — Editorial-dunkel, natürlich-hell, kühl-minimal, warm-opulent?
+3. **Stimmung** — Editorial-dunkel, natürlich-hell, kühl-minimal, warm-opulent?
 
-Diese 3 Werte bilden die Newsletter-Palette:
-- \`bg\` = Haupthintergrund (abgeleitet aus Bildstimmung)
-- \`accent\` = Akzentfarbe (für Linien, Buttons, Sublines)
+Daraus leitest du die Newsletter-Palette ab:
+- \`bg\` = Haupthintergrund (aus Bildstimmung)
+- \`accent\` = Akzentfarbe (für Linien, Buttons, Sublines) — sparsam, ein Akzent, nicht drei
 - \`text\` = Haupttextfarbe (maximaler Kontrast auf bg)
 
-**Die Bildanalyse hat Vorrang vor der Marken-Farbtabelle.**
-Die Marken-Tabelle (Schritt 3) ist nur Fallback wenn keine Bilder vorhanden sind.
+**Bilder haben immer Vorrang.** Die Farbtabelle unten ist NUR ein Fallback, wenn die Bilder keine klare Richtung geben:
 
-Wenn Postkarte vorhanden: Newsletter MUSS visuell zur Postkarte passen (gleiche Palette + Layout-Energie).
+| Stimmung | Akzent-Vorschlag | Passt zu |
+|---|---|---|
+| Warm, Holz, Outdoor | Gold #b8953e | Tuuci, Röthlisberger |
+| Kühl, Stein, Bad | Anthrazit #3a3a3a | Boffi, Salvatori, Arclinea |
+| Natur, Garten | Olive #6b7c5e | Gartenmöbel, natürliche Materialien |
+| Licht, Leuchten | Schieferblau #5a6e7f | Lodes, Terzani, Marset |
+| Interior, Stoffe | Weinrot #7a3b3b | Baxter, Maxalto |
+| Neutral, Allrounder | Taupe #8c7e6e | DePadova, B&B Italia |
+
+**Diese Tabelle ist ein Vorschlag, kein Zwang.** Wenn die Bilder eine andere Farbe nahelegen — nimm die.
+
+Wenn Postkarte vorhanden: Newsletter MUSS visuell zur Postkarte passen (gleiche Palette + Layout-Energie, Akzentfarbe übernehmen).
 
 ### Schritt 3: Design-Entscheidung treffen (intern — keine Ausgabe)
 
-Entscheide anhand Bildstimmung + Marke ob Dark- oder Light-Approach. Die Wahl ist intern — gib keine Erklärung aus.
+Entscheide anhand Bildstimmung ob Dark- oder Light-Approach. Die Wahl ist intern — gib keine Erklärung aus.
 
-**Marken-Mood-Mapping (Fallback wenn keine Bilder vorhanden):**
-
-| Marke / Kategorie | Empfohlener Ansatz |
-|---|---|
-| Baxter, Promemoria, Maxalto, Barovier & Toso | Dark editorial bevorzugen — tiefe Töne, Gold/Creme-Akzente |
-| Lodes, Terzani, Marset | Dramatisch atmosphärisch — Dunkel erlaubt wenn Bild es trägt |
-| B&B Italia, Arflex, DePadova | Flexibel — Bild entscheidet |
-| Salvatori, Arclinea, Boffi | Kühl-minimal — eher hell, Anthrazit-Akzent |
-| Tuuci, ADL, Magis | Hell, natürlich/modern — Grün/Blau/Grau-Akzente |
-| Röthlisberger | Warm-holzig — hell bis mid-tone, kein reines Schwarz |
-
-**Dark-Approach** (wenn Bild dunkel/moody ist ODER Marke Dark empfiehlt):
-- bg: \`#111111\`–\`#1e1e1e\` | text: \`#ede8e3\` | accent: aus Bild (oft Gold, Creme, gedämpftes Blau)
+**Dark-Approach** (wenn Bild dunkel/moody ist):
+- bg: \`#111111\`–\`#1e1e1e\` | text: \`#ede8e3\` | accent: aus Bild
 - Buttons: heller Hintergrund mit dunklem Text ODER outline-Stil
 
-**Light-Approach** (wenn Bild hell/natürlich ist ODER Marke Light empfiehlt):
-- bg: \`#ffffff\` oder sehr leichter Bildton (max. 10% Sättigung) | text: \`#1a1a1a\` | accent: aus Bild
-- Akzentfarbe darf kräftiger sein als die üblichen Beige-Töne — aus dem Bild ableiten
+**Light-Approach** (wenn Bild hell/natürlich ist):
+- bg: \`#ffffff\` oder warme Hellgrau-Töne (#efede8, #f5f3ef) | text: \`#1a1a1a\` oder \`#2c2c2c\` | accent: aus Bild
+- Akzentfarbe darf kräftiger sein als die üblichen Beige-Töne
 
-**Mixed ist immer erlaubt:** Hauptbereich hell, ein Kontrastblock dunkel (z.B. CTA-Section).
+**Mixed ist immer erlaubt und erwünscht:** z.B. weißer Content-Bereich → getönter Zwischenblock → dunkler CTA-Block → weißer Footer.
 
 ### Schritt 4: Texte humanisieren
 
@@ -158,18 +156,25 @@ Niemals: mj-body → mj-section → mj-column → mj-section.
 #### Font-Import — KRITISCH
 **NIEMALS \`<mj-font>\` verwenden.** Mailchimp blockt die resultierenden \`<link>\`-Tags.
 
+**Montserrat ist der sichere Default.** Wenn eine andere Google Font besser zur Marke und Bildwelt passt, darfst du wechseln. Voraussetzung: Google Fonts v1 API kompatibel, Fallback-Stack angeben.
+
+Beispiele für Font-Wechsel:
+- Salvatori (Stein, Handwerk) → Cormorant Garamond oder Playfair Display für Headlines
+- Lodes (Licht, Architektur) → DM Sans oder Inter für eine cleanere Anmutung
+- Wenn unsicher: Montserrat nehmen — es funktioniert immer
+
+**Import-Format (v1 API — PFLICHT):**
 \`\`\`xml
 <mj-style>
   @import url('https://fonts.googleapis.com/css?family=Montserrat:200,300,400,500,600');
 </mj-style>
 \`\`\`
+NIEMALS css2 API (\`css2?family=...wght@200;300\`) — Mailchimp akzeptiert nur v1.
 
-Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akzeptiert. Nur das v1-Format.
-
-**Font-Stack:**
+**Font-Stack (immer mit Fallbacks):**
 \`\`\`xml
 <mj-attributes>
-  <mj-all font-family="'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif" />
+  <mj-all font-family="'[Gewählte Font]', 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif" />
 </mj-attributes>
 \`\`\`
 
@@ -185,18 +190,20 @@ Auch die CSS2-API (\`css2?family=...wght@200;300\`) wird von Mailchimp NICHT akz
 
 #### Layout-Entscheidung (aktiv wählen — kein Standard)
 
-Wähle das Layout basierend auf Bildanzahl, Textmenge und Bildstimmung:
+**Variiere das Layout im Mittelteil aktiv. Nicht immer alternierende Zweispalter.** Wähle basierend auf Bildanzahl und Content-Art:
 
-| Situation | Layout |
+| Layout | Wann nutzen |
 |---|---|
-| 1 starkes Hero-Bild, langer Text | Editorial Einspalter — Text führt, Bild atmosphärisch |
-| 2–3 Bilder, gleichwertiger Inhalt | Alternierende Zweispalter |
-| 4+ Produkte, Kollektion | Drei-Spalter oder Grid |
-| Event/Einladung, 1 Bild | Full-Width Sequenz — Bild → Text → CTA |
-| Wenig Text, starkes Bild | Big Image first, Text darunter kompakt |
+| **Alternierende Zweispalter** (Bild links ↔ rechts) | 3+ Produktbilder, klassische Produktvorstellung |
+| **Einspalter editorial** | Wenig Bilder, langer Text, Storytelling, Einladungen |
+| **Full-Width Bilder** zwischen Textsektionen | Starke Bildsprache, atmosphärisch, Events |
+| **Drei-Spalter** | Produktvergleiche, Kollektion-Übersichten, Feature-Grids |
+| **Dunkle Kontrast-Sektion** | Einzelner CTA hervorheben, Zitat, Highlight |
+| **Bildergalerie** | Messe-Recap, Event-Fotos, viele Bilder ohne viel Text |
 
-Mische Layout-Typen innerhalb einer Mail: z.B. Full-Width Hero → Zweispalter Produkte → dunkler CTA-Block → Footer.
-Jeder Newsletter soll anders strukturiert sein.
+Alle diese Varianten sind gleichwertig und erwünscht. Mische Layout-Typen innerhalb einer Mail: z.B. Full-Width Hero → Zweispalter Produkte → dunkler CTA-Block → Footer.
+
+**Jeder Newsletter soll anders strukturiert sein.**
 
 #### Layout-Fixregeln
 - Hero-Bild: Full-Width, ganz oben nach dem Header
@@ -462,35 +469,40 @@ Das Design muss eine Emotion auslösen. Es soll sich anfühlen wie ein hochwerti
 
 **Sei kreativ.** Jeder Newsletter darf anders aussehen. Wähle Design passend zu Marke und Anlass.
 
-### Farbwelt
+### Farbwelt — ABLEITEN, nicht hardcoden
 
-Haupthintergrund und Palette werden aus der Bildanalyse (Schritt 2) abgeleitet — nicht fest vorgegeben.
+**Leite die Akzentfarbe aus den hochgeladenen Bildern ab.** Analysiere Stimmung, Materialien, Licht. Greife eine Farbe aus der Bildwelt auf und nutze sie als Akzent (Linien, Buttons, Sublines). Sparsam — ein Akzent, nicht drei.
 
 **Fixpunkte (immer einhalten):**
-- Footer: bg \`#ffffff\`, Text \`#999999\` — bleibt immer weiß, unabhängig vom Rest
-- Logo-Sections (Header + Footer): bg immer \`#ffffff\` — Logos brauchen neutralen Hintergrund
-- Schriftfarbe: ausreichend Kontrast auf dem gewählten Hintergrund (Zielgruppe 35–65 Jahre)
-- Hersteller-Logo im Header: auf weißem Hintergrund, immer sichtbar
+- Footer + Header (Logo-Sections): bg immer \`#ffffff\`
+- Text: Dunkelgrau (\`#1a1a1a\`, \`#2c2c2c\`) — kein reines Schwarz (\`#000000\`)
+- Hintergrund: Weiß oder warme Hellgrau-Töne als Basis. Dunkle Sektionen (Anthrazit, Charcoal) als Kontrast-Blöcke erlaubt und erwünscht.
+- Schriftfarbe: ausreichend Kontrast (Zielgruppe 35–65 Jahre)
 
-**Dark-Approach:**
-- Haupthintergrund: \`#111111\`–\`#1e1e1e\`
-- Text: \`#ede8e3\` oder \`#f0ece6\`
-- Akzent: aus Bild (Gold, Creme, Staub-Blau, Olivgrün — was das Bild hergibt)
+Falls die Bildwelt keine klare Richtung gibt — Fallback-Tabelle:
 
-**Light-Approach:**
-- Haupthintergrund: \`#ffffff\` oder sehr leichter Bildton (max. 10% Sättigung)
-- Text: \`#1a1a1a\` oder \`#2c2c2c\`
-- Akzent: aus Bild — kann kräftiger sein als Beige-Töne
+| Stimmung | Akzent | Passt zu |
+|---|---|---|
+| Warm, Holz, Outdoor | Gold #b8953e | Tuuci, Röthlisberger |
+| Kühl, Stein, Bad | Anthrazit #3a3a3a | Boffi, Salvatori, Arclinea |
+| Natur, Garten | Olive #6b7c5e | Gartenmöbel |
+| Licht, Leuchten | Schieferblau #5a6e7f | Lodes, Terzani, Marset |
+| Interior, Stoffe | Weinrot #7a3b3b | Baxter, Maxalto |
+| Neutral | Taupe #8c7e6e | DePadova, B&B Italia |
 
-**Sektionswechsel erlaubt und erwünscht:**
-Innerhalb einer Mail können verschiedene Sections unterschiedliche Hintergründe haben — z.B. weißer Content-Bereich → getönter Zwischenblock → dunkler CTA-Block → weißer Footer.
+**Diese Tabelle ist ein Vorschlag, kein Zwang.** Wenn die Bilder eine andere Farbe nahelegen — nimm die.
 
-### Layout-Varianten (alle gleichwertig — kein Standard)
+### Layout-Varianten — variiere aktiv
+
+**Nicht immer alternierende Zweispalter.** Alle folgenden Varianten sind gleichwertig und erwünscht:
 - Einspalter editorial — Text führt, atmosphärische Bilder
 - Alternierende Zweispalter — Bild/Text abwechselnd
-- Full-Width Sequenz — Bild → Text → CTA als Blöcke
+- Full-Width Bilder zwischen Textsektionen — atmosphärisch, Events
 - Drei-Spalter / Grid — Produkt-Übersichten, Kollektionen
-- Big Image first — dominantes Bild, Text kompakt darunter
+- Dunkle Kontrast-Sektion — CTA hervorheben, Zitat, Highlight
+- Bildergalerie — Messe-Recap, Event-Fotos
+
+Mische Layout-Typen innerhalb einer Mail. Jeder Newsletter soll anders strukturiert sein.
 
 ---
 
@@ -502,6 +514,16 @@ Innerhalb einer Mail können verschiedene Sections unterschiedliche Hintergründ
 | „Encoded images will not display" | Base64-Bilder im HTML | Preview-Datei hochgeladen statt ZIP |
 | „Email at high risk of being clipped" | Preview-Datei hochgeladen (Base64 = riesig) | ZIP nutzen |
 | Bilder erscheinen nicht | Platzhalter-URLs nicht ersetzt | ZIP-Import nutzen |
+
+---
+
+## KREATIVITÄTS-CHECK (vor Finalisierung)
+
+Bevor du das MJML finalisierst, prüfe intern:
+- Sieht dieser Newsletter aus wie ein Standard-Template? Wenn ja — ändere etwas.
+- Wurde die Farbwelt aus den Bildern abgeleitet oder aus der Default-Tabelle kopiert?
+- Ist das Layout bewusst gewählt oder der übliche alternierende Zweispalter?
+- Jeder Newsletter soll sich visuell vom vorherigen unterscheiden.
 
 ---
 
