@@ -1,6 +1,6 @@
 // lib/generate/newsletter.ts
 // Generates a newsletter via Claude API, compiles MJML, builds a Mailchimp ZIP,
-// and creates a Base64 preview HTML.
+// and creates a preview HTML with signed Supabase URLs.
 
 import Anthropic from '@anthropic-ai/sdk'
 // @ts-ignore
@@ -9,6 +9,8 @@ import JSZip from 'jszip'
 import sharp from 'sharp'
 import { NEWSLETTER_SYSTEM_PROMPT } from './newsletter-prompt'
 import { validateNewsletterHtml } from '@/lib/mailchimp/size-guard'
+import { signStorageUrl } from '@/lib/supabase/storage'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { CampaignWithManufacturer, CampaignAsset, NewsletterBriefing } from '@/lib/supabase/types'
 
 export interface NewsletterInput {
@@ -361,24 +363,44 @@ async function buildZip(
   return { zipBuffer: Buffer.from(buf), warnings }
 }
 
-// ─── Base64 preview builder ───────────────────────────────────────────────────
+// ─── Preview builder (signed URLs) ───────────────────────────────────────────
 
-async function buildPreview(html: string, imageAssets: CampaignAsset[]): Promise<string> {
+async function buildPreview(
+  html: string,
+  imageAssets: CampaignAsset[],
+  logoUrls?: { manufacturerLogo?: string; agencyLogo?: string }
+): Promise<string> {
+  const admin = createAdminClient()
   let preview = html
+
+  // Replace campaign image filenames with signed URLs
   for (const asset of imageAssets) {
     try {
-      const res = await fetch(asset.file_url)
-      if (!res.ok) continue
-      const buf = await res.arrayBuffer()
-      const b64 = Buffer.from(buf).toString('base64')
-      const dataUrl = `data:${asset.file_type};base64,${b64}`
-      // Replace by filename (Claude uses relative paths) AND by URL as fallback
-      preview = preview.split(asset.file_name).join(dataUrl)
-      preview = preview.split(asset.file_url).join(dataUrl)
+      const signedUrl = await signStorageUrl(admin, asset.file_url)
+      preview = preview.split(asset.file_name).join(signedUrl)
     } catch {
       // Skip failed image — preview will have broken img
     }
   }
+
+  // Replace logo filenames with signed URLs
+  const logoMap: { filename: string; url: string }[] = []
+  if (logoUrls?.manufacturerLogo) {
+    logoMap.push({ filename: 'manufacturer-logo.png', url: logoUrls.manufacturerLogo })
+  }
+  if (logoUrls?.agencyLogo) {
+    logoMap.push({ filename: 'agency-logo.png', url: logoUrls.agencyLogo })
+  }
+
+  for (const logo of logoMap) {
+    try {
+      const signedUrl = await signStorageUrl(admin, logo.url)
+      preview = preview.split(logo.filename).join(signedUrl)
+    } catch {
+      // Skip failed logo
+    }
+  }
+
   return preview
 }
 
@@ -472,7 +494,10 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
       manufacturerLogo: mfg?.logo_url,
       agencyLogo: agency?.logo_url,
     }),
-    buildPreview(html, allImageAssets),
+    buildPreview(html, allImageAssets, {
+      manufacturerLogo: mfg?.logo_url,
+      agencyLogo: agency?.logo_url,
+    }),
     generateSubjectAndPreview(input, client),
   ])
 
