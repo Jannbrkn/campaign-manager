@@ -55,6 +55,20 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+// ─── Auto-report helpers ─────────────────────────────────────────────────────
+
+function getAutoReportDate(linkedNewsletter: any): string | null {
+  if (!linkedNewsletter?.mailchimp_send_time) return null
+  const send = new Date(linkedNewsletter.mailchimp_send_time)
+  let added = 0
+  const d = new Date(send)
+  while (added < 4) {
+    d.setDate(d.getDate() + 1)
+    if (d.getDay() !== 0 && d.getDay() !== 6) added++
+  }
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 // ─── Linked campaign helpers ──────────────────────────────────────────────────
 
 interface LinkedCampaign {
@@ -62,6 +76,8 @@ interface LinkedCampaign {
   title: string
   type: CampaignType
   scheduled_date: string
+  mailchimp_campaign_id?: string | null
+  mailchimp_send_time?: string | null
 }
 
 async function loadLinkedCampaigns(campaign: CampaignWithManufacturer): Promise<LinkedCampaign[]> {
@@ -103,7 +119,7 @@ async function loadLinkedCampaigns(campaign: CampaignWithManufacturer): Promise<
     if (campaign.linked_newsletter_id) {
       const { data: nl } = await supabase
         .from('campaigns')
-        .select('id, title, type, scheduled_date, linked_postcard_id')
+        .select('id, title, type, scheduled_date, linked_postcard_id, mailchimp_campaign_id, mailchimp_send_time')
         .eq('id', campaign.linked_newsletter_id)
         .single()
       if (nl) {
@@ -766,18 +782,32 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleGenerate}
-                  disabled={generating}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
-                >
-                  {generating && <Loader2 size={12} className="animate-spin" />}
-                  {generating
-                    ? 'Wird generiert…'
-                    : campaign.type === 'newsletter'
-                    ? 'Newsletter generieren'
-                    : 'Report generieren'}
-                </button>
+                <>
+                  {(campaign.type === 'report_internal' || campaign.type === 'report_external') &&
+                    !assets.some((a) => a.is_output) && (() => {
+                      const linkedNl = linkedCampaigns.find((lc) => lc.type === 'newsletter')
+                      if (!linkedNl || !linkedNl.mailchimp_campaign_id) return null
+                      const dueDate = getAutoReportDate(linkedNl)
+                      if (!dueDate) return null
+                      return (
+                        <p className="text-xs text-text-secondary mb-2">
+                          Auto-Report wird ca. {dueDate} generiert
+                        </p>
+                      )
+                    })()}
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                  >
+                    {generating && <Loader2 size={12} className="animate-spin" />}
+                    {generating
+                      ? 'Wird generiert…'
+                      : campaign.type === 'newsletter'
+                      ? 'Newsletter generieren'
+                      : 'Report generieren'}
+                  </button>
+                </>
               )}
               {genError && <p className="text-xs text-[#E65100] mt-2">{genError}</p>}
             </div>
