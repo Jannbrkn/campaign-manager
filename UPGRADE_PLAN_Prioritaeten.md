@@ -23,24 +23,9 @@ Benutze Claude Code im **Planmode** und arbeite diese Liste Schritt für Schritt
 
 ---
 
-## Prio 3: Newsletter-Generator Skill korrigieren 📝
-**Datei:** `/mnt/skills/user/newsletter-generator/SKILL.md` im Projekt
-**Was tun:** Die Logo-Platzierung auf Zeile 162-167 ist falsch — da steht "Agentur-Logo im Header". Das muss korrigiert werden zu "Hersteller-Logo im Header, Agentur-Logo NUR im Footer".
-
-**Prompt für Claude Code:**
-```
-Öffne die Newsletter-Generator Skill-Datei und korrigiere die Logo-Platzierung:
-
-FALSCH (aktuell):
-| Agentur-Logo | Header (oben, zentriert) | 200–220px |
-| Hersteller-Logo | Über der Headline, nach dem Hero | 120–160px |
-
-RICHTIG (neu):
-| Hersteller-Logo | Header (oben, zentriert, auf #ffffff) | 160–220px |
-| Agentur-Logo | Footer (unter Signatur, auf #ffffff) | 140–160px |
-
-Prüfe die gesamte Datei auf weitere Stellen wo Agentur-Logo im Header erwähnt wird und korrigiere sie.
-```
+## ~~Prio 3: Newsletter-Generator Skill korrigieren~~ ✅ ERLEDIGT
+Logo-Platzierung in Skill-Datei, newsletter-prompt.ts, Spec- und Plan-Docs korrigiert.
+Hersteller-Logo im Header (160–220px, auf #ffffff), Agentur-Logo NUR im Footer (140–160px, auf #ffffff).
 
 ---
 

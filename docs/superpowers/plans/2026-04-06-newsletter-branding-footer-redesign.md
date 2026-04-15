@@ -257,8 +257,8 @@ Replace with:
 
 | Logo | Position | Breite | Klickbar |
 |---|---|---|---|
-| **Hersteller-Logo** | **Header (oben, zentriert)** | 180–220px | **Ja → Website des Herstellers** |
-| Agentur-Logo | Footer (neben Adressdaten) | 80–100px | Nein |
+| **Hersteller-Logo** | **Header (oben, zentriert, auf #ffffff)** | 160–220px | **Ja → website_url des Herstellers** |
+| Agentur-Logo | Footer (zentriert, über Adressdaten, auf #ffffff) | 140–160px | Ja → website_url der Agentur |
 
 - Das Hersteller-Logo im Header MUSS in `<mj-image>` mit `href="[website_url]"` eingebettet sein.
 - Wenn keine `website_url` vorhanden: Logo anzeigen, aber kein `href` setzen.
@@ -329,13 +329,11 @@ Plus Mailchimp-Merge-Tags:
 <a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>
 ```
 
-**Footer-Kontrast (PFLICHT):**
-- Hintergrund: #1a1a1a oder #2c2c2c (dunkel)
+**Footer-Design (PFLICHT):**
+- Hintergrund: #ffffff
 - Haupttext: #999999
-- Adressen/Details: #777777
-- Links (Abmelden etc.): #888888, underline
-- NIEMALS: hellgrauer Text auf weißem oder hellgrauem Hintergrund — das ist nicht lesbar.
-- Der Footer-Hintergrund muss sich klar vom Rest der Mail abheben.
+- Links (Abmelden etc.): #bbbbbb
+- Logo-Hintergrund: immer #ffffff
 ```
 
 Replace entirely with:
@@ -346,20 +344,17 @@ Replace entirely with:
 Der Footer ist der rechtliche Absender-Block der Agentur. Er folgt einem festen Design — keine Abweichungen.
 
 **Struktur (von oben nach unten):**
-1. `mj-divider` als visuelle Trennung vom Body (Farbe: #2a2a2a)
-2. Agentur-Logo (80–100px, zentriert) — falls `logo_url` vorhanden
-3. Agentur-Name
-4. Agentur-Adresse
-5. Kontakt-E-Mail der Agentur (`contact_email` — NICHT `order_email`) — weglassen wenn nicht vorhanden
-6. Agentur-Telefon
-7. Mailchimp-Pflicht-Links: `<a href="*|UNSUB|*">Abmelden</a>` · `<a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>`
+1. Agentur-Logo (140–160px, zentriert, klickbar auf Agentur-Website) — auf #ffffff
+2. Agentur-Name (Versalien, #999999)
+3. Kontakt-E-Mail · Telefon (`contact_email` — NICHT `order_email`)
+4. Straße · PLZ Stadt
+5. Mailchimp-Pflicht-Links: `<a href="*|UNSUB|*">Abmelden</a>` | `<a href="*|UPDATE_PROFILE|*">Einstellungen ändern</a>`
 
 **Design (nicht verhandelbar):**
-- Hintergrund: `#1a1a1a`
-- Haupttext: `#cccccc`, 9–10px, Light (300)
-- Links (Abmelden etc.): `#888888`, unterstrichen
-- Agentur-Name: `#999999`, etwas größer (10–11px)
-- NIEMALS heller Hintergrund im Footer — weder weiß noch hellgrau.
+- Hintergrund: `#ffffff`
+- Haupttext: `#999999`, 9–10px, Light (300)
+- Links (Abmelden etc.): `#bbbbbb`
+- Logo-Hintergrund: immer `#ffffff`
 - NIEMALS `order_email` der Agentur im Footer oder im Body verwenden.
 ```
 
@@ -382,13 +377,14 @@ Replace with:
 
 ```
 CHECKLISTE
-✅/❌ Hersteller-Logo im Header (klickbar auf website_url)?
-✅/❌ Agentur-Logo NUR im Footer (nicht im Header/Body)?
+✅/❌ Hersteller-Logo im Header (160–220px, klickbar auf website_url, auf #ffffff)?
+✅/❌ Agentur-Logo NUR im Footer (140–160px, klickbar auf Agentur-website_url, auf #ffffff)?
+✅/❌ Kein Agentur-Logo/-Name im Header oder Body?
 ✅/❌ Mindestens 2 CTAs vorhanden?
 ✅/❌ Alle Produktbilder klickbar (href auf Produkt-URL)?
 ✅/❌ Alle CTA-Buttons mit finalem Link?
-✅/❌ Footer: Agentur-Name, Adresse, Kontakt-Mail, Telefon?
-✅/❌ Footer: dunkler Hintergrund (#1a1a1a), helle Schrift (#cccccc)?
+✅/❌ Footer: Agentur-Name, contact_email (NICHT order_email), Telefon, Straße + PLZ + Stadt?
+✅/❌ Footer: #ffffff Hintergrund, #999999 Text?
 ✅/❌ Subject Line + Preview Text vorgeschlagen?
 ✅/❌ ZIP-Datei erstellt und ausgeliefert?
 ⚠️  Fehlende Links: [auflisten oder „keine"]
@@ -442,7 +438,7 @@ The Typografie table (around line 164 in the prompt) has this row:
 
 Replace with:
 ```
-| Footer | Light (300) | 9–10px | #cccccc auf #1a1a1a Hintergrund — immer dunkel |
+| Footer | Light (300) | 9–10px | #999999 auf #ffffff Hintergrund — immer weiß |
 ```
 
 - [ ] **Step 9: Commit**
@@ -977,8 +973,8 @@ Download or view the `newsletter.mjml` output asset. Verify:
 - `<mj-image href="https://www.salvatori.it" ...>` with the manufacturer logo src at the top (header section)
 - No agency logo in the header or body
 - Agency logo appears only in the footer section
-- Footer background is `#1a1a1a`
-- Footer text color is `#cccccc`
+- Footer background is `#ffffff`
+- Footer text color is `#999999`
 - `info@collezioni.eu` (contact_email) appears in footer
 - `order@...` does NOT appear anywhere in the MJML
 - At least 2 `<mj-button>` or CTA elements present

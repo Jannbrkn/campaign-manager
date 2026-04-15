@@ -75,8 +75,8 @@ The `order_email` continues to be passed as-is (for internal reference only) but
 **New rule:**
 | Logo | Position | Breite | Klickbar |
 |---|---|---|---|
-| **Hersteller-Logo** | Header (oben, zentriert) | 180–220px | Ja → `website_url` |
-| Agentur-Logo | Footer (neben Adressdaten) | 80–100px | Nein |
+| **Hersteller-Logo** | Header (oben, zentriert, auf #ffffff) | 160–220px | Ja → `website_url` des Herstellers |
+| Agentur-Logo | Footer (zentriert, über Adressdaten, auf #ffffff) | 140–160px | Ja → `website_url` der Agentur |
 
 The manufacturer logo must be wrapped in `<mj-image href="[website_url]">`. If no `website_url` is available, the logo is still shown but not linked.
 
@@ -99,31 +99,29 @@ Replace the existing footer section with:
 
 Inhalt:
 ```
-[Agentur-Logo, 80–100px]
+[Agentur-Logo, 140–160px, zentriert, klickbar auf Agentur-Website]
 [Agentur-Name]
-[Agentur-Adresse]
-[Agentur-Kontakt-E-Mail]   ← NEU (contact_email, NICHT order_email)
-[Agentur-Telefon]
-[Abmelden-Link] · [Einstellungen-Link]
+[Kontakt-E-Mail · Telefon]
+[Straße · PLZ Stadt]
+[Abmelden | Einstellungen ändern]
 ```
 
 Design (nicht verhandelbar):
-- Hintergrund: `#1a1a1a`
-- Trennlinie (mj-divider) über dem Footer-Block
-- Haupttext: `#cccccc`, 9–10px, Light (300)
-- Links: `#888888`, unterstrichen
-- Logo-Variante: Falls Agentur ein helles Logo hat, dieses verwenden. Falls nicht, nur Text.
-- **NIEMALS** heller Hintergrund mit grauem Text im Footer.
+- Hintergrund: `#ffffff`
+- Text: `#999999`, 9–10px, Light (300)
+- Links (Abmelden/Einstellungen): `#bbbbbb`
+- Logo immer auf `#ffffff` Hintergrund
 
 ### 4d. Checkliste — update
 
 Add to the post-generation checklist:
 ```
-✅/❌ Hersteller-Logo oben (klickbar auf Website)?
-✅/❌ Agentur nur im Footer (nicht im Header)?
+✅/❌ Hersteller-Logo im Header (160–220px, klickbar auf website_url, auf #ffffff)?
+✅/❌ Agentur-Logo NUR im Footer (140–160px, klickbar auf Agentur-website_url, auf #ffffff)?
+✅/❌ Kein Agentur-Logo/-Name im Header oder Body?
 ✅/❌ Mindestens 2 CTAs vorhanden?
-✅/❌ Footer: Agentur-Name, Adresse, Kontakt-Mail, Telefon?
-✅/❌ Footer: dunkler Hintergrund (#1a1a1a), helle Schrift (#cccccc)?
+✅/❌ Footer: Agentur-Name, contact_email (NICHT order_email), Telefon, Straße + PLZ + Stadt?
+✅/❌ Footer: #ffffff Hintergrund, #999999 Text?
 ```
 
 ---
