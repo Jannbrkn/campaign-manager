@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk'
 // @ts-ignore
 import mjml2html from 'mjml'
 import JSZip from 'jszip'
+import sharp from 'sharp'
 import { NEWSLETTER_SYSTEM_PROMPT } from './newsletter-prompt'
 import { validateNewsletterHtml } from '@/lib/mailchimp/size-guard'
 import type { CampaignWithManufacturer, CampaignAsset, NewsletterBriefing } from '@/lib/supabase/types'
@@ -28,7 +29,10 @@ export interface NewsletterOutput {
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
-async function buildUserPrompt(input: NewsletterInput): Promise<string> {
+async function buildUserPrompt(
+  input: NewsletterInput,
+  imageInfo?: { gifFiles: Set<string>; skippedFiles: Set<string> }
+): Promise<string> {
   const { campaign, assets, postcardAssets, briefing, feedback } = input
   const mfg = campaign.manufacturers as any
   const agency = mfg?.agencies as any
@@ -132,7 +136,15 @@ async function buildUserPrompt(input: NewsletterInput): Promise<string> {
   if (imageAssets.length > 0) {
     lines.push('## BILDER (eigene Kampagne)')
     lines.push('(Bilder sind als Vision-Blöcke beigefügt — verwende die Dateinamen als src-Attribut: src="dateiname.jpg")')
-    for (const a of imageAssets) lines.push(`- ${a.file_name}`)
+    for (const a of imageAssets) {
+      if (imageInfo?.gifFiles.has(a.file_name)) {
+        lines.push(`- ${a.file_name} (animiertes GIF — du siehst das erste Frame zur Farb-/Stilreferenz. Verwende im MJML: <mj-image src="${a.file_name}">)`)
+      } else if (imageInfo?.skippedFiles.has(a.file_name)) {
+        lines.push(`- ${a.file_name} (nicht als Vision-Block — nur Dateiname für src-Attribut)`)
+      } else {
+        lines.push(`- ${a.file_name}`)
+      }
+    }
     lines.push('')
   }
 
@@ -145,7 +157,15 @@ async function buildUserPrompt(input: NewsletterInput): Promise<string> {
   if (postcardImages.length > 0) {
     lines.push('## POSTKARTE (Stil-Referenz — Newsletter muss visuell passen)')
     lines.push('(Postkarten-Bilder sind als Vision-Blöcke beigefügt)')
-    for (const a of postcardImages) lines.push(`- ${a.file_name}`)
+    for (const a of postcardImages) {
+      if (imageInfo?.gifFiles.has(a.file_name)) {
+        lines.push(`- ${a.file_name} (animiertes GIF — erstes Frame als Referenz)`)
+      } else if (imageInfo?.skippedFiles.has(a.file_name)) {
+        lines.push(`- ${a.file_name} (nicht als Vision-Block — Budget erreicht)`)
+      } else {
+        lines.push(`- ${a.file_name}`)
+      }
+    }
     lines.push('')
   }
 
@@ -160,7 +180,8 @@ async function buildUserPrompt(input: NewsletterInput): Promise<string> {
 
 // ─── Image content blocks for vision ─────────────────────────────────────────
 
-const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const MAX_VISION_BUDGET_BYTES = 1024 * 1024 // 1MB total for all vision blocks
+const MAX_SINGLE_IMAGE_BYTES = 300 * 1024   // 300KB per image after compression
 
 function isGif(asset: CampaignAsset): boolean {
   return (
@@ -170,44 +191,92 @@ function isGif(asset: CampaignAsset): boolean {
   )
 }
 
+interface ImageProcessingResult {
+  blocks: Anthropic.ImageBlockParam[]
+  gifFiles: Set<string>
+  skippedFiles: Set<string>
+}
+
+async function compressImage(buf: Buffer, filename: string): Promise<Buffer> {
+  const compressed = await sharp(buf)
+    .resize({ width: 800, withoutEnlargement: true })
+    .jpeg({ quality: 70 })
+    .toBuffer()
+  console.log(`[Vision] ${filename}: ${Math.round(buf.length / 1024)}kB → ${Math.round(compressed.length / 1024)}kB`)
+  return compressed
+}
+
+async function extractGifFirstFrame(buf: Buffer, filename: string): Promise<Buffer> {
+  const frame = await sharp(buf, { animated: false })
+    .jpeg({ quality: 80 })
+    .toBuffer()
+  console.log(`[Vision] ${filename}: GIF first frame extracted (${Math.round(buf.length / 1024)}kB → ${Math.round(frame.length / 1024)}kB)`)
+  return frame
+}
+
 async function buildImageBlocks(
   assets: CampaignAsset[],
   postcardAssets: CampaignAsset[]
-): Promise<Anthropic.ImageBlockParam[]> {
+): Promise<ImageProcessingResult> {
   const imageAssets = [
     ...assets.filter((a) => a.asset_category === 'image'),
     ...postcardAssets.filter(
       (a) => a.asset_category === 'image' || a.asset_category === 'postcard_pdf'
     ),
-  // GIFs werden nicht als Vision-Block geladen (zu groß für Token-Limit).
-  // Die GIF-URL ist aber im Text-Prompt enthalten — Claude baut das src-Attribut trotzdem korrekt.
-  ].filter((a) => !isGif(a))
+  ]
 
   const blocks: Anthropic.ImageBlockParam[] = []
+  const gifFiles = new Set<string>()
+  const skippedFiles = new Set<string>()
+  let totalBytes = 0
+
   for (const asset of imageAssets) {
-    const mediaType = SUPPORTED_IMAGE_TYPES.includes(asset.file_type)
-      ? asset.file_type
-      : 'image/jpeg'
     // Skip PDFs — Claude vision doesn't support them
     if (asset.file_type === 'application/pdf') continue
+
     try {
       const res = await fetch(asset.file_url)
       if (!res.ok) continue
-      const buf = await res.arrayBuffer()
-      const b64 = Buffer.from(buf).toString('base64')
+      const rawBuf = Buffer.from(await res.arrayBuffer())
+
+      let compressed: Buffer
+      if (isGif(asset)) {
+        gifFiles.add(asset.file_name)
+        compressed = await extractGifFirstFrame(rawBuf, asset.file_name)
+      } else {
+        compressed = await compressImage(rawBuf, asset.file_name)
+      }
+
+      // Enforce per-image limit
+      if (compressed.length > MAX_SINGLE_IMAGE_BYTES) {
+        compressed = await sharp(compressed)
+          .jpeg({ quality: 50 })
+          .toBuffer()
+      }
+
+      // Check total budget before adding
+      if (totalBytes + compressed.length > MAX_VISION_BUDGET_BYTES) {
+        console.warn(`[Vision] Budget reached (${Math.round(totalBytes / 1024)}kB) — skipping ${asset.file_name}`)
+        skippedFiles.add(asset.file_name)
+        continue
+      }
+
+      totalBytes += compressed.length
       blocks.push({
         type: 'image' as const,
         source: {
           type: 'base64' as const,
-          media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-          data: b64,
+          media_type: 'image/jpeg' as const,
+          data: compressed.toString('base64'),
         },
       })
-    } catch {
-      // Skip image if download fails — generation continues without it
+    } catch (e) {
+      console.warn(`[Vision] Failed to process ${asset.file_name}:`, e)
     }
   }
-  return blocks
+
+  console.log(`[Vision] ${blocks.length} blocks, ${Math.round(totalBytes / 1024)}kB total`)
+  return { blocks, gifFiles, skippedFiles }
 }
 
 // ─── ZIP builder ──────────────────────────────────────────────────────────────
@@ -355,9 +424,9 @@ Antworte ausschließlich mit einem JSON-Objekt (kein Markdown-Wrapper): {"subjec
 export async function generateNewsletter(input: NewsletterInput): Promise<NewsletterOutput> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  const textPrompt = await buildUserPrompt(input)
-  const allImageBlocks = await buildImageBlocks(input.assets, input.postcardAssets)
-  const imageBlocks = allImageBlocks.slice(0, 4)
+  // Process images first so we know which are GIFs / skipped (for text prompt annotations)
+  const { blocks: imageBlocks, gifFiles, skippedFiles } = await buildImageBlocks(input.assets, input.postcardAssets)
+  const textPrompt = await buildUserPrompt(input, { gifFiles, skippedFiles })
 
   const userContent: Anthropic.ContentBlockParam[] = [
     { type: 'text', text: textPrompt },

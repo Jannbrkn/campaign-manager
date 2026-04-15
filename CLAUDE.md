@@ -132,9 +132,16 @@ Scheduled alerts and notifications.
 - If a postcard exists for a campaign, the newsletter MUST match its style
 
 ### Newsletter Rules
-- Generated via Claude API → MJML → HTML → flat ZIP for Mailchimp import
-- Footer must include agency logo, address, phone, email from agency record
-- Audience tags from manufacturer record determine Mailchimp segment
+Vollständige Regeln (Struktur, Kreativrichtlinien, technische Pipeline, Qualitätsprüfung) stehen in **`docs/NEWSLETTER_RULES.md`**.
+**Diese Datei MUSS gelesen werden, bevor Newsletter-Code geschrieben oder MJML generiert wird.**
+
+Kurzfassung der harten Regeln:
+- Header: NUR Hersteller-Logo (160–220px, auf #ffffff) — KEIN Agentur-Logo/-Name im Header oder Body
+- Footer: Agentur-Logo + Name + `contact_email` (NICHT `order_email`) + Telefon + Adresse + Abmelden/Einstellungen
+- MJML 4.x, 640px Breite, flat ZIP, Production-HTML < 102KB
+- Font-Import via `@import` in `<mj-style>` (nicht `<mj-font>`), Google Fonts v1 API
+- Farbwelt aus Bildern ableiten, nicht hardcoden
+- GIFs: First-Frame als JPEG an Vision API, Original-GIF in MJML/ZIP
 
 ### Report Rules
 - Input: Mailchimp Members Export (CSV/XLSX)
