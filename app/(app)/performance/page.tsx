@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { CampaignWithManufacturer, ManufacturerGroup, Agency } from '@/lib/supabase/types'
 import KpiRow from '@/components/performance/KpiRow'
 import ManufacturerGrid from '@/components/performance/ManufacturerGrid'
+import UnmatchedPanel from '@/components/performance/UnmatchedPanel'
 
 function groupCampaigns(
   campaigns: CampaignWithManufacturer[],
@@ -108,6 +109,8 @@ export default async function PerformancePage({
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-light text-text-primary">Performance</h1>
       </div>
+
+      <UnmatchedPanel />
 
       <KpiRow groups={groups} totalCampaigns={groups.reduce((sum, g) => sum + g.campaigns.length, 0)} />
 

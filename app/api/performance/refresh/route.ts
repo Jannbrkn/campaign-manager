@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mcFetch, mcConfigured, MC_SERVER } from '@/lib/mailchimp'
+import { mcFetch, mcConfigured, MC_SERVER, fetchAllMcCampaigns } from '@/lib/mailchimp'
+import { findBestMatch } from '@/lib/mailchimp/matching'
 
 export const maxDuration = 60
 
@@ -31,24 +32,6 @@ const REPORT_FIELDS = [
   'send_time',
 ].join(',')
 
-async function fetchAllMailchimpCampaigns() {
-  const all: any[] = []
-  let offset = 0
-  const count = 200
-  while (true) {
-    const res = await mcFetch(
-      `/campaigns?count=${count}&offset=${offset}&fields=campaigns.id,campaigns.web_id,campaigns.settings,campaigns.send_time,campaigns.status`,
-      'GET'
-    )
-    const batch = res.campaigns ?? []
-    all.push(...batch)
-    if (batch.length < count) break
-    offset += count
-  }
-  // Nur gesendete Kampagnen für Matching nutzen — Drafts haben keinen Report
-  return all.filter((mc) => mc.status === 'sent')
-}
-
 function daysSince(iso: string): number {
   return (Date.now() - new Date(iso).getTime()) / 86_400_000
 }
@@ -67,7 +50,7 @@ export async function POST(_req: NextRequest) {
   // ── Phase 1: Matching ────────────────────────────────────────────────────
 
   const [mcCampaigns, { data: dbCampaigns }] = await Promise.all([
-    fetchAllMailchimpCampaigns(),
+    fetchAllMcCampaigns({ onlySent: true }),
     admin
       .from('campaigns')
       .select('id, title, scheduled_date, mailchimp_campaign_id, manufacturers(name, agencies(name))')
@@ -75,66 +58,47 @@ export async function POST(_req: NextRequest) {
   ])
 
   let linked = 0
-  const linkedDetails: { db_title: string; mc_title: string; diff_days: number }[] = []
+  const linkedDetails: { db_title: string; mc_title: string; diff_days: number; score: number }[] = []
   const noMatch: string[] = []
+
+  // Skip matching on future-dated campaigns — they can't possibly be sent yet
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
 
   if (dbCampaigns) {
     for (const db of dbCampaigns) {
       if (db.mailchimp_campaign_id) continue
       if (!db.scheduled_date) continue
 
-      const dbTime = new Date(db.scheduled_date).getTime()
-      const mfgName = (db.manufacturers as any)?.name?.toLowerCase() ?? ''
-      const firstWord = mfgName.split(' ')[0]
+      // Future campaigns won't have a Mailchimp match yet
+      if (new Date(db.scheduled_date) > today) continue
 
-      // Kandidaten: MC-Kampagnen deren Titel den Herstellernamen enthält
-      const candidates = firstWord
-        ? mcCampaigns.filter((mc) => {
-            const mcTitle = (mc.settings?.title ?? mc.settings?.subject_line ?? '').toLowerCase()
-            return mcTitle.includes(firstWord)
-          })
-        : mcCampaigns
-
-      // Besten Match per Sendedatum (±7 Tage) finden
-      let best: any = null
-      let bestDiff = Infinity
-
-      for (const mc of candidates) {
-        // send_time ist garantiert vorhanden (nur status=sent gefiltert)
-        const diff = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
-        if (diff <= 7 && diff < bestDiff) {
-          bestDiff = diff
-          best = mc
-        }
-      }
-
-      // Fallback: kein Namens-Match → alle gesendeten MC-Kampagnen, ±3 Tage
-      if (!best && firstWord) {
-        for (const mc of mcCampaigns) {
-          const diff = Math.abs(dbTime - new Date(mc.send_time).getTime()) / 86_400_000
-          if (diff <= 3 && diff < bestDiff) {
-            bestDiff = diff
-            best = mc
-          }
-        }
-      }
+      const best = findBestMatch(
+        {
+          id: db.id,
+          title: db.title,
+          scheduled_date: db.scheduled_date,
+          manufacturer_name: (db.manufacturers as any)?.name ?? '',
+        },
+        mcCampaigns
+      )
 
       if (best) {
         await admin
           .from('campaigns')
           .update({
-            mailchimp_campaign_id: best.id,
-            mailchimp_url: `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${best.web_id}`,
+            mailchimp_campaign_id: best.mc.id,
+            mailchimp_url: `https://${MC_SERVER}.admin.mailchimp.com/campaigns/edit?id=${best.mc.web_id}`,
           })
           .eq('id', db.id)
         linked++
         linkedDetails.push({
           db_title: db.title,
-          mc_title: best.settings?.title ?? best.id,
-          diff_days: Math.round(bestDiff * 10) / 10,
+          mc_title: best.mc.settings?.title ?? best.mc.id,
+          diff_days: best.diffDays,
+          score: best.score,
         })
       } else {
-        // Kein Match — wahrscheinlich noch nicht versendet
         noMatch.push(db.title)
       }
     }

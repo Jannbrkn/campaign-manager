@@ -24,3 +24,21 @@ export async function mcFetch(path: string, method: string, body?: object) {
 export function mcConfigured() {
   return MC_API_KEY.length > 0
 }
+
+/** Fetch all campaigns from Mailchimp (paginated), optionally filtered to status=sent. */
+export async function fetchAllMcCampaigns(opts: { onlySent?: boolean } = {}): Promise<any[]> {
+  const all: any[] = []
+  let offset = 0
+  const count = 200
+  while (true) {
+    const res = await mcFetch(
+      `/campaigns?count=${count}&offset=${offset}&fields=campaigns.id,campaigns.web_id,campaigns.settings,campaigns.send_time,campaigns.status`,
+      'GET'
+    )
+    const batch = res.campaigns ?? []
+    all.push(...batch)
+    if (batch.length < count) break
+    offset += count
+  }
+  return opts.onlySent ? all.filter((c) => c.status === 'sent') : all
+}
