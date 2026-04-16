@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/auto-reports",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/performance-refresh",
+      "schedule": "0 7 * * *"
     }
   ],
   "functions": {
@@ -17,6 +21,12 @@
       "maxDuration": 300
     },
     "app/api/cron/auto-reports/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/cron/performance-refresh/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/performance/refresh/route.ts": {
       "maxDuration": 120
     }
   }

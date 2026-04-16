@@ -117,8 +117,36 @@ export interface CampaignReport {
   industry_bounce_rate: number | null
   industry_unsub_rate: number | null
 
+  click_details: ClickDetail[] | null
+  domain_performance: DomainPerformance[] | null
+
   raw_report: any
   created_at: string
+}
+
+/** Mailchimp /reports/{id}/click-details entry (one per tracked URL). */
+export interface ClickDetail {
+  url: string
+  total_clicks: number
+  unique_clicks: number
+  click_percentage: number       // fraction of total link clicks
+  unique_click_percentage: number
+}
+
+/** Mailchimp /reports/{id}/domain-performance entry (one per recipient email domain). */
+export interface DomainPerformance {
+  domain: string
+  emails_sent: number
+  bounces: number
+  opens: number
+  clicks: number
+  unsubs: number
+  delivered: number
+  bounces_pct: number
+  opens_pct: number
+  clicks_pct: number
+  unsubs_pct: number
+  delivered_pct: number
 }
 
 export interface Campaign {
@@ -175,6 +203,23 @@ export interface CampaignWithManufacturer extends Campaign {
   manufacturers: ManufacturerWithAgency
 }
 
+export interface AggregatedLink {
+  url: string
+  total_clicks: number
+  unique_clicks: number
+}
+
+export interface AggregatedDomain {
+  domain: string
+  emails_sent: number
+  opens: number
+  clicks: number
+  bounces: number
+  unsubs: number
+  open_rate: number   // derived: opens / emails_sent
+  click_rate: number  // derived: clicks / emails_sent
+}
+
 export interface ManufacturerGroup {
   manufacturer: ManufacturerWithAgency
   campaigns: CampaignWithManufacturer[]
@@ -189,6 +234,8 @@ export interface ManufacturerGroup {
   totalAbuseReports: number
   sources: ('api' | 'csv')[]
   mppFiltered: boolean  // true if all stats with API source have proxy_excluded_open_rate
+  topLinks: AggregatedLink[]       // aggregated across campaigns
+  topDomains: AggregatedDomain[]   // aggregated across campaigns
 }
 
 export type Database = {
