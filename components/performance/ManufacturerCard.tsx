@@ -19,7 +19,7 @@ function fmtDelta(own: number | null, benchmark: number | null): { text: string;
   const delta = (own - benchmark) * 100
   const sign = delta >= 0 ? '+' : ''
   const cls = delta >= 0 ? 'text-[#2E7D32]' : 'text-[#E65100]'
-  return { text: `${sign}${delta.toFixed(1)}pp`, cls }
+  return { text: `${sign}${delta.toFixed(1)}%`, cls }
 }
 
 function TrendIcon({ trend }: { trend: TrendDirection }) {
@@ -122,12 +122,9 @@ export default function ManufacturerCard({
           </p>
         </>
       ) : (
-        <>
-          <p className="text-2xl font-light text-[#444] mb-1">—</p>
-          <p className="text-[11px] text-text-secondary">
-            {group.campaigns.length} Kampagne{group.campaigns.length !== 1 ? 'n' : ''} geplant · noch kein Versand
-          </p>
-        </>
+        <p className="text-[11px] text-text-secondary mt-2">
+          {group.campaigns.length} Kampagne{group.campaigns.length !== 1 ? 'n' : ''} geplant · noch kein Versand
+        </p>
       )}
     </button>
   )

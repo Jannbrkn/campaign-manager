@@ -33,7 +33,7 @@ function fmtDelta(own: number | null, industry: number | null): { text: string; 
   const delta = (own - industry) * 100
   const sign = delta >= 0 ? '+' : ''
   const cls = delta >= 0 ? 'text-[#2E7D32]' : 'text-[#E65100]'
-  return { text: `${sign}${delta.toFixed(1)}pp`, cls }
+  return { text: `${sign}${delta.toFixed(1)}%`, cls }
 }
 
 function MetricTile({
