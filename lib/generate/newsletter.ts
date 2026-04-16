@@ -474,8 +474,23 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 16384,
-    system: NEWSLETTER_SYSTEM_PROMPT,
+    system: [
+      {
+        type: 'text',
+        text: NEWSLETTER_SYSTEM_PROMPT,
+        cache_control: { type: 'ephemeral' },
+      },
+    ],
     messages: [{ role: 'user', content: userContent }],
+  })
+
+  // Log cache performance (hit/miss/write) for cost monitoring
+  const usage = response.usage as any
+  console.log('[Cache]', {
+    cache_read: usage.cache_read_input_tokens ?? 0,
+    cache_write: usage.cache_creation_input_tokens ?? 0,
+    input: usage.input_tokens,
+    output: usage.output_tokens,
   })
 
   const mjmlSource = (response.content[0] as Anthropic.TextBlock).text.trim()
