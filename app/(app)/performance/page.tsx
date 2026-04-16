@@ -29,28 +29,50 @@ function groupCampaigns(
         campaigns: [],
         avgOpenRate: null,
         avgClickRate: null,
+        avgIndustryOpenRate: null,
+        avgIndustryClickRate: null,
         totalSent: 0,
         totalUnsubscribes: 0,
+        totalHardBounces: 0,
+        totalSoftBounces: 0,
+        totalAbuseReports: 0,
         sources: [],
+        mppFiltered: false,
       })
     }
     const g = map.get(id)!
     g.campaigns.push(c)
     if (c.performance_stats) {
-      g.totalSent += c.performance_stats.emails_sent
-      if (c.performance_stats.unsubscribes !== null) {
-        g.totalUnsubscribes += c.performance_stats.unsubscribes
-      }
-      const src = c.performance_stats.source
-      if (!g.sources.includes(src)) g.sources.push(src)
+      const ps = c.performance_stats
+      g.totalSent += ps.emails_sent
+      if (ps.unsubscribes !== null) g.totalUnsubscribes += ps.unsubscribes
+      if (ps.hard_bounces != null) g.totalHardBounces += ps.hard_bounces
+      if (ps.soft_bounces != null) g.totalSoftBounces += ps.soft_bounces
+      if (ps.abuse_reports != null) g.totalAbuseReports += ps.abuse_reports
+      if (!g.sources.includes(ps.source)) g.sources.push(ps.source)
     }
   }
 
   for (const g of Array.from(map.values())) {
     const ws = g.campaigns.filter((c) => c.performance_stats)
     if (ws.length > 0) {
-      g.avgOpenRate = ws.reduce((s: number, c: CampaignWithManufacturer) => s + c.performance_stats!.open_rate, 0) / ws.length
-      g.avgClickRate = ws.reduce((s: number, c: CampaignWithManufacturer) => s + c.performance_stats!.click_rate, 0) / ws.length
+      g.avgOpenRate =
+        ws.reduce((s: number, c: CampaignWithManufacturer) => s + c.performance_stats!.open_rate, 0) / ws.length
+      g.avgClickRate =
+        ws.reduce((s: number, c: CampaignWithManufacturer) => s + c.performance_stats!.click_rate, 0) / ws.length
+
+      // Industry benchmark averages (only over campaigns that have them)
+      const withIndustry = ws.filter((c) => c.performance_stats!.industry_open_rate != null)
+      if (withIndustry.length > 0) {
+        g.avgIndustryOpenRate =
+          withIndustry.reduce((s, c) => s + (c.performance_stats!.industry_open_rate ?? 0), 0) / withIndustry.length
+        g.avgIndustryClickRate =
+          withIndustry.reduce((s, c) => s + (c.performance_stats!.industry_click_rate ?? 0), 0) / withIndustry.length
+      }
+
+      // MPP filter status — true only if every API-sourced stat has proxy_excluded_open_rate
+      const apiStats = ws.filter((c) => c.performance_stats!.source === 'api')
+      g.mppFiltered = apiStats.length > 0 && apiStats.every((c) => c.performance_stats!.proxy_excluded_open_rate != null)
     }
   }
 

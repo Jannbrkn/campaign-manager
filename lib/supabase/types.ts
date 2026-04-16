@@ -180,9 +180,15 @@ export interface ManufacturerGroup {
   campaigns: CampaignWithManufacturer[]
   avgOpenRate: number | null
   avgClickRate: number | null
+  avgIndustryOpenRate: number | null
+  avgIndustryClickRate: number | null
   totalSent: number
   totalUnsubscribes: number
+  totalHardBounces: number
+  totalSoftBounces: number
+  totalAbuseReports: number
   sources: ('api' | 'csv')[]
+  mppFiltered: boolean  // true if all stats with API source have proxy_excluded_open_rate
 }
 
 export type Database = {
