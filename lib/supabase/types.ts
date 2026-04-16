@@ -72,6 +72,53 @@ export interface PerformanceStats {
   emails_sent: number
   unsubscribes: number | null  // null when not available (e.g. CSV exports)
   source: 'api' | 'csv'
+  // Extended metrics — written by API refresh, may be null for CSV source
+  proxy_excluded_open_rate?: number | null  // MPP-filtered (matches MC UI)
+  hard_bounces?: number | null
+  soft_bounces?: number | null
+  abuse_reports?: number | null
+  industry_open_rate?: number | null
+  industry_click_rate?: number | null
+}
+
+/**
+ * Historical snapshot of Mailchimp stats. One row per campaign per refresh.
+ * Older snapshots are frozen (is_final=true) once the campaign is >30 days old.
+ */
+export interface CampaignReport {
+  id: string
+  campaign_id: string
+  mailchimp_campaign_id: string
+  snapshot_date: string
+  is_final: boolean
+
+  emails_sent: number | null
+  hard_bounces: number | null
+  soft_bounces: number | null
+
+  opens_total: number | null
+  unique_opens: number | null
+  open_rate: number | null
+  proxy_excluded_opens: number | null
+  proxy_excluded_unique_opens: number | null
+  proxy_excluded_open_rate: number | null
+
+  clicks_total: number | null
+  unique_clicks: number | null
+  unique_subscriber_clicks: number | null
+  click_rate: number | null
+
+  unsubscribed: number | null
+  abuse_reports: number | null
+
+  industry_type: string | null
+  industry_open_rate: number | null
+  industry_click_rate: number | null
+  industry_bounce_rate: number | null
+  industry_unsub_rate: number | null
+
+  raw_report: any
+  created_at: string
 }
 
 export interface Campaign {
@@ -146,6 +193,7 @@ export type Database = {
       campaigns: { Row: Campaign; Insert: Omit<Campaign, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Omit<Campaign, 'id' | 'created_at' | 'updated_at'>> }
       campaign_assets: { Row: CampaignAsset; Insert: Omit<CampaignAsset, 'id' | 'created_at'> & { file_size?: number | null }; Update: Partial<Omit<CampaignAsset, 'id' | 'created_at'>> }
       campaign_alerts: { Row: CampaignAlert; Insert: Omit<CampaignAlert, 'id'>; Update: Partial<Omit<CampaignAlert, 'id'>> }
+      campaign_reports: { Row: CampaignReport; Insert: Omit<CampaignReport, 'id' | 'created_at'>; Update: Partial<Omit<CampaignReport, 'id' | 'created_at'>> }
     }
   }
 }
