@@ -1,12 +1,85 @@
 // app/(app)/performance/page.tsx
 import { createClient } from '@/lib/supabase/server'
-import type { CampaignWithManufacturer, ManufacturerGroup, Agency } from '@/lib/supabase/types'
+import type {
+  CampaignWithManufacturer,
+  ManufacturerGroup,
+  Agency,
+  AggregatedLink,
+  AggregatedDomain,
+  ClickDetail,
+  DomainPerformance,
+} from '@/lib/supabase/types'
 import KpiRow from '@/components/performance/KpiRow'
 import ManufacturerGrid from '@/components/performance/ManufacturerGrid'
 import UnmatchedPanel from '@/components/performance/UnmatchedPanel'
 
+interface LatestSnapshot {
+  campaign_id: string
+  click_details: ClickDetail[] | null
+  domain_performance: DomainPerformance[] | null
+}
+
+/** Aggregate click_details across campaigns → top links by total_clicks. */
+function aggregateLinks(snapshots: LatestSnapshot[]): AggregatedLink[] {
+  const map = new Map<string, AggregatedLink>()
+  for (const s of snapshots) {
+    if (!Array.isArray(s.click_details)) continue
+    for (const link of s.click_details) {
+      if (!link?.url) continue
+      const existing = map.get(link.url)
+      if (existing) {
+        existing.total_clicks += link.total_clicks ?? 0
+        existing.unique_clicks += link.unique_clicks ?? 0
+      } else {
+        map.set(link.url, {
+          url: link.url,
+          total_clicks: link.total_clicks ?? 0,
+          unique_clicks: link.unique_clicks ?? 0,
+        })
+      }
+    }
+  }
+  return Array.from(map.values())
+    .sort((a, b) => b.unique_clicks - a.unique_clicks)
+    .slice(0, 10)
+}
+
+/** Aggregate domain_performance across campaigns → top domains by emails_sent. */
+function aggregateDomains(snapshots: LatestSnapshot[]): AggregatedDomain[] {
+  const map = new Map<string, AggregatedDomain>()
+  for (const s of snapshots) {
+    if (!Array.isArray(s.domain_performance)) continue
+    for (const d of s.domain_performance) {
+      if (!d?.domain) continue
+      const existing = map.get(d.domain) ?? {
+        domain: d.domain,
+        emails_sent: 0,
+        opens: 0,
+        clicks: 0,
+        bounces: 0,
+        unsubs: 0,
+        open_rate: 0,
+        click_rate: 0,
+      }
+      existing.emails_sent += d.emails_sent ?? 0
+      existing.opens += d.opens ?? 0
+      existing.clicks += d.clicks ?? 0
+      existing.bounces += d.bounces ?? 0
+      existing.unsubs += d.unsubs ?? 0
+      map.set(d.domain, existing)
+    }
+  }
+  const out = Array.from(map.values()).map((d) => ({
+    ...d,
+    open_rate: d.emails_sent > 0 ? d.opens / d.emails_sent : 0,
+    click_rate: d.emails_sent > 0 ? d.clicks / d.emails_sent : 0,
+  }))
+  return out.sort((a, b) => b.emails_sent - a.emails_sent).slice(0, 8)
+}
+
 function groupCampaigns(
   campaigns: CampaignWithManufacturer[],
+  latestByCampaign: Map<string, LatestSnapshot>,
   searchParams: { year?: string; agency?: string; type?: string }
 ): ManufacturerGroup[] {
   const year = searchParams.year
@@ -39,6 +112,8 @@ function groupCampaigns(
         totalAbuseReports: 0,
         sources: [],
         mppFiltered: false,
+        topLinks: [],
+        topDomains: [],
       })
     }
     const g = map.get(id)!
@@ -62,7 +137,6 @@ function groupCampaigns(
       g.avgClickRate =
         ws.reduce((s: number, c: CampaignWithManufacturer) => s + c.performance_stats!.click_rate, 0) / ws.length
 
-      // Industry benchmark averages (only over campaigns that have them)
       const withIndustry = ws.filter((c) => c.performance_stats!.industry_open_rate != null)
       if (withIndustry.length > 0) {
         g.avgIndustryOpenRate =
@@ -71,10 +145,17 @@ function groupCampaigns(
           withIndustry.reduce((s, c) => s + (c.performance_stats!.industry_click_rate ?? 0), 0) / withIndustry.length
       }
 
-      // MPP filter status — true only if every API-sourced stat has proxy_excluded_open_rate
       const apiStats = ws.filter((c) => c.performance_stats!.source === 'api')
       g.mppFiltered = apiStats.length > 0 && apiStats.every((c) => c.performance_stats!.proxy_excluded_open_rate != null)
     }
+
+    // Aggregate click_details and domain_performance from snapshots of this manufacturer's campaigns
+    const snapshots: LatestSnapshot[] = g.campaigns
+      .map((c) => latestByCampaign.get(c.id))
+      .filter((s): s is LatestSnapshot => !!s)
+
+    g.topLinks = aggregateLinks(snapshots)
+    g.topDomains = aggregateDomains(snapshots)
   }
 
   return Array.from(map.values()).sort((a, b) => {
@@ -92,17 +173,33 @@ export default async function PerformancePage({
 }) {
   const supabase = await createClient()
 
-  const [{ data: campaignData }, { data: agencyData }] = await Promise.all([
+  const [{ data: campaignData }, { data: agencyData }, { data: snapshotData }] = await Promise.all([
     supabase
       .from('campaigns')
       .select('*, manufacturers(*, agencies(*))')
       .order('scheduled_date', { ascending: false }),
     supabase.from('agencies').select('*').order('name'),
+    // Fetch ALL snapshots, we'll pick the latest per campaign_id in JS
+    supabase
+      .from('campaign_reports')
+      .select('campaign_id, click_details, domain_performance, snapshot_date')
+      .order('snapshot_date', { ascending: false }),
   ])
+
+  const latestByCampaign = new Map<string, LatestSnapshot>()
+  for (const s of (snapshotData ?? []) as any[]) {
+    if (!latestByCampaign.has(s.campaign_id)) {
+      latestByCampaign.set(s.campaign_id, {
+        campaign_id: s.campaign_id,
+        click_details: s.click_details,
+        domain_performance: s.domain_performance,
+      })
+    }
+  }
 
   const campaigns = (campaignData ?? []) as unknown as CampaignWithManufacturer[]
   const agencies = (agencyData ?? []) as Agency[]
-  const groups = groupCampaigns(campaigns, searchParams)
+  const groups = groupCampaigns(campaigns, latestByCampaign, searchParams)
 
   return (
     <div className="p-8">

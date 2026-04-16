@@ -2,6 +2,7 @@
 import { X, Info } from 'lucide-react'
 import type { ManufacturerGroup, CampaignType, CampaignWithManufacturer } from '@/lib/supabase/types'
 import TrendChart from './TrendChart'
+import { TopLinksPanel, DomainPerformancePanel } from './LinkDomainPanels'
 
 const TYPE_LABELS: Record<CampaignType, string> = {
   postcard: 'Postkarte',
@@ -174,6 +175,12 @@ export default function DrillDown({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 py-5 border-b border-border">
         <TrendChart campaigns={group.campaigns} metric="open" label="Öffnungsrate über Zeit" />
         <TrendChart campaigns={group.campaigns} metric="click" label="Klickrate über Zeit" />
+      </div>
+
+      {/* Link + Domain panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 py-5 border-b border-border">
+        <TopLinksPanel links={group.topLinks} />
+        <DomainPerformancePanel domains={group.topDomains} />
       </div>
 
       {/* Campaign table */}
