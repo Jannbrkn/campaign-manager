@@ -1,6 +1,7 @@
 // components/performance/DrillDown.tsx
 import { X, Info } from 'lucide-react'
 import type { ManufacturerGroup, CampaignType, CampaignWithManufacturer } from '@/lib/supabase/types'
+import TrendChart from './TrendChart'
 
 const TYPE_LABELS: Record<CampaignType, string> = {
   postcard: 'Postkarte',
@@ -167,6 +168,12 @@ export default function DrillDown({
           <X size={12} />
           Schließen
         </button>
+      </div>
+
+      {/* Trend charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 py-5 border-b border-border">
+        <TrendChart campaigns={group.campaigns} metric="open" label="Öffnungsrate über Zeit" />
+        <TrendChart campaigns={group.campaigns} metric="click" label="Klickrate über Zeit" />
       </div>
 
       {/* Campaign table */}
