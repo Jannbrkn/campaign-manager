@@ -11,14 +11,29 @@ import DrillDown from './DrillDown'
 
 const YEARS = ['2026', '2025', '2024', 'Alle']
 
+function fmtRelative(iso: string | null): string {
+  if (!iso) return 'noch nicht synchronisiert'
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60_000)
+  if (mins < 1) return 'gerade eben'
+  if (mins < 60) return `vor ${mins} Min`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `vor ${hours} Std`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `vor ${days} Tag${days !== 1 ? 'en' : ''}`
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: '2-digit' })
+}
+
 export default function ManufacturerGrid({
   groups,
   agencies,
   searchParams,
+  lastRefreshedAt,
 }: {
   groups: ManufacturerGroup[]
   agencies: Agency[]
   searchParams: { year?: string; agency?: string; type?: string }
+  lastRefreshedAt?: string | null
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [refreshing, setRefreshing] = useState(false)
@@ -67,7 +82,7 @@ export default function ManufacturerGrid({
 
   return (
     <div>
-      {/* Refresh button + result */}
+      {/* Refresh button + result + timestamp */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={handleRefresh}
@@ -77,7 +92,13 @@ export default function ManufacturerGrid({
           {refreshing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
           Mailchimp aktualisieren
         </button>
-        {refreshResult && <span className="text-xs text-text-secondary">{refreshResult}</span>}
+        <span
+          className="text-[11px] text-text-secondary/60"
+          title={lastRefreshedAt ? `Letzte Aktualisierung: ${new Date(lastRefreshedAt).toLocaleString('de-DE')}` : undefined}
+        >
+          Stand: {fmtRelative(lastRefreshedAt ?? null)}
+        </span>
+        {refreshResult && <span className="text-xs text-text-secondary ml-auto">{refreshResult}</span>}
       </div>
 
       {/* Filters */}

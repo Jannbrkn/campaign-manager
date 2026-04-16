@@ -220,6 +220,9 @@ export interface AggregatedDomain {
   click_rate: number  // derived: clicks / emails_sent
 }
 
+/** Trend direction for a metric, computed by splitting campaigns in half chronologically. */
+export type TrendDirection = 'up' | 'down' | 'stable' | null
+
 export interface ManufacturerGroup {
   manufacturer: ManufacturerWithAgency
   campaigns: CampaignWithManufacturer[]
@@ -227,6 +230,8 @@ export interface ManufacturerGroup {
   avgClickRate: number | null
   avgIndustryOpenRate: number | null
   avgIndustryClickRate: number | null
+  trendOpen: TrendDirection
+  trendClick: TrendDirection
   totalSent: number
   totalUnsubscribes: number
   totalHardBounces: number

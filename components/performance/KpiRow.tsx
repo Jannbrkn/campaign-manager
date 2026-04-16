@@ -1,9 +1,14 @@
 // components/performance/KpiRow.tsx
 import type { ManufacturerGroup } from '@/lib/supabase/types'
 
+// Minimum campaigns required for a manufacturer to qualify as "Bester Hersteller".
+// Below this threshold the number is statistical noise (e.g. a single send with
+// an outlier audience shouldn't win).
+const BEST_MIN_CAMPAIGNS = 3
+
 function fmt(rate: number | null): string {
   if (rate === null) return '—'
-  return `${Math.round(rate * 100)}%`
+  return `${(rate * 100).toFixed(1)}%`
 }
 
 export default function KpiRow({
@@ -27,7 +32,14 @@ export default function KpiRow({
     ? allWithStats.reduce((s, c) => s + c.performance_stats!.click_rate, 0) / withDataCount
     : null
 
-  const best = groups.find((g) => g.avgOpenRate !== null) ?? null
+  // "Bester Hersteller": requires ≥ BEST_MIN_CAMPAIGNS stat-bearing campaigns
+  const bestCandidates = groups.filter(
+    (g) => g.avgOpenRate !== null && g.campaigns.filter((c) => c.performance_stats).length >= BEST_MIN_CAMPAIGNS
+  )
+  const best = bestCandidates[0] ?? null  // groups already sorted by avgOpenRate desc
+  const bestCampaignCount = best
+    ? best.campaigns.filter((c) => c.performance_stats).length
+    : 0
 
   const kpis = [
     {
@@ -48,7 +60,9 @@ export default function KpiRow({
     {
       label: 'Bester Hersteller',
       value: best ? best.manufacturer.name : '—',
-      sub: best ? `${fmt(best.avgOpenRate)} Öffnungsrate` : 'Noch keine Daten',
+      sub: best
+        ? `${fmt(best.avgOpenRate)} Öffnung · ${bestCampaignCount} Kamp.`
+        : `Min. ${BEST_MIN_CAMPAIGNS} Kampagnen nötig`,
       small: true,
     },
   ]

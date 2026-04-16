@@ -1,5 +1,6 @@
 // components/performance/ManufacturerCard.tsx
-import type { ManufacturerGroup } from '@/lib/supabase/types'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import type { ManufacturerGroup, TrendDirection } from '@/lib/supabase/types'
 
 function sourceBadge(sources: ('api' | 'csv')[]) {
   if (sources.length === 0) return { label: 'Keine Daten', cls: 'text-[#444] border-[#333] bg-transparent' }
@@ -8,9 +9,55 @@ function sourceBadge(sources: ('api' | 'csv')[]) {
   return { label: 'CSV', cls: 'text-[#C4A87C] border-[#C4A87C]/30 bg-[#C4A87C]/8' }
 }
 
-function fmt(rate: number | null): string {
+function fmtRate(rate: number | null): string {
   if (rate === null) return '—'
-  return `${Math.round(rate * 100)}%`
+  return `${(rate * 100).toFixed(1)}%`
+}
+
+function fmtDelta(own: number | null, benchmark: number | null): { text: string; cls: string } | null {
+  if (own == null || benchmark == null) return null
+  const delta = (own - benchmark) * 100
+  const sign = delta >= 0 ? '+' : ''
+  const cls = delta >= 0 ? 'text-[#2E7D32]' : 'text-[#E65100]'
+  return { text: `${sign}${delta.toFixed(1)}pp`, cls }
+}
+
+function TrendIcon({ trend }: { trend: TrendDirection }) {
+  if (trend === 'up') return <TrendingUp size={11} className="text-[#2E7D32] shrink-0" strokeWidth={2} />
+  if (trend === 'down') return <TrendingDown size={11} className="text-[#E65100] shrink-0" strokeWidth={2} />
+  if (trend === 'stable') return <Minus size={11} className="text-text-secondary/60 shrink-0" strokeWidth={2} />
+  return null
+}
+
+function MetricBlock({
+  label,
+  value,
+  trend,
+  benchmark,
+  hasData,
+}: {
+  label: string
+  value: string
+  trend: TrendDirection
+  benchmark: { text: string; cls: string } | null
+  hasData: boolean
+}) {
+  return (
+    <div>
+      <p className={`text-2xl font-light leading-tight mb-1 ${hasData ? 'text-[#C4A87C]' : 'text-[#444]'}`}>
+        {value}
+      </p>
+      <div className="flex items-center gap-1 text-[10px] text-text-secondary">
+        <span>{label}</span>
+        <TrendIcon trend={trend} />
+      </div>
+      {benchmark && (
+        <p className={`text-[10px] mt-0.5 ${benchmark.cls}`} title="vs. Branchen-Benchmark">
+          {benchmark.text}
+        </p>
+      )}
+    </div>
+  )
 }
 
 export default function ManufacturerCard({
@@ -26,6 +73,9 @@ export default function ManufacturerCard({
   const badge = sourceBadge(group.sources)
   const campaignsWithStats = group.campaigns.filter((c) => c.performance_stats).length
 
+  const openDelta = fmtDelta(group.avgOpenRate, group.avgIndustryOpenRate)
+  const clickDelta = fmtDelta(group.avgClickRate, group.avgIndustryClickRate)
+
   return (
     <button
       onClick={onClick}
@@ -38,7 +88,6 @@ export default function ManufacturerCard({
           : 'border-border opacity-45 hover:opacity-60'
       }`}
     >
-      {/* Source badge */}
       <span className={`absolute top-3 right-3 text-[9px] uppercase tracking-wider px-1.5 py-0.5 border rounded-sm ${badge.cls}`}>
         {badge.label}
       </span>
@@ -50,14 +99,36 @@ export default function ManufacturerCard({
         {group.manufacturer.name}
       </p>
 
-      <p className={`text-3xl font-light mb-1.5 ${hasData ? 'text-[#C4A87C]' : 'text-[#444]'}`}>
-        {fmt(group.avgOpenRate)}
-      </p>
-      <p className="text-[11px] text-text-secondary">
-        {hasData
-          ? `${fmt(group.avgClickRate)} Klick · ${campaignsWithStats} Kamp.`
-          : `${group.campaigns.length} Kampagne${group.campaigns.length !== 1 ? 'n' : ''} · kein Export`}
-      </p>
+      {hasData ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <MetricBlock
+              label="Öffnung"
+              value={fmtRate(group.avgOpenRate)}
+              trend={group.trendOpen}
+              benchmark={openDelta}
+              hasData={hasData}
+            />
+            <MetricBlock
+              label="Klick"
+              value={fmtRate(group.avgClickRate)}
+              trend={group.trendClick}
+              benchmark={clickDelta}
+              hasData={hasData}
+            />
+          </div>
+          <p className="text-[10px] text-text-secondary/70">
+            {campaignsWithStats} Kampagne{campaignsWithStats !== 1 ? 'n' : ''}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-2xl font-light text-[#444] mb-1">—</p>
+          <p className="text-[11px] text-text-secondary">
+            {group.campaigns.length} Kampagne{group.campaigns.length !== 1 ? 'n' : ''} geplant · noch kein Versand
+          </p>
+        </>
+      )}
     </button>
   )
 }

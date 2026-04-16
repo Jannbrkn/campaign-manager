@@ -8,6 +8,7 @@ import type {
   AggregatedDomain,
   ClickDetail,
   DomainPerformance,
+  TrendDirection,
 } from '@/lib/supabase/types'
 import KpiRow from '@/components/performance/KpiRow'
 import ManufacturerGrid from '@/components/performance/ManufacturerGrid'
@@ -17,6 +18,34 @@ interface LatestSnapshot {
   campaign_id: string
   click_details: ClickDetail[] | null
   domain_performance: DomainPerformance[] | null
+}
+
+/** Compute a trend direction by splitting campaigns (with stats) in half
+ *  chronologically and comparing averages. Noise threshold: 3pp. */
+function computeTrend(
+  campaigns: CampaignWithManufacturer[],
+  metric: 'open_rate' | 'click_rate'
+): TrendDirection {
+  const noiseThresholdPp = metric === 'open_rate' ? 3 : 1  // click rates are smaller, tighter threshold
+  const withStats = campaigns
+    .filter((c) => c.performance_stats)
+    .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
+
+  if (withStats.length < 2) return null
+
+  // Older half gets the middle point when count is odd
+  const mid = Math.ceil(withStats.length / 2)
+  const older = withStats.slice(0, mid)
+  const newer = withStats.slice(mid)
+  if (older.length === 0 || newer.length === 0) return null
+
+  const olderAvg = older.reduce((s, c) => s + c.performance_stats![metric], 0) / older.length
+  const newerAvg = newer.reduce((s, c) => s + c.performance_stats![metric], 0) / newer.length
+  const deltaPp = (newerAvg - olderAvg) * 100
+
+  if (deltaPp > noiseThresholdPp) return 'up'
+  if (deltaPp < -noiseThresholdPp) return 'down'
+  return 'stable'
 }
 
 /** Aggregate click_details across campaigns → top links by total_clicks. */
@@ -105,6 +134,8 @@ function groupCampaigns(
         avgClickRate: null,
         avgIndustryOpenRate: null,
         avgIndustryClickRate: null,
+        trendOpen: null,
+        trendClick: null,
         totalSent: 0,
         totalUnsubscribes: 0,
         totalHardBounces: 0,
@@ -147,6 +178,10 @@ function groupCampaigns(
 
       const apiStats = ws.filter((c) => c.performance_stats!.source === 'api')
       g.mppFiltered = apiStats.length > 0 && apiStats.every((c) => c.performance_stats!.proxy_excluded_open_rate != null)
+
+      // Trend direction (requires ≥2 campaigns with stats)
+      g.trendOpen = computeTrend(g.campaigns, 'open_rate')
+      g.trendClick = computeTrend(g.campaigns, 'click_rate')
     }
 
     // Aggregate click_details and domain_performance from snapshots of this manufacturer's campaigns
@@ -187,6 +222,7 @@ export default async function PerformancePage({
   ])
 
   const latestByCampaign = new Map<string, LatestSnapshot>()
+  let lastRefreshedAt: string | null = null
   for (const s of (snapshotData ?? []) as any[]) {
     if (!latestByCampaign.has(s.campaign_id)) {
       latestByCampaign.set(s.campaign_id, {
@@ -194,6 +230,9 @@ export default async function PerformancePage({
         click_details: s.click_details,
         domain_performance: s.domain_performance,
       })
+    }
+    if (!lastRefreshedAt || s.snapshot_date > lastRefreshedAt) {
+      lastRefreshedAt = s.snapshot_date
     }
   }
 
@@ -215,6 +254,7 @@ export default async function PerformancePage({
         groups={groups}
         agencies={agencies}
         searchParams={searchParams}
+        lastRefreshedAt={lastRefreshedAt}
       />
     </div>
   )
