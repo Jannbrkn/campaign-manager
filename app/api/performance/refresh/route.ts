@@ -131,9 +131,14 @@ export async function POST(_req: NextRequest) {
     try {
       const report = await mcFetch(`/reports/${campaign.mailchimp_campaign_id}`, 'GET')
 
-      // report.opens.open_rate und report.clicks.click_rate sind die korrekten Felder
-      // in der Mailchimp Reports API v3 für reguläre Kampagnen
-      const open_rate = report.opens?.open_rate ?? report.report_summary?.open_rate ?? 0
+      // MPP-Fix: bevorzugt proxy_excluded_open_rate (ohne Apple-Mail-Prefetch-Opens)
+      // Das ist die Rate, die Mailchimp auch im Web-UI anzeigt (seit 22.06.2024)
+      // Fallback: open_rate für ältere Kampagnen, in denen proxy_excluded_* fehlt
+      const open_rate =
+        report.opens?.proxy_excluded_open_rate ??
+        report.opens?.open_rate ??
+        report.report_summary?.open_rate ??
+        0
       const click_rate = report.clicks?.click_rate ?? report.report_summary?.click_rate ?? 0
       const emails_sent = report.emails_sent ?? 0
       const unsubscribes = report.unsubscribes?.count ?? report.unsubscribed ?? 0
