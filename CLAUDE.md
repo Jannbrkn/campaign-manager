@@ -11,7 +11,8 @@ A campaign management tool for a luxury furniture brand agency managing newslett
 - **Framework**: Next.js 14 (App Router) + TypeScript
 - **Styling**: Tailwind CSS — dark luxury theme (black background, white calendar lines, warm accent #EDE8E3)
 - **Database & Auth**: Supabase (PostgreSQL + Auth + Storage)
-- **AI Generation**: Claude API (Sonnet) for newsletters (MJML) and reports (Excel)
+- **AI Generation**: Claude API — Sonnet for newsletters (MJML) and reports (Excel), Haiku for subject lines
+- **Email Marketing**: Mailchimp API (audience tags, campaign sends, members export → lead reports)
 - **Email Notifications**: Resend (alerts, report delivery)
 - **Calendar Sync**: Google Calendar API → Apple Calendar
 - **Deployment**: Vercel
@@ -142,12 +143,14 @@ Kurzfassung der harten Regeln:
 - Font-Import via `@import` in `<mj-style>` (nicht `<mj-font>`), Google Fonts v1 API
 - Farbwelt aus Bildern ableiten, nicht hardcoden
 - GIFs: First-Frame als JPEG an Vision API, Original-GIF in MJML/ZIP
+- Conversion/CTA: Drei-Ebenen-Architektur (Primär gefüllt · Sekundär Outline · Tertiär Textlink →), ein klarer CTA above the fold, max. ein Primär-Button pro Screen — Details + Button-Maße in NEWSLETTER_RULES.md. Newsletter bleiben DE/Sie-Form.
 
 ### Report Rules
 - Input: Mailchimp Members Export (CSV/XLSX)
 - Output: Two Excel files per campaign
   - Internal: Lead prioritization with scoring (clicks×3, opens×1, personal mail bonus +2)
   - External: Client-facing report, alphabetically sorted, no internal metrics visible
+- **Output language: English** — sheet names, headers, KPI labels, priority tiers, notes, file names. Scoring logic, priority tiers, 30-contact limit, filters and dual-report philosophy stay unchanged. See **Language Policy** below for the binding DE→EN mapping.
 
 ## File Format Support
 PDF, PNG, JPEG, XLSX, CSV, ZIP — both upload and download
@@ -169,3 +172,106 @@ PDF, PNG, JPEG, XLSX, CSV, ZIP — both upload and download
 - Supabase client: use @supabase/ssr for Next.js App Router
 - File uploads go to Supabase Storage bucket "campaign-assets"
 - Environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, RESEND_API_KEY
+
+## Language Policy
+
+> Added 2026-06-22 (briefing). Newsletters stay German; reports switch to English.
+
+- **Reports & evaluations** (internal lead report AND client report) are produced in **English** — sheet names, column headers, KPI labels, priority tiers, notes and file names. **Scoring logic and report philosophy are unchanged — only the language changes.**
+- **Newsletters** and all customer-facing mailing copy remain **German (formal Sie-Form).**
+
+This applies in `mailchimp-lead-auswertung/SKILL.md` and `Prompt_Mailchimp_Lead_Auswertung_Dual.md` (see Roadmap → Pending alignment). Binding DE→EN mapping:
+
+**File names**
+| German | English |
+|---|---|
+| `[Kunde]_Lead_Priorisierung_[Datum].xlsx` | `[Client]_Lead_Prioritization_[Date].xlsx` |
+| `[Kunde]_Kampagnenauswertung_[Datum].xlsx` | `[Client]_Campaign_Report_[Date].xlsx` |
+
+**Internal report — sheets & columns**
+| German | English |
+|---|---|
+| Sheet „Lead-Priorisierung" | `Lead Prioritization` |
+| Sheet „Auswertung" | `Analysis` |
+| Sheet „Methodik" | `Methodology` |
+| Nr. | `No.` |
+| Priorität | `Priority` |
+| Kontakt | `Contact` |
+| E-Mail-Adresse | `Email Address` |
+| Telefon | `Phone` |
+| Opens | `Opens` |
+| Clicks | `Clicks` |
+| Mail-Typ | `Address Type` |
+| A – Hohe Relevanz | `A – High Relevance` |
+| B – Relevanz gegeben | `B – Relevant` |
+| C – Potenzial vorhanden | `C – Potential` |
+| Mail-Typ „Persönlich" | `Personal` |
+| Mail-Typ „Info-Adresse" | `Generic` |
+
+**Client report — sheets, KPIs & text**
+| German | English |
+|---|---|
+| Sheet „Kampagnenübersicht" | `Campaign Overview` |
+| Sheet „Erreichte Kontakte" | `Engaged Contacts` |
+| „Kontakte mit erhöhtem Interesse" | `Contacts with elevated interest` |
+| „Kampagnenauswertung · [Name]" | `Campaign Report · [Campaign Name]` |
+| „Erstellt von Collezioni · [Datum]" | `Prepared by Collezioni · [Date]` |
+| Erreichte Kontakte | `Contacts Reached` |
+| Öffnungsrate | `Open Rate` |
+| Interaktionsrate | `Click-to-Open Rate` (only show if > 5%) |
+| Erreichte Entscheider | `Decision-Makers Reached` → `XX direct contacts reached` |
+| Qualifizierte Leads | `Qualified Leads` → `XX contacts with elevated interest identified` |
+| Spalte „Unternehmen / Zuordnung" | `Company / Assignment` |
+
+**Unchanged (now phrased in English):** positive KPI framing, alphabetical sorting in the client report, no scores/opens/clicks/phone in the client report, no note about missing data, absolute numbers instead of percent at low rates.
+
+## Required Campaign Contacts (brand-dependent)
+
+> Added 2026-06-22 (briefing §5).
+
+Per campaign, brand-dependent internal contacts must be included:
+
+- **Collezioni**: always include **Annika** (`office@collezioni.eu`) and **Karo** (`kontakt@collezioni.eu`).
+- **All other brands** (Exclusive Collection, Design Collection, EMQuadrat, vondomani): always include **Annika** (`office@exclusive-collection.eu`); for the respective customer additionally include **Tom** (`info@exclusive-collection.eu`).
+
+**Application scope (current decision):** these contacts are wired as **recipients of reports & alerts** (option C). This is the current setting and can be extended later (e.g. CC on lead outreach, or reply-to/CC on newsletter sends).
+
+`campaign-contacts.ts` is **planned, not yet created** (see Roadmap). Target spec:
+
+```typescript
+// campaign-contacts.ts — brand-dependent required contacts
+export const REQUIRED_CONTACTS = {
+  collezioni: [
+    { name: "Annika", email: "office@collezioni.eu" },
+    { name: "Karo",   email: "kontakt@collezioni.eu" },
+  ],
+  // Default for all other brands:
+  default: [
+    { name: "Annika", email: "office@exclusive-collection.eu" }, // always
+    { name: "Tom",    email: "info@exclusive-collection.eu", perCustomer: true }, // per customer
+  ],
+} as const;
+
+export function getRequiredContacts(brand: string) {
+  return brand.toLowerCase() === "collezioni"
+    ? REQUIRED_CONTACTS.collezioni
+    : REQUIRED_CONTACTS.default;
+}
+```
+
+## Roadmap & Planned Extensions
+
+> Foundation for upcoming tools (briefing 2026-06-22, §8). Backlog — not yet built.
+
+1. **Phase 4 — Alert system** (designed, not implemented). Vercel Cron → consolidated email summaries to `marketing@collezioni.eu` and `brunken.jann@gmail.com` (new campaign performance, qualified leads, due follow-ups). The required campaign contacts above are wired here as report/alert recipients.
+2. **Close the create–measure–iterate loop.** Feed A/B subject results and distinct CTA-link tracking from Mailchimp back into lead reporting. Extend the Supabase data model with `campaign_id ↔ subject_variant ↔ cta_clicks`.
+3. **Cross-brand contact-overlap tracking.** Detect contacts that appear across multiple brands — avoid double outreach, surface highly active contacts.
+4. **Postcard automation** (research). Automated runs of 300–500 pieces. Trade-off: EchtPost (simple API automation) vs. FLYERALARM/Lettershop (premium material); optilyz as deeper CRM/postcard integration if the EchtPost hybrid is not enough.
+5. **Skill consolidation.** Possibly merge `ec-newsletter` into `newsletter-generator`; until then keep both in sync.
+
+### Pending alignment (briefing §7 — intentionally NOT done this round)
+Captured here so nothing is lost; source files were left untouched:
+- `lib/generate/newsletter-prompt.ts` — fold in the conversion/CTA standards from `docs/NEWSLETTER_RULES.md` (three-tier CTAs, button sizes, subject/preview, closing). Still carries the older button spec (`inner-padding 14px 45px`, 10–11px, outline „selten").
+- `mailchimp-lead-auswertung/SKILL.md` + `Prompt_Mailchimp_Lead_Auswertung_Dual.md` — change the language header to English and apply the DE→EN label mapping (Language Policy above). Logic unchanged.
+- `ec-newsletter/SKILL.md` — fix `npx mjml` → local binary `node /home/claude/node_modules/mjml/bin/mjml`; keep in sync with `newsletter-generator`.
+- `campaign-contacts.ts` — create the config object (spec above) and wire it to report/alert recipients.

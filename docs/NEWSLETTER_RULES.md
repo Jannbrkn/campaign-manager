@@ -56,14 +56,63 @@ Footer-Hintergrund: **#ffffff**, Text: **#999999**
 - Alle Logos mit `href` verlinken (Hersteller → Hersteller-Website, Agentur → Agentur-Website)
 - Logo-Hintergrund: **IMMER #ffffff** — auch bei hellen/weißen Logos
 
-### CTAs
+### CTAs & Conversion (Drei-Ebenen-Architektur)
 
-- Mindesthöhe: 44px, volle Hintergrundfarbe, **KEIN Outline-Style**
-- CTA-Text MUSS die Aktion konkret benennen:
-  - ✅ "Preisliste anfordern", "Einladung bestätigen", "Katalog herunterladen"
-  - ❌ "Mehr erfahren", "Jetzt entdecken", "Kontakt aufnehmen"
-- **Single-Topic-Mails** (ein Thema, z.B. Messeeinladung): CTA 2× einbauen — nach Hero und nach Content
-- **Multi-Topic-Mails** (mehrere Produkte/Themen): Je Thema 1× CTA reicht
+> Grundsatz: **Klarheit durch Platzierung, Weißraum und eine eindeutige Primärhandlung — nicht durch Lautstärke.** Klick-Optimierung und Luxus-Anmutung schließen sich nicht aus.
+
+**Immer (nicht verhandelbar):**
+- Catchy Subject Line + ergänzender Preview-Text, technisch als versteckter **Preheader** im MJML gesetzt
+- Ein klarer CTA **above the fold** — sichtbar ohne Scrollen (erste ~500–600px Desktop / erster Screen mobil)
+- Pro Produkt ein CTA, dazu je ein CTA für Kollektion und Hersteller-Website
+- **Eine dominante Handlung pro Screen** — höchstens EIN Primär-Button je Screen (Paradox of Choice)
+- Closing mit Positionierungszeile + Kontakt-CTA (`tel:` / `mailto:`)
+
+**Variabel (Kreativität erwünscht):** Layout, Akzentfarbe, Bildführung, genaue Textwahl, welche Positionierungszeile. Jede Mail erfüllt die Kriterien, ohne identisch auszusehen.
+
+**CTA-Platzierung (Pflicht-Struktur):**
+
+| CTA | Wo | Gewicht |
+|---|---|---|
+| Above-the-fold-CTA | direkt nach Hero + Hersteller-Logo, erster Screen | Primär (gefüllt) |
+| Produkt-CTA | in jeder Produktsektion, unter dem Textblock | Hero-Produkt primär, weitere sekundär |
+| Kollektions-CTA | nach den Produkten („Mehr von [Marke]") | Sekundär (Outline) |
+| Hersteller-Website-CTA | vor dem Closing | Tertiär (Textlink mit Pfeil →) |
+| Kontakt-CTA | im Closing, mit Positionierungszeile | Sekundär |
+
+- **Produktbilder zusätzlich klickbar** (`href` auf Produkt-URL) — aber der Lead-CTA ist **ein echter Button, kein klickbares Bild** (viele Clients blocken Bilder by default).
+- **Single-Topic-Mails** (ein Event/Launch): Produkt-Schleifen entfallen → Above-the-fold-CTA + Haupt-CTA (z.B. „Einladung bestätigen") + Hersteller-Website + Kontakt.
+
+**Drei Button-Stufen** (ersetzt die frühere Regel „KEIN Outline-Style" — Outline ist jetzt die definierte Sekundärstufe):
+
+| Ebene | Stil |
+|---|---|
+| **Primär** | Gefüllter Button, Akzentfarbe, weiße Schrift — max. EINER pro Screen |
+| **Sekundär** | Outline-Button (1px Akzentfarbe, transparenter Grund) |
+| **Tertiär** | Unterstrichener Textlink mit Pfeil (→) |
+
+**Button-Maße:**
+
+| Eigenschaft | Wert |
+|---|---|
+| Schriftgröße Primär | 12–13px |
+| Schriftgröße Sekundär/Tertiär | 11–12px |
+| Innenabstand (`inner-padding`) | `16px 34px` |
+| Touch-Target Mobile | ≥ 44px |
+| Schrift | Montserrat Medium (500), Versalien, Laufweite 2px |
+| Abstand um den Button | ≥ 24px, nie eingeklemmt |
+| Mobile | Primär-Button (nahezu) vollbreit |
+
+**CTA-Text MUSS die Aktion konkret benennen:**
+- ✅ „Preisliste anfordern", „Einladung bestätigen", „Katalog herunterladen", „Zur Kollektion"
+- ❌ „Mehr erfahren", „Jetzt entdecken", „Kontakt aufnehmen"
+
+**Subject & Preview:**
+- Front-loaded (Wichtigstes zuerst). Preview-Text ergänzt das Subject, wiederholt es nicht.
+- 2–3 Subject-/Preview-Paare vorschlagen, je mit kurzer Begründung + klarer Empfehlung.
+- Gewählten Preview-Text als versteckten Preheader ins MJML setzen (nicht nur vorschlagen).
+
+> Kanonische MJML-Snippets für die drei Button-Stufen liegen in den Skill-Referenzen (`references/mailchimp-technical.md`) — von dort übernehmen, nicht neu erfinden.
+> ⚠️ **Divergenz (Stand 2026-06-22):** `lib/generate/newsletter-prompt.ts` trägt noch die ältere Button-Spec (`inner-padding 14px 45px`, 10–11px, Outline „selten"). Diese Datei muss noch an die obige Architektur angeglichen werden (Briefing §7) — bis dahin gelten DIESE Regeln als Zielzustand.
 
 ### Technische Pflicht
 
@@ -219,10 +268,14 @@ Vor dem Absenden intern prüfen:
 - [ ] Kein Agentur-Logo/-Name außerhalb des Footers?
 
 **CTAs:**
-- [ ] Single-Topic: CTA 2× vorhanden?
+- [ ] CTA above the fold vorhanden (erster Screen, ohne Scrollen)?
+- [ ] Max. EIN Primär-Button pro Screen?
+- [ ] Drei-Ebenen-Struktur genutzt (Primär gefüllt · Sekundär Outline · Tertiär Textlink →)?
+- [ ] Produkt-CTAs + Kollektions-CTA + Hersteller-Website-CTA + Kontakt-CTA gesetzt?
+- [ ] Versteckter Preheader (Preview-Text) im MJML?
 - [ ] Alle CTAs mit finalen Links (keine Platzhalter)?
 - [ ] CTA-Text konkret und spezifisch?
-- [ ] Button-Stil: volle Hintergrundfarbe, kein Outline?
+- [ ] Button-Maße: inner-padding 16px 34px, Touch-Target ≥ 44px?
 
 **Technik:**
 - [ ] Alle `src`-Attribute = relative Dateinamen?
