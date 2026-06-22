@@ -16,7 +16,7 @@ export type Priority = 'A' | 'B' | 'C'
 export interface ScoredContact extends Contact {
   score: number
   priority: Priority
-  mailType: 'Persönlich' | 'Info-Adresse'
+  mailType: 'Personal' | 'Generic'
 }
 
 // Prefixes that identify non-personal (info) email addresses.
@@ -74,7 +74,7 @@ export function filterAndScore(contacts: Contact[]): ScoredContact[] {
       ...c,
       score,
       priority: priorityOf(c, score),
-      mailType: isPersonalEmail(c.email) ? 'Persönlich' : 'Info-Adresse',
+      mailType: isPersonalEmail(c.email) ? 'Personal' : 'Generic',
     })
   }
 

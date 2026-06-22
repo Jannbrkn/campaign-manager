@@ -188,13 +188,13 @@ export async function GET(req: NextRequest) {
       const xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
       if (internalId) {
-        const path = `${internalId}/${mfgSlug}_Lead_Priorisierung_${dateStr}.xlsx`
+        const path = `${internalId}/${mfgSlug}_Lead_Prioritization_${dateStr}.xlsx`
         await admin.storage.from('campaign-assets').upload(path, internalBuffer, { upsert: true, contentType: xlsxMime })
         const { data: urlData } = admin.storage.from('campaign-assets').getPublicUrl(path)
         await admin.from('campaign_assets').delete().eq('campaign_id', internalId).eq('is_output', true)
         await admin.from('campaign_assets').insert({
           campaign_id: internalId,
-          file_name: `${mfgSlug}_Lead_Priorisierung_${dateStr}.xlsx`,
+          file_name: `${mfgSlug}_Lead_Prioritization_${dateStr}.xlsx`,
           file_type: xlsxMime,
           file_url: urlData.publicUrl,
           file_size: internalBuffer.length,
@@ -205,13 +205,13 @@ export async function GET(req: NextRequest) {
       }
 
       if (externalId) {
-        const path = `${externalId}/${mfgSlug}_Kampagnenauswertung_${dateStr}.xlsx`
+        const path = `${externalId}/${mfgSlug}_Campaign_Report_${dateStr}.xlsx`
         await admin.storage.from('campaign-assets').upload(path, externalBuffer, { upsert: true, contentType: xlsxMime })
         const { data: urlData } = admin.storage.from('campaign-assets').getPublicUrl(path)
         await admin.from('campaign_assets').delete().eq('campaign_id', externalId).eq('is_output', true)
         await admin.from('campaign_assets').insert({
           campaign_id: externalId,
-          file_name: `${mfgSlug}_Kampagnenauswertung_${dateStr}.xlsx`,
+          file_name: `${mfgSlug}_Campaign_Report_${dateStr}.xlsx`,
           file_type: xlsxMime,
           file_url: urlData.publicUrl,
           file_size: externalBuffer.length,

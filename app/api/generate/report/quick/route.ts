@@ -78,11 +78,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       internal: {
-        filename: `${slug}_Lead_Priorisierung_${dateStr}.xlsx`,
+        filename: `${slug}_Lead_Prioritization_${dateStr}.xlsx`,
         base64: internalBuffer.toString('base64'),
       },
       external: {
-        filename: `${slug}_Kampagnenauswertung_${dateStr}.xlsx`,
+        filename: `${slug}_Campaign_Report_${dateStr}.xlsx`,
         base64: externalBuffer.toString('base64'),
       },
     })

@@ -169,8 +169,8 @@ async function buildInternal(
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
 
-  // ── Sheet 1: Lead-Priorisierung ──────────────────────────────────────────
-  const ws1 = wb.addWorksheet('Lead-Priorisierung')
+  // ── Sheet 1: Lead Prioritization ──────────────────────────────────────────
+  const ws1 = wb.addWorksheet('Lead Prioritization')
   ws1.columns = [
     { key: 'nr',       width: 6  },
     { key: 'prio',     width: 13 },
@@ -197,13 +197,13 @@ async function buildInternal(
   // Row 3: Meta
   ws1.mergeCells('A3:H3')
   ws1.getRow(3).getCell(1).value =
-    `Erstellt: ${p.campaignDate} · Datenquelle: Mailchimp-Export · Filter: Score > 3 Opens`
+    `Created: ${p.campaignDate} · Data source: Mailchimp export · Filter: score > 3 opens`
   applyFont(ws1.getRow(3).getCell(1), { size: 9, color: { argb: 'FF999999' } })
 
   // Row 4: Confidentiality hint
   ws1.mergeCells('A4:H4')
   const r4cell = ws1.getRow(4).getCell(1)
-  r4cell.value = 'Interne Auswertung — Nicht zur Weitergabe an Kunden'
+  r4cell.value = 'Internal analysis — not for sharing with clients'
   applyFont(r4cell, { size: 9, italic: true, color: { argb: 'FF555555' } })
   setFill(r4cell, '#F5F3F0')
 
@@ -211,7 +211,7 @@ async function buildInternal(
   ws1.addRow([])
 
   // Row 6: Header
-  const headerRow = ws1.addRow(['Nr.', 'Priorität', 'Kontakt', 'E-Mail-Adresse', 'Telefon', 'Opens', 'Clicks', 'Mail-Typ'])
+  const headerRow = ws1.addRow(['No.', 'Priority', 'Contact', 'Email Address', 'Phone', 'Opens', 'Clicks', 'Address Type'])
   headerRow.eachCell((cell) => {
     applyFont(cell, { bold: true, color: { argb: 'FFFFFFFF' } })
     setFill(cell, '#2C2C2C')
@@ -254,14 +254,14 @@ async function buildInternal(
     if (!c.phone) applyFont(dataRow.getCell(5), { color: { argb: 'FFBBBBBB' } })
 
     // Mail-type color
-    const mtColor = c.mailType === 'Persönlich' ? 'FF2E7D32' : 'FF999999'
+    const mtColor = c.mailType === 'Personal' ? 'FF2E7D32' : 'FF999999'
     applyFont(dataRow.getCell(8), { color: { argb: mtColor } })
   })
 
-  // ── Sheet 2: Auswertung ──────────────────────────────────────────────────
-  const ws2 = wb.addWorksheet('Auswertung')
+  // ── Sheet 2: Analysis ──────────────────────────────────────────────────
+  const ws2 = wb.addWorksheet('Analysis')
   ws2.columns = [{ width: 30 }, { width: 12 }, { width: 12 }]
-  ws2.addRow(['Kategorie', 'Anzahl', 'Anteil']).eachCell((c) => {
+  ws2.addRow(['Category', 'Count', 'Share']).eachCell((c) => {
     applyFont(c, { bold: true, color: { argb: 'FFFFFFFF' } })
     setFill(c, '#2C2C2C')
   })
@@ -269,37 +269,37 @@ async function buildInternal(
   for (const prio of ['A', 'B', 'C'] as const) {
     const count = contacts.filter((c) => c.priority === prio).length
     ws2.addRow([
-      `Priorität ${prio}`,
+      `Priority ${prio}`,
       count,
       total > 0 ? `${Math.round((count / total) * 100)} %` : '—',
     ])
   }
   ws2.addRow([])
-  ws2.addRow(['Mail-Typ', 'Anzahl', '']).eachCell((c) => {
+  ws2.addRow(['Address Type', 'Count', '']).eachCell((c) => {
     applyFont(c, { bold: true, color: { argb: 'FFFFFFFF' } })
     setFill(c, '#2C2C2C')
   })
-  const personal = contacts.filter((c) => c.mailType === 'Persönlich').length
-  ws2.addRow(['Persönlich', personal, ''])
-  ws2.addRow(['Info-Adresse', total - personal, ''])
+  const personal = contacts.filter((c) => c.mailType === 'Personal').length
+  ws2.addRow(['Personal', personal, ''])
+  ws2.addRow(['Generic', total - personal, ''])
 
-  // ── Sheet 3: Methodik ────────────────────────────────────────────────────
-  const ws3 = wb.addWorksheet('Methodik')
+  // ── Sheet 3: Methodology ────────────────────────────────────────────────────
+  const ws3 = wb.addWorksheet('Methodology')
   ws3.columns = [{ width: 30 }, { width: 60 }]
   const meta: [string, string][] = [
-    ['Scoring-Formel', 'Score = (Clicks × 3) + (Opens × 1) + Mail-Typ-Bonus'],
-    ['Mail-Typ-Bonus', '+2 für persönliche Adressen (nicht: info@, office@, kontakt@, contact@, mail@)'],
-    ['Priorität A', 'Score ≥ 8 ODER (≥ 1 Click UND persönliche Mail)'],
-    ['Priorität B', 'Score ≥ 5 ODER Opens ≥ 4'],
-    ['Priorität C', 'Alle übrigen qualifizierten Kontakte'],
-    ['Ausschluss', '≤ 3 Opens UND 0 Clicks'],
-    ['Kontakt-Limit', 'Max. 30 Kontakte; zusätzliche Clicker immer aufgeführt'],
-    ['Sortierung', 'Score absteigend → Clicks → Opens'],
-    ['Hersteller', p.manufacturerName],
-    ['Kampagne', p.campaignTitle],
-    ['Erstellt', p.campaignDate],
+    ['Scoring formula', 'Score = (clicks × 3) + (opens × 1) + address-type bonus'],
+    ['Address-type bonus', '+2 for personal addresses (not: info@, office@, kontakt@, contact@, mail@)'],
+    ['Priority A', 'Score ≥ 8 OR (≥ 1 click AND personal email)'],
+    ['Priority B', 'Score ≥ 5 OR opens ≥ 4'],
+    ['Priority C', 'All other qualified contacts'],
+    ['Exclusion', '≤ 3 opens AND 0 clicks'],
+    ['Contact limit', 'Max. 30 contacts; additional clickers always listed'],
+    ['Sorting', 'Score descending → clicks → opens'],
+    ['Manufacturer', p.manufacturerName],
+    ['Campaign', p.campaignTitle],
+    ['Created', p.campaignDate],
   ]
-  ws3.addRow(['Feld', 'Wert']).eachCell((c) => {
+  ws3.addRow(['Field', 'Value']).eachCell((c) => {
     applyFont(c, { bold: true, color: { argb: 'FFFFFFFF' } })
     setFill(c, '#2C2C2C')
   })
@@ -320,8 +320,8 @@ async function buildExternal(
 ): Promise<Buffer> {
   const wb = new ExcelJS.Workbook()
 
-  // ── Sheet 1: Kampagnenübersicht ──────────────────────────────────────────
-  const ws1 = wb.addWorksheet('Kampagnenübersicht')
+  // ── Sheet 1: Campaign Overview ──────────────────────────────────────────
+  const ws1 = wb.addWorksheet('Campaign Overview')
   ws1.columns = [{ width: 35 }, { width: 20 }]
 
   ws1.mergeCells('A1:B1')
@@ -329,23 +329,23 @@ async function buildExternal(
   ws1.getRow(1).getCell(1).font = { name: 'Arial', bold: true, size: 18 }
 
   ws1.mergeCells('A2:B2')
-  ws1.getRow(2).getCell(1).value = `Kampagnenauswertung · ${p.campaignTitle}`
+  ws1.getRow(2).getCell(1).value = `Campaign Report · ${p.campaignTitle}`
   applyFont(ws1.getRow(2).getCell(1), { size: 11 })
 
   ws1.mergeCells('A3:B3')
-  ws1.getRow(3).getCell(1).value = `Erstellt von ${p.agencyName} · ${p.campaignDate}`
+  ws1.getRow(3).getCell(1).value = `Prepared by ${p.agencyName} · ${p.campaignDate}`
   applyFont(ws1.getRow(3).getCell(1), { size: 9, color: { argb: 'FF999999' } })
 
   ws1.addRow([])
 
   // KPI block
-  const personal = contacts.filter((c) => c.mailType === 'Persönlich').length
+  const personal = contacts.filter((c) => c.mailType === 'Personal').length
   const topLeads = contacts.filter((c) => c.priority === 'A' || c.priority === 'B').length
   const kpis: [string, string | number][] = [
-    ['Kontakte mit Interaktion', contacts.length],
-    ['Identifizierte Entscheider', `${personal} direkte Ansprechpartner erreicht`],
-    ['Kontakte mit erhöhtem Interesse', `${topLeads} Kontakte qualifiziert`],
-    ['Kampagne', p.campaignTitle],
+    ['Contacts Reached', contacts.length],
+    ['Decision-Makers Reached', `${personal} direct contacts reached`],
+    ['Contacts with elevated interest', `${topLeads} qualified contacts`],
+    ['Campaign', p.campaignTitle],
   ]
   for (const [label, value] of kpis) {
     const row = ws1.addRow([label, value])
@@ -356,11 +356,11 @@ async function buildExternal(
     row.height = 22
   }
 
-  // ── Sheet 2: Erreichte Kontakte ──────────────────────────────────────────
-  const ws2 = wb.addWorksheet('Erreichte Kontakte')
+  // ── Sheet 2: Engaged Contacts ──────────────────────────────────────────
+  const ws2 = wb.addWorksheet('Engaged Contacts')
   ws2.columns = [{ width: 6 }, { width: 28 }, { width: 36 }]
 
-  const headerRow = ws2.addRow(['Nr.', 'Kontakt', 'E-Mail-Adresse'])
+  const headerRow = ws2.addRow(['No.', 'Contact', 'Email Address'])
   headerRow.eachCell((c) => {
     applyFont(c, { bold: true, color: { argb: 'FFFFFFFF' } })
     setFill(c, '#2C2C2C')

@@ -272,6 +272,6 @@ export function getRequiredContacts(brand: string) {
 ### Pending alignment (briefing §7 — intentionally NOT done this round)
 Captured here so nothing is lost; source files were left untouched:
 - ✓ `lib/generate/newsletter-prompt.ts` — **DONE 2026-06-22**: conversion/CTA standards from `docs/NEWSLETTER_RULES.md` folded in (three-tier CTAs, button sizes `16px 34px`, hidden preheader, closing with contact CTA). Newsletters remain DE/Sie.
-- `mailchimp-lead-auswertung/SKILL.md` + `Prompt_Mailchimp_Lead_Auswertung_Dual.md` — change the language header to English and apply the DE→EN label mapping (Language Policy above). Logic unchanged.
+- ✓ **In-app reports DONE 2026-06-22**: `lib/generate/report.ts` + `scoring.ts` now output English (sheets, columns, KPIs, methodology, notes) and report filenames switched (`_Lead_Prioritization_`, `_Campaign_Report_` in the report API routes). Still pending (external, out of this repo): `mailchimp-lead-auswertung/SKILL.md` + `Prompt_Mailchimp_Lead_Auswertung_Dual.md` — language header + DE→EN label mapping. Scoring/priorities/limits/filters unchanged throughout.
 - `ec-newsletter/SKILL.md` — fix `npx mjml` → local binary `node /home/claude/node_modules/mjml/bin/mjml`; keep in sync with `newsletter-generator`.
 - `campaign-contacts.ts` — create the config object (spec above) and wire it to report/alert recipients.

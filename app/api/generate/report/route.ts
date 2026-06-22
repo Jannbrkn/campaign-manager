@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     // Upload internal XLSX
     if (internalId) {
-      const intPath = `${internalId}/${mfgSlug}_Lead_Priorisierung_${dateStr}.xlsx`
+      const intPath = `${internalId}/${mfgSlug}_Lead_Prioritization_${dateStr}.xlsx`
       await admin.storage
         .from('campaign-assets')
         .upload(intPath, internalBuffer, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
       await admin.from('campaign_assets').delete().eq('campaign_id', internalId).eq('is_output', true)
       await admin.from('campaign_assets').insert({
         campaign_id: internalId,
-        file_name: `${mfgSlug}_Lead_Priorisierung_${dateStr}.xlsx`,
+        file_name: `${mfgSlug}_Lead_Prioritization_${dateStr}.xlsx`,
         file_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         file_url: intUrl.publicUrl,
         file_size: internalBuffer.length,
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     // Upload external XLSX
     if (externalId) {
-      const extPath = `${externalId}/${mfgSlug}_Kampagnenauswertung_${dateStr}.xlsx`
+      const extPath = `${externalId}/${mfgSlug}_Campaign_Report_${dateStr}.xlsx`
       await admin.storage
         .from('campaign-assets')
         .upload(extPath, externalBuffer, { upsert: true, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
       await admin.from('campaign_assets').delete().eq('campaign_id', externalId).eq('is_output', true)
       await admin.from('campaign_assets').insert({
         campaign_id: externalId,
-        file_name: `${mfgSlug}_Kampagnenauswertung_${dateStr}.xlsx`,
+        file_name: `${mfgSlug}_Campaign_Report_${dateStr}.xlsx`,
         file_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         file_url: extUrl.publicUrl,
         file_size: externalBuffer.length,
