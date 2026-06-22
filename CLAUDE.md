@@ -271,7 +271,7 @@ export function getRequiredContacts(brand: string) {
 
 ### Pending alignment (briefing §7 — intentionally NOT done this round)
 Captured here so nothing is lost; source files were left untouched:
-- `lib/generate/newsletter-prompt.ts` — fold in the conversion/CTA standards from `docs/NEWSLETTER_RULES.md` (three-tier CTAs, button sizes, subject/preview, closing). Still carries the older button spec (`inner-padding 14px 45px`, 10–11px, outline „selten").
+- ✓ `lib/generate/newsletter-prompt.ts` — **DONE 2026-06-22**: conversion/CTA standards from `docs/NEWSLETTER_RULES.md` folded in (three-tier CTAs, button sizes `16px 34px`, hidden preheader, closing with contact CTA). Newsletters remain DE/Sie.
 - `mailchimp-lead-auswertung/SKILL.md` + `Prompt_Mailchimp_Lead_Auswertung_Dual.md` — change the language header to English and apply the DE→EN label mapping (Language Policy above). Logic unchanged.
 - `ec-newsletter/SKILL.md` — fix `npx mjml` → local binary `node /home/claude/node_modules/mjml/bin/mjml`; keep in sync with `newsletter-generator`.
 - `campaign-contacts.ts` — create the config object (spec above) and wire it to report/alert recipients.

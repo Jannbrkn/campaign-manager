@@ -152,6 +152,7 @@ Niemals: mj-body → mj-section → mj-column → mj-section.
 2. 640px Breite
 3. \`alt\`-Attribut auf jedem \`<mj-image>\`
 4. \`<mj-title>\` setzen
+5. **Versteckter Preheader (Preview-Text)** als erstes Element im mj-body: ein ausgeblendeter Block (Inline-Style: display:none; max-height:0; overflow:hidden; mso-hide:all;). Inhalt = der Preview-Text (falls übergeben), sonst eine knappe, das Subject ergänzende Zeile. Wird im Posteingang als Vorschautext gezeigt, nicht im sichtbaren Mail-Body.
 
 #### Font-Import — KRITISCH
 **NIEMALS \`<mj-font>\` verwenden.** Mailchimp blockt die resultierenden \`<link>\`-Tags.
@@ -185,7 +186,7 @@ NIEMALS css2 API (\`css2?family=...wght@200;300\`) — Mailchimp akzeptiert nur 
 | Headlines | ExtraLight/Light (200–300) | 28–34px | Versalien, Laufweite 4–6px |
 | Sub-Headlines | Light (300) | 12–13px | Versalien, Laufweite 3px |
 | Fließtext | Light (300) | 14px | Zeilenhöhe 1.85 |
-| Buttons | Medium (500) | 10–11px | Versalien, Laufweite 2.5px |
+| Buttons | Medium (500) | 12–13px Primär / 11–12px Sekundär | Versalien, Laufweite 2px |
 | Footer | Light (300) | 9–10px | #999999 auf #ffffff Hintergrund — immer weiß |
 
 #### Layout-Entscheidung (aktiv wählen — kein Standard)
@@ -210,28 +211,33 @@ Alle diese Varianten sind gleichwertig und erwünscht. Mische Layout-Typen inner
 - **Hersteller-Logo im Header ist klickbar** → \`href\` auf \`website_url\` des Herstellers
 - Alle Produktbilder MÜSSEN klickbar sein (\`href\` auf Produkt-URL)
 - Alle CTA-Buttons MÜSSEN auf angegebene Links zeigen
-- **Mindestens 2 CTAs pro Newsletter** (siehe CTA-Pflicht unten)
+- **CTA above the fold** (erster Screen, ohne Scrollen) + **Drei-Ebenen-CTA-Struktur** (siehe CTA-Strategie unten)
 - CTAs kontextuell eingebettet — neben dem passenden Inhalt, NICHT als Block am Ende
 
-#### CTA-Strategie (KRITISCH)
+#### CTA-Strategie (KRITISCH) — Drei-Ebenen-Architektur
 
-**Regel: Immer mindestens 2 CTAs — Strategie abhängig vom Thema des Newsletters.**
+**Grundsatz: Klarheit durch Platzierung, Weißraum und eine eindeutige Primärhandlung — nicht durch Lautstärke. Eine dominante Handlung pro Screen: höchstens EIN Primär-Button je Screen (Paradox of Choice).**
 
-**Single-Topic-Newsletter** (1 Thema: Messe-Einladung, Event, exklusiver Launch, einzelne Aktion):
-- Denselben CTA ZWEIMAL einbauen — oben und unten
-- **CTA 1:** Nach dem Hero-Bild / der Einleitung — direkt, z.B. „Persönliche Einladung bestätigen"
-- **CTA 2:** Am Ende des Inhalts, vor dem Footer — verstärkend, z.B. „Platz sichern" oder „Jetzt anmelden"
-- Beide CTAs zeigen auf denselben Link, dürfen aber unterschiedlich formuliert sein
+**Pflicht-Platzierung der CTAs:**
 
-**Multi-Topic-Newsletter** (mehrere Themen: Produktvorstellung + Event + News):
-- Jedes Thema bekommt seinen eigenen CTA direkt beim jeweiligen Inhalt
-- Kein doppelter CTA nötig
+| CTA | Wo | Stufe |
+|---|---|---|
+| Above-the-fold-CTA | direkt nach Hero + Hersteller-Logo, erster Screen (~500–600px) | **Primär** (gefüllt) |
+| Produkt-CTA | in jeder Produktsektion, unter dem Textblock | Hero-Produkt **primär**, weitere **sekundär** |
+| Kollektions-CTA | nach den Produkten („Mehr von [Marke]") | **Sekundär** (Outline) |
+| Hersteller-Website-CTA | vor dem Closing | **Tertiär** (Textlink mit Pfeil →) |
+| Kontakt-CTA | im Closing, mit Positionierungszeile | **Sekundär** |
+
+- **Produktbilder zusätzlich klickbar** (href auf Produkt-URL) — aber der Lead-CTA ist ein **echter Button, kein klickbares Bild** (viele Clients blocken Bilder by default).
+- **Multi-Topic** (mehrere Produkte/Themen): volle Struktur — Above-the-fold + je Produkt ein CTA + Kollektion + Website + Kontakt.
+- **Single-Topic** (1 Event/Launch): Produkt-Schleifen entfallen → Above-the-fold-CTA + Haupt-CTA (z.B. „Einladung bestätigen") + Hersteller-Website + Kontakt.
+- **Closing (Pflicht):** warme Positionierungszeile (Ehrlichkeit/Offenheit, „wir sind Ihr Ansprechpartner") + Kontakt-CTA mit tel:/mailto:-Link.
 
 **CTA-Texte — konkret benennen:**
-- ✅ „Preisliste herunterladen", „Termin vereinbaren", „Einladung bestätigen", „Platz sichern"
+- ✅ „Preisliste anfordern", „Termin vereinbaren", „Einladung bestätigen", „Zur Kollektion"
 - ❌ „Mehr erfahren", „Jetzt entdecken", „Kontakt aufnehmen"
 
-Wenn kein zweiter Link vorhanden: CTA mit [!] LINK FEHLT markieren, aber MJML-Struktur trotzdem ausgeben.
+Wenn ein Link fehlt: CTA mit [!] LINK FEHLT markieren, aber MJML-Struktur trotzdem ausgeben.
 
 #### Logo-Platzierung — DYNAMISCH (KRITISCH)
 
@@ -257,35 +263,38 @@ Logos haben fast immer einen transparenten oder weißen Hintergrund. Auf getönt
 
 #### Button-Design (KRITISCH — exakt einhalten)
 
-Buttons müssen großzügig, klickbar und visuell klar sein. Keine dünnen Outline-Boxen.
+Buttons müssen großzügig, klickbar und visuell klar sein. Drei klar abgestufte Ebenen — max. EIN Primär-Button pro Screen.
 
 **MJML-Pflichtattribute für jeden \`<mj-button>\`:**
 
 \`\`\`xml
 <mj-button
-  inner-padding="14px 45px"
+  inner-padding="16px 34px"
   border-radius="0px"
-  font-size="10px"
+  font-size="13px"
   font-weight="500"
-  letter-spacing="2.5px"
+  letter-spacing="2px"
   text-transform="uppercase"
   font-family="'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif"
 >
 \`\`\`
 
-**Stil-Varianten (eine pro Button wählen):**
+**Drei Button-Stufen (Stufe nach CTA-Rolle wählen):**
 
-| Variante | background-color | color | border | Wann |
+- Schriftgröße: **Primär 12–13px**, **Sekundär/Tertiär 11–12px**
+- Touch-Target Mobile ≥ 44px; ≥ 24px Abstand um den Button (nie eingeklemmt); Primär-Button mobil (nahezu) vollbreit
+
+| Stufe | background-color | color | border | Wann |
 |---|---|---|---|---|
-| Filled (Standard) | [accent] | [Kontrastfarbe] | none | Primärer CTA |
-| Filled Dark | #1a1a1a | #ffffff | none | Auf hellem Hintergrund |
-| Filled Light | #ffffff | #1a1a1a | none | Auf dunklem Hintergrund |
-| Outline (selten) | transparent | [accent] | 2px solid [accent] | Nur als sekundärer CTA neben Filled |
+| **Primär** (gefüllt) | [accent] / #1a1a1a / #ffffff | Kontrastfarbe | none | Above-the-fold, Hero-Produkt — max. EINER pro Screen |
+| **Sekundär** (Outline) | transparent | [accent] | 1–2px solid [accent] | Kollektion, weitere Produkte, Kontakt-CTA |
+| **Tertiär** (Textlink) | als mj-text mit Link | [accent] | none | Hersteller-Website-CTA, unterstrichen mit Pfeil → |
+
+Primär auf hellem Grund: #1a1a1a + weiße Schrift. Auf dunklem Grund: #ffffff + dunkle Schrift.
 
 **NIEMALS:**
 - inner-padding weglassen oder unter 12px setzen
-- Outline als einzigen Button-Stil verwenden
-- border unter 2px bei Outline-Variante
+- mehr als EINEN Primär-Button pro Screen
 - Button ohne explizites inner-padding
 
 #### Logo-Auswahl — Einzellogo-Regel (KRITISCH)
@@ -397,7 +406,13 @@ Vor dem Abschluss intern prüfen (kein Text ausgeben — nur MJML):
 - Header-Section (Logo): Hintergrund #ffffff?
 - Agentur-Logo NUR im Footer (140–160px, klickbar auf Agentur-website_url)?
 - Kein Agentur-Logo oder Agentur-Name im Header oder Body?
-- Mindestens 2 CTAs (Single-Topic: gleicher Link 2×, Multi-Topic: je Thema 1×)?
+- Versteckter Preheader (Preview-Text) als erstes Element im Body?
+- CTA above the fold (erster Screen) vorhanden?
+- Max. EIN Primär-Button pro Screen?
+- Drei-Ebenen-Struktur (Primär gefüllt · Sekundär Outline · Tertiär Textlink →)?
+- Produkt-CTAs + Kollektions-CTA + Hersteller-Website-CTA + Kontakt-CTA gesetzt?
+- Closing mit Positionierungszeile + Kontakt-CTA (tel:/mailto:)?
+- Button-Maße: inner-padding 16px 34px, Touch-Target ≥ 44px?
 - Alle Produktbilder klickbar (href auf Produkt-URL)?
 - Alle CTA-Buttons mit finalem Link?
 - Footer: Agentur-Name, contact_email (NIEMALS order_email), Telefon, Straße + PLZ + Stadt?
@@ -414,7 +429,9 @@ Subject Lines werden separat generiert — hier nicht ausgeben.
 - ❌ Footer ohne vollständige Postanschrift (Straße + PLZ + Stadt)
 - ❌ Logos ohne \`href\`-Verlinkung (weder Hersteller- noch Agentur-Logo)
 - ❌ Logos auf getönten oder farbigen Hintergründen — Logo-Sections immer #ffffff
-- ❌ Bei Single-Topic-Mails nur einen CTA einbauen
+- ❌ Kein CTA above the fold (erster Screen)
+- ❌ Mehr als EIN Primär-Button pro Screen
+- ❌ Lead-CTA nur als klickbares Bild statt als echtem Button
 - ❌ CTA-Buttons generisch texten („Mehr erfahren", „Jetzt entdecken", „Kontakt aufnehmen")
 - ❌ \`order_email\` der Agentur irgendwo im Newsletter verwenden
 
@@ -427,9 +444,11 @@ Jeder Newsletter folgt dieser Struktur von oben nach unten:
 \`\`\`
 [Hersteller-Logo]              ← Header: Der Hersteller ist der Star (immer auf #ffffff)
 [Hero-Bild]
-[CTA 1 bei Single-Topic]
-[Inhalt]
-[CTA 2 bei Single-Topic]
+[Above-the-fold-CTA]           ← Primär (erster Screen)
+[Inhalt + Produkt-CTAs]
+[Kollektions-CTA]              ← Sekundär
+[Hersteller-Website-CTA →]     ← Tertiär (Textlink)
+[Closing: Positionierung + Kontakt-CTA]
 [Agentur-Logo]                 ← Footer: Wir sind der professionelle Absender (immer auf #ffffff)
 [Agentur-Name]
 [E-Mail · Telefon]

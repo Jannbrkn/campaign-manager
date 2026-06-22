@@ -112,7 +112,7 @@ Footer-Hintergrund: **#ffffff**, Text: **#999999**
 - Gewählten Preview-Text als versteckten Preheader ins MJML setzen (nicht nur vorschlagen).
 
 > Kanonische MJML-Snippets für die drei Button-Stufen liegen in den Skill-Referenzen (`references/mailchimp-technical.md`) — von dort übernehmen, nicht neu erfinden.
-> ⚠️ **Divergenz (Stand 2026-06-22):** `lib/generate/newsletter-prompt.ts` trägt noch die ältere Button-Spec (`inner-padding 14px 45px`, 10–11px, Outline „selten"). Diese Datei muss noch an die obige Architektur angeglichen werden (Briefing §7) — bis dahin gelten DIESE Regeln als Zielzustand.
+> ✓ **Stand 2026-06-22:** `lib/generate/newsletter-prompt.ts` ist an diese Architektur angeglichen (Drei-Ebenen-CTAs, Button-Maße `16px 34px`, Preheader-Pflicht, Closing mit Kontakt-CTA).
 
 ### Technische Pflicht
 
