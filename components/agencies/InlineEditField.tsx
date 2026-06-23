@@ -37,14 +37,15 @@ export default function InlineEditField({ agencyId, initialValue, onSave, placeh
 
   if (!editing) {
     return (
-      <div className="flex items-center gap-2 justify-end">
+      <div className="group flex items-center gap-2 justify-end">
         <span className="text-sm text-text-primary">{value || '—'}</span>
         <button
           onClick={() => setEditing(true)}
-          className="text-text-secondary hover:text-text-primary transition-colors"
+          className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+          title="Bearbeiten"
           aria-label="Bearbeiten"
         >
-          <Pencil size={12} />
+          <Pencil size={16} strokeWidth={1.75} />
         </button>
       </div>
     )
@@ -57,7 +58,7 @@ export default function InlineEditField({ agencyId, initialValue, onSave, placeh
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="bg-transparent border-b border-border text-sm text-text-primary focus:outline-none focus:border-accent-warm w-56 text-right"
+        className="w-56 rounded-xl border border-border bg-surface px-3 py-1.5 text-right text-sm text-text-primary transition-colors focus:border-accent-warm focus:outline-none focus:ring-2 focus:ring-accent-warm/20"
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSave()
           if (e.key === 'Escape') handleCancel()
@@ -65,18 +66,28 @@ export default function InlineEditField({ agencyId, initialValue, onSave, placeh
         autoFocus
       />
       {saving ? (
-        <Loader2 size={12} className="animate-spin text-text-secondary" />
+        <Loader2 size={16} strokeWidth={1.75} className="animate-spin text-text-secondary" />
       ) : (
         <>
-          <button onClick={handleSave} className="text-green-500 hover:text-green-400 transition-colors" aria-label="Speichern">
-            <Check size={12} />
+          <button
+            onClick={handleSave}
+            className="rounded-lg p-1.5 text-success transition-colors hover:bg-surface-hover"
+            title="Speichern"
+            aria-label="Speichern"
+          >
+            <Check size={16} strokeWidth={1.75} />
           </button>
-          <button onClick={handleCancel} className="text-text-secondary hover:text-text-primary transition-colors" aria-label="Abbrechen">
-            <X size={12} />
+          <button
+            onClick={handleCancel}
+            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+            title="Abbrechen"
+            aria-label="Abbrechen"
+          >
+            <X size={16} strokeWidth={1.75} />
           </button>
         </>
       )}
-      {error && <span className="text-xs text-red-500 ml-1">{error}</span>}
+      {error && <span className="ml-1 text-xs text-warning">{error}</span>}
     </div>
   )
 }

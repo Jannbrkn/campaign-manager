@@ -13,6 +13,7 @@ import type {
 import KpiRow from '@/components/performance/KpiRow'
 import ManufacturerGrid from '@/components/performance/ManufacturerGrid'
 import UnmatchedPanel from '@/components/performance/UnmatchedPanel'
+import { BarChart3 } from 'lucide-react'
 
 interface LatestSnapshot {
   campaign_id: string
@@ -241,9 +242,19 @@ export default async function PerformancePage({
   const groups = groupCampaigns(campaigns, latestByCampaign, searchParams)
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-light text-text-primary">Performance</h1>
+    <div className="p-8 space-y-8">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 border border-border text-accent-warm">
+            <BarChart3 size={20} strokeWidth={1.75} aria-hidden="true" />
+          </span>
+          <div>
+            <h1 className="page-title">Performance</h1>
+            <p className="mt-1.5 text-sm text-text-secondary max-w-prose">
+              Auswertung der Kampagnen-Performance je Hersteller — Öffnungs- und Klickraten, Trends und Reichweite.
+            </p>
+          </div>
+        </div>
       </div>
 
       <UnmatchedPanel />

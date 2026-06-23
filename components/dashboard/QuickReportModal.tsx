@@ -51,31 +51,33 @@ function FileDropZone({
   const ref = useRef<HTMLInputElement>(null)
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1.5">
+      <label className="field-label">
         {label}
       </label>
       <div
-        className={`border border-dashed rounded-sm px-4 py-4 text-center cursor-pointer transition-colors ${
+        className={`border border-dashed rounded-xl px-4 py-5 text-center cursor-pointer transition-colors ${
           file
-            ? 'border-[#2E7D32]/60 bg-[#2E7D32]/5'
+            ? 'border-success/60 bg-success/5'
             : 'border-border hover:border-accent-warm/40'
         } ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
         onClick={() => ref.current?.click()}
       >
         {file ? (
           <div className="flex items-center justify-center gap-2">
-            <Icon size={13} className="text-[#2E7D32] shrink-0" />
-            <span className="text-sm text-[#2E7D32] truncate max-w-[220px]">{file.name}</span>
+            <Icon size={16} strokeWidth={1.75} className="text-success shrink-0" />
+            <span className="text-sm text-success truncate max-w-[220px]">{file.name}</span>
             <button
               onClick={(e) => { e.stopPropagation(); onChange(null); if (ref.current) ref.current.value = '' }}
-              className="text-text-secondary/60 hover:text-text-secondary transition-colors"
+              title="Datei entfernen"
+              aria-label="Datei entfernen"
+              className="text-text-secondary/60 hover:text-text-secondary transition-colors rounded-lg p-0.5"
             >
-              <X size={12} />
+              <X size={14} strokeWidth={1.75} />
             </button>
           </div>
         ) : (
           <>
-            <Icon size={15} className="mx-auto mb-1.5 text-text-secondary/40" />
+            <Icon size={20} strokeWidth={1.75} className="mx-auto mb-2 text-text-secondary/40" />
             <p className="text-xs text-text-secondary/70">{hint}</p>
           </>
         )}
@@ -147,22 +149,30 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md mx-4 bg-surface border border-border rounded-sm shadow-2xl"
+        className="relative w-full max-w-lg mx-4 bg-surface-2 border border-border rounded-2xl shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <div>
-            <p className="text-xs uppercase tracking-wider text-text-secondary mb-0.5">Schnell-Report</p>
-            <h2 className="text-base font-light text-text-primary">Report generieren</h2>
+            <p className="section-title mb-1">Schnell-Report</p>
+            <h2 className="font-display text-lg font-semibold text-text-primary">Report generieren</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Aus zwei Mailchimp-Exporten internen und externen Report erstellen.
+            </p>
           </div>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
-            <X size={16} />
+          <button
+            onClick={onClose}
+            title="Schließen"
+            aria-label="Schließen"
+            className="btn-ghost p-2 shrink-0"
+          >
+            <X size={18} strokeWidth={1.75} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-6 space-y-5">
           {step === 'done' ? (
             <div className="space-y-3">
               <p className="text-sm text-text-secondary">
@@ -171,27 +181,27 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
               {internal && (
                 <button
                   onClick={() => downloadFile(internal)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-background border border-border rounded-sm hover:border-accent-warm/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-surface border border-border rounded-xl hover:border-accent-warm/50 hover:bg-surface-hover transition-colors text-left"
                 >
-                  <FileSpreadsheet size={16} className="text-[#2E7D32] shrink-0" />
+                  <FileSpreadsheet size={20} strokeWidth={1.75} className="text-success shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-text-primary truncate">{internal.filename}</p>
                     <p className="text-xs text-text-secondary mt-0.5">Interner Lead-Report</p>
                   </div>
-                  <Download size={14} className="text-text-secondary shrink-0" />
+                  <Download size={16} strokeWidth={1.75} className="text-text-secondary shrink-0" />
                 </button>
               )}
               {external && (
                 <button
                   onClick={() => downloadFile(external)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-background border border-border rounded-sm hover:border-accent-warm/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-surface border border-border rounded-xl hover:border-accent-warm/50 hover:bg-surface-hover transition-colors text-left"
                 >
-                  <FileSpreadsheet size={16} className="text-accent-warm shrink-0" />
+                  <FileSpreadsheet size={20} strokeWidth={1.75} className="text-accent-warm shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-text-primary truncate">{external.filename}</p>
                     <p className="text-xs text-text-secondary mt-0.5">Externe Kampagnenauswertung</p>
                   </div>
-                  <Download size={14} className="text-text-secondary shrink-0" />
+                  <Download size={16} strokeWidth={1.75} className="text-text-secondary shrink-0" />
                 </button>
               )}
               <button
@@ -203,10 +213,10 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
             </div>
           ) : step === 'error' ? (
             <div className="space-y-3">
-              <p className="text-sm text-[#E65100]">{error}</p>
+              <p className="text-sm text-warning">{error}</p>
               <button
                 onClick={() => setStep('form')}
-                className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+                className="btn-secondary"
               >
                 Zurück
               </button>
@@ -215,14 +225,14 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
             <>
               {/* Manufacturer select */}
               <div>
-                <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1.5">
+                <label className="field-label">
                   Hersteller
                 </label>
                 <select
                   value={manufacturerId}
                   onChange={(e) => setManufacturerId(e.target.value)}
                   disabled={step === 'generating'}
-                  className="w-full bg-background border border-border rounded-sm px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50 transition-colors disabled:opacity-50"
+                  className="field-input disabled:opacity-50"
                 >
                   <option value="">Hersteller wählen…</option>
                   {manufacturers.map((m) => (
@@ -235,7 +245,7 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
 
               {/* Campaign title */}
               <div>
-                <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1.5">
+                <label className="field-label">
                   Kampagnenname <span className="normal-case text-text-secondary/50">(optional)</span>
                 </label>
                 <input
@@ -244,8 +254,11 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
                   onChange={(e) => setCampaignTitle(e.target.value)}
                   disabled={step === 'generating'}
                   placeholder={selectedMfg ? selectedMfg.name : 'z.B. B&B Italia Frühjahr 2026'}
-                  className="w-full bg-background border border-border rounded-sm px-3 py-2 text-sm text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 transition-colors disabled:opacity-50"
+                  className="field-input disabled:opacity-50"
                 />
+                <p className="mt-1.5 text-xs text-text-secondary/70">
+                  Leer lassen, um den Herstellernamen zu verwenden.
+                </p>
               </div>
 
               {/* Two CSV upload zones */}
@@ -268,7 +281,7 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
 
               {/* Missing file hints */}
               {manufacturerId && (recipientsFile || campaignFile) && !(recipientsFile && campaignFile) && (
-                <p className="text-xs text-[#E65100]">
+                <p className="text-xs text-warning">
                   {!recipientsFile
                     ? 'Die Rezipienten-Auswertung fehlt für den vollständigen Report.'
                     : 'Die Kampagnenwerte fehlen für den vollständigen Report.'}
@@ -280,20 +293,20 @@ export default function QuickReportModal({ manufacturers, onClose }: Props) {
 
         {/* Footer */}
         {(step === 'form' || step === 'generating') && (
-          <div className="px-6 py-4 border-t border-border flex justify-end">
+          <div className="px-6 py-5 border-t border-border flex justify-end">
             <button
               onClick={handleGenerate}
               disabled={!canSubmit}
-              className="flex items-center gap-2 px-5 py-2 text-sm text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-40"
+              className="btn-primary"
             >
               {step === 'generating' ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={16} strokeWidth={1.75} className="animate-spin" />
                   Wird generiert…
                 </>
               ) : (
                 <>
-                  <FileSpreadsheet size={14} />
+                  <FileSpreadsheet size={16} strokeWidth={1.75} />
                   Reports generieren
                 </>
               )}

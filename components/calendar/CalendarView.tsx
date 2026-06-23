@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Agency, Manufacturer, CampaignWithManufacturer, CampaignType } from '@/lib/supabase/types'
 import NewCampaignModal from './NewCampaignModal'
@@ -82,8 +82,8 @@ function buildConflictDates(campaigns: CampaignWithManufacturer[]): Set<string> 
 // ─── Campaign type dot color ───────────────────────────────────────────────────
 
 const TYPE_DOT: Record<CampaignType, string> = {
-  postcard:        'bg-[#C4A87C]',
-  newsletter:      'bg-[#EDE8E3]',
+  postcard:        'bg-accent-gold',
+  newsletter:      'bg-accent-warm',
   report_internal: 'bg-[#555555]',
   report_external: 'bg-[#555555]',
 }
@@ -128,9 +128,9 @@ function MiniMonth({
               key={key + i}
               onClick={() => isCurrentMonth && dayCampaigns.length > 0 && onDayClick(year, month, key)}
               className={`
-                relative flex flex-col items-center justify-start pt-0.5 pb-1 rounded-sm min-h-[26px]
+                relative flex flex-col items-center justify-start pt-0.5 pb-1 rounded-lg min-h-[26px]
                 ${!isCurrentMonth ? 'opacity-20 pointer-events-none' : ''}
-                ${isCurrentMonth && dayCampaigns.length > 0 ? 'cursor-pointer hover:bg-white/5' : ''}
+                ${isCurrentMonth && dayCampaigns.length > 0 ? 'cursor-pointer hover:bg-surface-hover' : ''}
               `}
             >
               <span className={`
@@ -142,9 +142,9 @@ function MiniMonth({
               {dayCampaigns.length > 0 && !isToday && (
                 <div className="flex gap-px mt-0.5">
                   {hasNewsletter && (
-                    <span className={`w-1 h-1 rounded-full ${isConflict ? 'bg-[#E65100]' : 'bg-[#EDE8E3]'}`} />
+                    <span className={`w-1 h-1 rounded-full ${isConflict ? 'bg-warning' : 'bg-accent-warm'}`} />
                   )}
-                  {hasPostcard && <span className="w-1 h-1 rounded-full bg-[#C4A87C]" />}
+                  {hasPostcard && <span className="w-1 h-1 rounded-full bg-accent-gold" />}
                   {!hasNewsletter && !hasPostcard && (
                     <span className="w-1 h-1 rounded-full bg-[#555555]" />
                   )}
@@ -178,7 +178,7 @@ function QuarterMonth({
     <div className="flex flex-col border-r border-border last:border-r-0 min-h-0">
       {/* Month label */}
       <div className="px-4 py-3 border-b border-border shrink-0">
-        <p className="text-sm font-light text-text-primary">
+        <p className="text-sm font-medium text-text-primary">
           {MONTH_NAMES[month]} <span className="text-text-secondary">{year}</span>
         </p>
       </div>
@@ -208,7 +208,7 @@ function QuarterMonth({
               className={`
                 border-b border-r border-border cursor-pointer p-1.5 flex flex-col gap-0.5
                 ${!isCurrentMonth ? 'opacity-25 pointer-events-none' : ''}
-                ${isSelected ? 'bg-accent-warm/5' : 'hover:bg-white/[0.03]'}
+                ${isSelected ? 'bg-accent-warm/5' : 'hover:bg-surface-hover'}
               `}
             >
               <span className={`
@@ -220,7 +220,7 @@ function QuarterMonth({
               {dayCampaigns.map((c) => (
                 <div key={c.id} className="flex items-center gap-1 min-w-0">
                   <span className={`w-1 h-1 rounded-full shrink-0 ${
-                    c.type === 'newsletter' && isConflict ? 'bg-[#E65100]' : TYPE_DOT[c.type]
+                    c.type === 'newsletter' && isConflict ? 'bg-warning' : TYPE_DOT[c.type]
                   }`} />
                   <span className="text-[8px] text-text-secondary truncate leading-tight">
                     {c.manufacturers?.name ?? ''}
@@ -367,35 +367,52 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
       <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-8 py-4 border-b border-border shrink-0">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-light text-text-primary tracking-wide min-w-[180px]">
-              {toolbarLabel()}
-            </h1>
-            <div className="flex items-center gap-1">
-              <button onClick={() => navigate(-1)} className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-sm transition-colors" aria-label="Vorherige" title="Vorherige">
-                <ChevronLeft size={16} />
+        <div className="flex items-center justify-between gap-4 px-8 py-5 border-b border-border shrink-0">
+          <div className="flex items-center gap-5">
+            <div className="min-w-[180px]">
+              <h1 className="page-title text-xl">{toolbarLabel()}</h1>
+              <p className="mt-1 text-xs text-text-secondary">
+                Kampagnen-Kalender — Postkarten, Newsletter und Reports im Überblick.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => navigate(-1)}
+                className="btn-ghost p-2 rounded-lg"
+                aria-label="Vorheriger Zeitraum"
+                title="Vorheriger Zeitraum"
+              >
+                <ChevronLeft size={18} strokeWidth={1.75} />
               </button>
-              <button onClick={goToday} className="px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary border border-border hover:border-text-secondary/40 rounded-sm transition-colors">
+              <button
+                onClick={goToday}
+                className="btn-secondary px-3 py-1.5 text-xs"
+                title="Zum heutigen Datum springen"
+              >
                 Heute
               </button>
-              <button onClick={() => navigate(1)} className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-sm transition-colors" aria-label="Nächste" title="Nächste">
-                <ChevronRight size={16} />
+              <button
+                onClick={() => navigate(1)}
+                className="btn-ghost p-2 rounded-lg"
+                aria-label="Nächster Zeitraum"
+                title="Nächster Zeitraum"
+              >
+                <ChevronRight size={18} strokeWidth={1.75} />
               </button>
             </div>
 
             {/* View switcher */}
-            <div className="flex items-center border border-border rounded-sm overflow-hidden">
+            <div className="flex items-center border border-border rounded-xl overflow-hidden">
               {(['month', 'quarter', 'year'] as ViewMode[]).map((v, i) => (
                 <button
                   key={v}
                   onClick={() => { setViewMode(v); setSelectedDate(null) }}
                   className={`
-                    px-3 py-1.5 text-xs transition-colors
+                    px-3.5 py-1.5 text-xs transition-colors
                     ${i > 0 ? 'border-l border-border' : ''}
                     ${viewMode === v
-                      ? 'bg-accent-warm/10 text-accent-warm'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                      ? 'bg-accent-warm/10 text-accent-warm font-medium'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
                     }
                   `}
                 >
@@ -408,16 +425,16 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
           <div className="flex items-center gap-3">
             {/* Conflict legend — only when conflicts exist */}
             {conflictDates.size > 0 && (
-              <div className="flex items-center gap-1.5 text-[10px] text-[#E65100] border border-[#E65100]/30 bg-[#E65100]/5 px-2.5 py-1 rounded-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E65100] shrink-0" />
+              <div className="flex items-center gap-1.5 text-[10px] text-warning border border-warning/30 bg-warning/5 px-2.5 py-1 rounded-full">
+                <AlertTriangle size={12} strokeWidth={1.75} className="shrink-0" />
                 Newsletter-Konflikt in dieser Woche
               </div>
             )}
             <button
               onClick={() => handleNewCampaign()}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors"
+              className="btn-primary"
             >
-              <Plus size={14} />
+              <Plus size={16} strokeWidth={1.75} />
               Neue Kampagne
             </button>
           </div>
@@ -452,7 +469,7 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
                     onClick={() => handleDayClick(dateKey)}
                     className={`
                       relative border-r border-b border-border cursor-pointer transition-colors
-                      ${isSelected ? 'bg-accent-warm/5' : isWeekend && isCurrentMonth ? 'bg-white/[0.01] hover:bg-white/[0.03]' : 'hover:bg-white/[0.03]'}
+                      ${isSelected ? 'bg-accent-warm/5' : isWeekend && isCurrentMonth ? 'bg-surface/40 hover:bg-surface-hover' : 'hover:bg-surface-hover'}
                       ${!isCurrentMonth ? 'opacity-30' : ''}
                     `}
                   >
@@ -470,7 +487,7 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
                           <span
                             key={c.id}
                             className={`inline-block w-1.5 h-1.5 rounded-full ${
-                              c.type === 'newsletter' && isConflict ? 'bg-[#E65100]' : STATUS_STYLE[c.status].dot
+                              c.type === 'newsletter' && isConflict ? 'bg-warning' : STATUS_STYLE[c.status].dot
                             }`}
                             title={c.title}
                           />
@@ -482,9 +499,9 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
                     )}
                     <div className="px-2 pb-1.5 space-y-0.5 hidden [@media(min-height:800px)]:block">
                       {dayCampaigns.slice(0, 2).map((c) => (
-                        <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-sm text-[10px] truncate bg-white/[0.04] text-text-secondary">
+                        <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg text-[10px] truncate bg-surface-hover text-text-secondary">
                           <span className={`w-1 h-1 rounded-full shrink-0 ${
-                            c.type === 'newsletter' && isConflict ? 'bg-[#E65100]' : STATUS_STYLE[c.status].dot
+                            c.type === 'newsletter' && isConflict ? 'bg-warning' : STATUS_STYLE[c.status].dot
                           }`} />
                           <span className="truncate">{c.title}</span>
                         </div>
@@ -533,10 +550,10 @@ export default function CalendarView({ agencies, manufacturers }: Props) {
           <div className="flex-1 overflow-y-auto relative">
             {/* Legend */}
             <div className="flex items-center gap-4 px-8 py-3 border-b border-border text-[10px] text-text-secondary">
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#EDE8E3]" />Newsletter</div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#C4A87C]" />Postkarte</div>
+              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-accent-warm" />Newsletter</div>
+              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-accent-gold" />Postkarte</div>
               <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#555555]" />Report</div>
-              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#E65100]" />Konflikt (2+ Newsletter / Woche)</div>
+              <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-warning" />Konflikt (2+ Newsletter / Woche)</div>
             </div>
             <div className="grid grid-cols-4 divide-x divide-y divide-border">
               {Array.from({ length: 12 }, (_, i) => (

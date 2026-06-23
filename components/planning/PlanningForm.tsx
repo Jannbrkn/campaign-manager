@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CalendarPlus, ArrowRight, CheckCircle2, Calendar } from 'lucide-react'
 
 export default function PlanningForm() {
   const currentYear = new Date().getFullYear()
@@ -33,20 +33,22 @@ export default function PlanningForm() {
     }
   }
 
-  const pillBase = 'text-xs px-4 py-1.5 rounded-sm border transition-colors cursor-pointer'
-  const pillActive = 'border-accent-warm text-accent-warm'
-  const pillInactive = 'border-border text-text-secondary hover:text-text-primary'
+  const pillBase = 'text-sm px-4 py-1.5 rounded-full border transition-colors cursor-pointer'
+  const pillActive = 'border-accent-warm bg-accent-warm/10 text-accent-warm'
+  const pillInactive = 'border-border text-text-secondary hover:text-text-primary hover:border-border-strong'
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-2xl font-light text-text-primary mb-2">Jahresplanung</h1>
-      <p className="text-sm text-text-secondary mb-8">
-        Kampagnenketten für alle Hersteller automatisch anlegen. Hersteller mit bestehenden Kampagnen im gewählten Jahr werden übersprungen.
-      </p>
+      <div className="mb-8">
+        <h1 className="page-title">Jahresplanung</h1>
+        <p className="mt-1.5 text-sm text-text-secondary max-w-prose">
+          Kampagnenketten für alle Hersteller automatisch anlegen. Hersteller mit bestehenden Kampagnen im gewählten Jahr werden übersprungen.
+        </p>
+      </div>
 
       {/* Year selector */}
-      <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-3">Jahr auswählen</p>
-      <div className="flex gap-2 mb-8">
+      <p className="field-label">Jahr auswählen</p>
+      <div className="flex gap-2 mb-3 mt-2">
         {years.map((y) => (
           <button
             key={y}
@@ -57,42 +59,48 @@ export default function PlanningForm() {
           </button>
         ))}
       </div>
+      <p className="text-xs text-text-secondary mb-8 max-w-prose">
+        Wähle das Jahr, für das die Kampagnenketten angelegt werden sollen.
+      </p>
 
       {/* Generate button */}
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="flex items-center gap-2 bg-accent-warm text-[#0A0A0A] text-sm font-medium px-5 py-2.5 rounded-sm hover:bg-[#EDE8E3]/90 transition-colors disabled:opacity-50"
+        className="btn-primary"
       >
-        {loading && <Loader2 size={14} className="animate-spin" />}
-        Kampagnen generieren →
+        {loading ? <Loader2 size={16} className="animate-spin" strokeWidth={1.75} /> : <CalendarPlus size={16} strokeWidth={1.75} />}
+        Kampagnen generieren
       </button>
 
       {/* Result card */}
       {result && (
-        <div className="mt-8 border border-border bg-surface rounded-sm p-5 max-w-sm">
+        <div className="card mt-8 p-6 max-w-sm">
           {result.created > 0 ? (
             <>
-              <p className="text-sm text-text-primary font-medium mb-4">
-                ✓ Jahresplanung {year} abgeschlossen
+              <p className="flex items-center gap-2 text-sm text-text-primary font-medium mb-5">
+                <CheckCircle2 size={18} className="text-success" strokeWidth={1.75} />
+                Jahresplanung {year} abgeschlossen
               </p>
-              <div className="flex gap-8 mb-5">
+              <div className="flex gap-8 mb-6">
                 <div>
-                  <p className="text-2xl font-light text-[#C4A87C]">{result.created}</p>
-                  <p className="text-[11px] text-text-secondary">Kampagnen erstellt</p>
+                  <p className="font-display text-3xl font-semibold text-accent-gold">{result.created}</p>
+                  <p className="text-xs text-text-secondary mt-0.5">Kampagnen erstellt</p>
                 </div>
                 {result.skipped > 0 && (
                   <div>
-                    <p className="text-2xl font-light text-text-secondary">{result.skipped}</p>
-                    <p className="text-[11px] text-text-secondary">übersprungen</p>
+                    <p className="font-display text-3xl font-semibold text-text-secondary">{result.skipped}</p>
+                    <p className="text-xs text-text-secondary mt-0.5">übersprungen</p>
                   </div>
                 )}
               </div>
               <Link
                 href="/calendar"
-                className="text-xs text-text-secondary border border-border rounded-sm px-3 py-1.5 hover:text-text-primary transition-colors inline-block"
+                className="btn-secondary inline-flex"
               >
-                Im Kalender ansehen →
+                <Calendar size={16} strokeWidth={1.75} />
+                Im Kalender ansehen
+                <ArrowRight size={16} strokeWidth={1.75} />
               </Link>
             </>
           ) : result.errors.length > 0 ? (
@@ -104,9 +112,9 @@ export default function PlanningForm() {
           )}
 
           {result.errors.length > 0 && (
-            <ul className="mt-3 space-y-1">
+            <ul className="mt-4 space-y-1">
               {result.errors.map((e, i) => (
-                <li key={i} className="text-[11px] text-text-secondary">— {e}</li>
+                <li key={i} className="text-xs text-text-secondary">— {e}</li>
               ))}
             </ul>
           )}

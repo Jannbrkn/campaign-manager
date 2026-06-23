@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, Loader2 } from 'lucide-react'
+import { RefreshCw, Loader2, BarChart3 } from 'lucide-react'
 import type { ManufacturerGroup, Agency } from '@/lib/supabase/types'
 import ManufacturerCard from './ManufacturerCard'
 import DrillDown from './DrillDown'
@@ -76,29 +76,39 @@ export default function ManufacturerGrid({
     return `/performance?${p.toString()}`
   }
 
-  const pillBase = 'text-xs px-3 py-1.5 rounded-sm border transition-colors'
+  const pillBase = 'text-xs px-3 py-1.5 rounded-full border transition-colors'
   const pillActive = 'border-accent-warm text-accent-warm'
-  const pillInactive = 'border-border text-text-secondary hover:text-text-primary'
+  const pillInactive = 'border-border text-text-secondary hover:text-text-primary hover:border-border-strong'
 
   return (
     <div>
-      {/* Refresh button + result + timestamp */}
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 text-xs text-text-secondary border border-border rounded-sm px-3 py-1.5 hover:text-text-primary transition-colors disabled:opacity-50"
-        >
-          {refreshing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-          Mailchimp aktualisieren
-        </button>
-        <span
-          className="text-[11px] text-text-secondary/60"
-          title={lastRefreshedAt ? `Letzte Aktualisierung: ${new Date(lastRefreshedAt).toLocaleString('de-DE')}` : undefined}
-        >
-          Stand: {fmtRelative(lastRefreshedAt ?? null)}
-        </span>
-        {refreshResult && <span className="text-xs text-text-secondary ml-auto">{refreshResult}</span>}
+      {/* Page header */}
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Performance</h1>
+          <p className="mt-1.5 text-sm text-text-secondary max-w-prose">
+            Öffnungs- und Klickraten aller Hersteller im Überblick. Karte anklicken für Details.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span
+            className="text-[11px] text-text-secondary/60"
+            title={lastRefreshedAt ? `Letzte Aktualisierung: ${new Date(lastRefreshedAt).toLocaleString('de-DE')}` : undefined}
+          >
+            Stand: {fmtRelative(lastRefreshedAt ?? null)}
+          </span>
+          {refreshResult && <span className="text-xs text-text-secondary">{refreshResult}</span>}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Daten aus Mailchimp aktualisieren"
+            aria-label="Daten aus Mailchimp aktualisieren"
+            className="btn-secondary disabled:opacity-50"
+          >
+            {refreshing ? <Loader2 size={16} className="animate-spin" strokeWidth={1.75} /> : <RefreshCw size={16} strokeWidth={1.75} />}
+            Mailchimp aktualisieren
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -146,12 +156,12 @@ export default function ManufacturerGrid({
       </div>
 
       {/* Section label */}
-      <p className="text-[10px] text-text-secondary uppercase tracking-wider mb-4">
+      <p className="section-title mb-4">
         Hersteller · sortiert nach Öffnungsrate
       </p>
 
       {/* Card grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
         {groups.map((g) => (
           <ManufacturerCard
             key={g.manufacturer.id}
@@ -161,9 +171,13 @@ export default function ManufacturerGrid({
           />
         ))}
         {groups.length === 0 && (
-          <p className="col-span-4 text-sm text-text-secondary text-center py-12">
-            Keine Kampagnen für diese Filter
-          </p>
+          <div className="col-span-2 md:col-span-3 lg:col-span-4 flex flex-col items-center justify-center text-center py-16 px-6">
+            <BarChart3 size={32} className="text-text-secondary/50 mb-4" strokeWidth={1.5} />
+            <p className="text-text-primary text-sm font-medium">Keine Kampagnen für diese Filter</p>
+            <p className="text-text-secondary text-sm mt-1 max-w-sm">
+              Passe die Filter oben an oder aktualisiere die Daten aus Mailchimp.
+            </p>
+          </div>
         )}
       </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, FileSpreadsheet } from 'lucide-react'
+import { Loader2, FileSpreadsheet, CheckCircle2, XCircle, MinusCircle } from 'lucide-react'
 
 export default function AutoReportsPanel() {
   const [running, setRunning] = useState(false)
@@ -28,54 +28,57 @@ export default function AutoReportsPanel() {
   }
 
   return (
-    <div className="bg-surface border border-border rounded-sm p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card p-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-sm font-medium text-text-primary mb-1">Auto-Reports</h2>
-          <p className="text-xs text-text-secondary">
+          <h2 className="section-title mb-1.5">Auto-Reports</h2>
+          <p className="text-sm text-text-secondary max-w-prose">
             Generiert Reports für alle Newsletter, die ≥4 Werktage her sind.
           </p>
         </div>
         <button
           onClick={triggerAutoReports}
           disabled={running}
-          className="flex items-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+          className="btn-primary shrink-0"
         >
-          {running ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+          {running ? <Loader2 size={16} className="animate-spin" strokeWidth={1.75} /> : <FileSpreadsheet size={16} strokeWidth={1.75} />}
           {running ? 'Läuft…' : 'Jetzt ausführen'}
         </button>
       </div>
 
       {error && (
-        <p className="text-xs text-[#E65100] mt-2">{error}</p>
+        <p className="text-sm text-warning mt-2">{error}</p>
       )}
 
       {result && (
-        <div className="mt-4 border-t border-border pt-4">
-          <div className="flex gap-6 mb-3">
-            <span className="text-xs text-text-secondary">
-              Generiert: <span className="text-[#2E7D32] font-medium">{result.processed}</span>
+        <div className="mt-6 border-t border-border pt-6">
+          <div className="flex flex-wrap gap-8 mb-4">
+            <span className="flex flex-col gap-1">
+              <span className="field-label">Generiert</span>
+              <span className="font-display text-2xl font-semibold text-success">{result.processed}</span>
             </span>
-            <span className="text-xs text-text-secondary">
-              Übersprungen: <span className="text-text-primary font-medium">{result.skipped}</span>
+            <span className="flex flex-col gap-1">
+              <span className="field-label">Übersprungen</span>
+              <span className="font-display text-2xl font-semibold text-text-primary">{result.skipped}</span>
             </span>
             {result.errors?.length > 0 && (
-              <span className="text-xs text-text-secondary">
-                Fehler: <span className="text-[#E65100] font-medium">{result.errors.length}</span>
+              <span className="flex flex-col gap-1">
+                <span className="field-label">Fehler</span>
+                <span className="font-display text-2xl font-semibold text-warning">{result.errors.length}</span>
               </span>
             )}
           </div>
           {result.details?.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {result.details.map((d: any, i: number) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className={
-                    d.status === 'generated' ? 'text-[#2E7D32]' :
-                    d.status === 'error' ? 'text-[#E65100]' :
-                    'text-text-secondary'
-                  }>
-                    {d.status === 'generated' ? '✓' : d.status === 'error' ? '✗' : '–'}
-                  </span>
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  {d.status === 'generated' ? (
+                    <CheckCircle2 size={16} className="text-success shrink-0" strokeWidth={1.75} />
+                  ) : d.status === 'error' ? (
+                    <XCircle size={16} className="text-warning shrink-0" strokeWidth={1.75} />
+                  ) : (
+                    <MinusCircle size={16} className="text-text-secondary shrink-0" strokeWidth={1.75} />
+                  )}
                   <span className="text-text-primary">{d.campaign}</span>
                   {d.reason && <span className="text-text-secondary">— {d.reason}</span>}
                 </div>

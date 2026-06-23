@@ -20,9 +20,11 @@ export default function QuickReportButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 text-sm text-text-primary border border-border rounded-sm hover:border-accent-warm/50 hover:text-accent-warm transition-colors"
+        title="Schnell-Report erstellen"
+        aria-label="Schnell-Report erstellen"
+        className="btn-secondary"
       >
-        <FileSpreadsheet size={14} />
+        <FileSpreadsheet size={16} strokeWidth={1.75} />
         Schnell-Report
       </button>
 

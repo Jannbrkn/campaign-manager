@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Loader2, CalendarClock } from 'lucide-react'
 import { deleteCampaign } from '@/app/(app)/calendar/actions'
 import EditCampaignModal from '@/components/calendar/EditCampaignModal'
 import type { Campaign, Manufacturer, Agency } from '@/lib/supabase/types'
@@ -58,9 +58,13 @@ export default function CampaignList({ campaigns }: Props) {
 
   if (campaigns.length === 0) {
     return (
-      <p className="px-6 py-8 text-text-secondary text-sm text-center">
-        Noch keine Kampagnen geplant
-      </p>
+      <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+        <CalendarClock size={32} strokeWidth={1.5} className="text-text-secondary/50 mb-4" />
+        <p className="text-sm font-medium text-text-primary">Noch keine Kampagnen geplant</p>
+        <p className="mt-1 max-w-sm text-sm text-text-secondary">
+          Sobald Kampagnen angelegt sind, erscheinen sie hier in der Übersicht.
+        </p>
+      </div>
     )
   }
 
@@ -99,7 +103,7 @@ export default function CampaignList({ campaigns }: Props) {
                   day: '2-digit', month: 'short', year: 'numeric',
                 })}
               </span>
-              <span className="text-xs px-2 py-0.5 bg-background border border-border rounded-sm text-accent-warm whitespace-nowrap">
+              <span className="badge text-accent-warm whitespace-nowrap">
                 {STATUS_LABELS[campaign.status] ?? campaign.status}
               </span>
 
@@ -110,33 +114,35 @@ export default function CampaignList({ campaigns }: Props) {
                   <button
                     onClick={() => handleDelete(campaign.id)}
                     disabled={isDeleting}
-                    className="flex items-center gap-1 text-xs px-2 py-1 border border-warning/40 text-warning rounded-sm hover:bg-warning/10 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 border border-warning/40 text-warning rounded-lg hover:bg-warning/10 transition-colors disabled:opacity-50"
                   >
-                    {isDeleting ? <Loader2 size={10} className="animate-spin" /> : null}
+                    {isDeleting ? <Loader2 size={12} className="animate-spin" /> : null}
                     Ja
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(null)}
-                    className="text-xs text-text-secondary hover:text-text-primary transition-colors"
+                    className="text-xs px-2.5 py-1 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
                   >
                     Nein
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => setEditingCampaign(campaign)}
-                    className="p-1.5 text-text-secondary hover:text-text-primary transition-colors rounded-sm"
+                    className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
                     title="Bearbeiten"
+                    aria-label="Kampagne bearbeiten"
                   >
-                    <Pencil size={13} />
+                    <Pencil size={16} strokeWidth={1.75} />
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(campaign.id)}
-                    className="p-1.5 text-text-secondary hover:text-warning transition-colors rounded-sm"
+                    className="p-2 rounded-lg text-text-secondary hover:text-warning hover:bg-surface-hover transition-colors"
                     title="Löschen"
+                    aria-label="Kampagne löschen"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={16} strokeWidth={1.75} />
                   </button>
                 </div>
               )}

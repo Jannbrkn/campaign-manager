@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Campaign, Manufacturer, Agency } from '@/lib/supabase/types'
 import CampaignList from '@/components/dashboard/CampaignList'
+import { Building2, Factory, CalendarClock, CalendarDays } from 'lucide-react'
 
 interface CampaignRow extends Campaign {
   manufacturers: (Manufacturer & { agencies: Agency }) | null
@@ -35,35 +36,45 @@ export default async function DashboardPage() {
     await Promise.all([getStats(), getNextCampaigns()])
 
   const stats = [
-    { label: 'Agenturen',            value: agencyCount ?? 0 },
-    { label: 'Hersteller',           value: manufacturerCount ?? 0 },
-    { label: 'Geplante Kampagnen',   value: campaignCount ?? 0 },
+    { label: 'Agenturen',            value: agencyCount ?? 0,      Icon: Building2 },
+    { label: 'Hersteller',           value: manufacturerCount ?? 0, Icon: Factory },
+    { label: 'Geplante Kampagnen',   value: campaignCount ?? 0,    Icon: CalendarClock },
     { label: 'Nächste Kampagne',     value: nextCampaigns[0]
         ? new Date(nextCampaigns[0].scheduled_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
-        : '—'
+        : '—',
+      Icon: CalendarDays
     },
   ]
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-light text-text-primary mb-8">Dashboard</h1>
+      {/* Page header */}
+      <div className="mb-8">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="mt-1.5 text-sm text-text-secondary">
+          Überblick über Agenturen, Hersteller und die nächsten geplanten Kampagnen.
+        </p>
+      </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {stats.map(({ label, value }) => (
-          <div key={label} className="bg-surface border border-border rounded-sm p-6">
-            <p className="text-text-secondary text-xs tracking-wider uppercase mb-3">{label}</p>
-            <p className="text-3xl font-light text-text-primary">{value}</p>
+        {stats.map(({ label, value, Icon }) => (
+          <div key={label} className="card p-6">
+            <div className="flex items-center gap-2 mb-3 text-text-secondary">
+              <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+              <p className="text-xs tracking-wider uppercase">{label}</p>
+            </div>
+            <p className="font-display text-3xl font-semibold text-text-primary">{value}</p>
           </div>
         ))}
       </div>
 
       {/* Upcoming campaigns */}
       <div>
-        <h2 className="text-xs tracking-wider uppercase text-text-secondary mb-4">
+        <h2 className="section-title mb-4">
           Nächste Kampagnen
         </h2>
-        <div className="bg-surface border border-border rounded-sm divide-y divide-border">
+        <div className="card divide-y divide-border overflow-hidden">
           <CampaignList campaigns={nextCampaigns as any} />
         </div>
       </div>

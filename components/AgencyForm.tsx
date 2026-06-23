@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Save, Upload, AlertCircle } from 'lucide-react'
 
 export default function AgencyForm() {
   const router = useRouter()
@@ -66,60 +67,67 @@ export default function AgencyForm() {
   ]
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-5">
+    <form onSubmit={handleSubmit} className="max-w-lg space-y-6">
       {fields.map(({ name, label, required, type }) => (
         <div key={name}>
-          <label className="block text-xs tracking-wider uppercase text-text-secondary mb-2">
+          <label className="field-label">
             {label}{required && <span className="text-warning ml-1">*</span>}
           </label>
           <input
             name={name}
             type={type}
             required={required}
-            className="w-full bg-surface border border-border text-text-primary px-4 py-3 text-sm rounded-sm focus:outline-none focus:border-accent-warm transition-colors"
+            className="field-input"
           />
         </div>
       ))}
 
       {/* Address textarea */}
       <div>
-        <label className="block text-xs tracking-wider uppercase text-text-secondary mb-2">
+        <label className="field-label">
           Adresse
         </label>
         <textarea
           name="address"
           rows={3}
-          className="w-full bg-surface border border-border text-text-primary px-4 py-3 text-sm rounded-sm focus:outline-none focus:border-accent-warm transition-colors resize-none"
+          className="field-input resize-none"
         />
       </div>
 
       {/* Logo upload */}
       <div>
-        <label className="block text-xs tracking-wider uppercase text-text-secondary mb-2">
+        <label className="field-label">
           Logo
         </label>
         <input
           type="file"
           accept="image/png,image/jpeg,image/svg+xml"
           onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-          className="w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border file:border-border file:bg-background file:text-text-secondary hover:file:text-text-primary file:cursor-pointer"
+          className="w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-border file:bg-surface-2 file:text-text-secondary hover:file:text-text-primary file:cursor-pointer file:transition-colors"
         />
+        <p className="mt-1.5 text-xs text-text-secondary">PNG, JPG oder SVG — wird im Footer der Newsletter verwendet.</p>
       </div>
 
-      {error && <p className="text-sm text-warning">{error}</p>}
+      {error && (
+        <p className="flex items-center gap-2 text-sm text-warning">
+          <AlertCircle size={16} strokeWidth={1.75} />
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
           disabled={saving}
-          className="bg-accent-warm text-background text-sm font-medium px-6 py-2.5 rounded-sm hover:bg-white transition-colors disabled:opacity-50"
+          className="btn-primary"
         >
+          {saving ? <Upload size={16} strokeWidth={1.75} className="animate-pulse" /> : <Save size={16} strokeWidth={1.75} />}
           {saving ? 'Speichern…' : 'Speichern'}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-sm text-text-secondary hover:text-text-primary px-4 py-2.5 transition-colors"
+          className="btn-secondary"
         >
           Abbrechen
         </button>

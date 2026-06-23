@@ -3,27 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  backgroundColor: '#1A1A1A',
-  border: '1px solid #2A2A2A',
-  color: '#FFFFFF',
-  padding: '12px 16px',
-  fontSize: '14px',
-  borderRadius: '2px',
-  outline: 'none',
-  transition: 'border-color 0.15s',
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  color: '#999999',
-  fontSize: '10px',
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  marginBottom: '8px',
-}
+import { LogIn, Loader2 } from 'lucide-react'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -53,11 +33,18 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+      <div className="mb-1">
+        <h1 className="page-title">Anmelden</h1>
+        <p className="mt-1.5 text-sm text-text-secondary">
+          Mit deinem Konto anmelden, um zum Campaign Manager zu gelangen.
+        </p>
+      </div>
 
       {/* Email */}
       <div>
-        <label style={labelStyle}>E-Mail</label>
+        <label className="field-label">E-Mail</label>
         <input
           type="email"
           value={email}
@@ -67,16 +54,13 @@ export default function LoginForm() {
           required
           autoComplete="email"
           placeholder="mail@domain.com"
-          style={{
-            ...inputStyle,
-            borderColor: emailFocus ? '#EDE8E3' : '#2A2A2A',
-          }}
+          className="field-input"
         />
       </div>
 
       {/* Password */}
       <div>
-        <label style={labelStyle}>Passwort</label>
+        <label className="field-label">Passwort</label>
         <input
           type="password"
           value={password}
@@ -86,41 +70,32 @@ export default function LoginForm() {
           required
           autoComplete="current-password"
           placeholder="••••••••"
-          style={{
-            ...inputStyle,
-            borderColor: passFocus ? '#EDE8E3' : '#2A2A2A',
-          }}
+          className="field-input"
         />
       </div>
 
       {/* Error */}
       {error && (
-        <p style={{ color: '#E65100', fontSize: '13px', margin: 0 }}>{error}</p>
+        <p className="text-sm text-warning">{error}</p>
       )}
 
       {/* Submit */}
       <button
         type="submit"
         disabled={loading}
-        style={{
-          width: '100%',
-          backgroundColor: loading ? '#C8C3BE' : '#EDE8E3',
-          color: '#0A0A0A',
-          fontSize: '12px',
-          fontWeight: '500',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          padding: '14px',
-          borderRadius: '2px',
-          border: 'none',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          transition: 'background-color 0.15s',
-          marginTop: '8px',
-        }}
-        onMouseEnter={(e) => { if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#FFFFFF' }}
-        onMouseLeave={(e) => { if (!loading) (e.target as HTMLButtonElement).style.backgroundColor = '#EDE8E3' }}
+        className="btn-primary mt-2 w-full justify-center"
       >
-        {loading ? 'Anmelden…' : 'Anmelden'}
+        {loading ? (
+          <>
+            <Loader2 size={16} strokeWidth={1.75} className="animate-spin" />
+            Anmelden…
+          </>
+        ) : (
+          <>
+            <LogIn size={16} strokeWidth={1.75} />
+            Anmelden
+          </>
+        )}
       </button>
 
     </form>

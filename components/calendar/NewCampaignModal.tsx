@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { X, Loader2, Check } from 'lucide-react'
+import { X, Loader2, Check, CalendarPlus, Mail, FileText } from 'lucide-react'
 import { createCampaign } from '@/app/(app)/calendar/actions'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
 
@@ -117,14 +117,29 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
   }, {})
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-surface border border-border rounded-sm shadow-2xl">
+      <div className="relative z-10 w-full max-w-lg bg-surface-2 border border-border rounded-2xl shadow-elevated">
 
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-          <h2 className="text-sm font-medium text-text-primary">Neue Kampagne</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
-            <X size={16} />
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-warm/10 text-accent-warm">
+              <CalendarPlus size={18} strokeWidth={1.75} />
+            </span>
+            <div>
+              <h2 className="text-base font-semibold text-text-primary">Neue Kampagne</h2>
+              <p className="mt-0.5 text-xs text-text-secondary">
+                Hersteller, Typ und Datum wählen – verknüpfte Termine entstehen automatisch.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            title="Schließen"
+            aria-label="Schließen"
+            className="btn-ghost p-2 shrink-0"
+          >
+            <X size={16} strokeWidth={1.75} />
           </button>
         </div>
 
@@ -132,11 +147,11 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
 
           {/* Manufacturer */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Hersteller</label>
+            <label className="field-label">Hersteller</label>
             <select
               value={manufacturerId}
               onChange={(e) => setManufacturerId(e.target.value)}
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50 appearance-none"
+              className="field-input appearance-none"
               required
             >
               <option value="">Hersteller wählen…</option>
@@ -156,17 +171,17 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
 
           {/* Type */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Typ</label>
-            <div className="grid grid-cols-4 gap-1.5">
+            <label className="field-label">Typ</label>
+            <div className="grid grid-cols-4 gap-2">
               {(Object.keys(TYPE_LABELS) as CampaignTypeOption[]).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => handleTypeChange(t)}
-                  className={`px-2 py-2 text-xs rounded-sm border transition-colors ${
+                  className={`px-2 py-2 text-xs rounded-xl border transition-colors ${
                     type === t
                       ? 'border-accent-warm text-accent-warm bg-accent-warm/5'
-                      : 'border-border text-text-secondary hover:text-text-primary'
+                      : 'border-border text-text-secondary hover:text-text-primary hover:border-border-strong'
                   }`}
                 >
                   {TYPE_LABELS[t]}
@@ -177,31 +192,31 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
 
           {/* Date */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Datum</label>
+            <label className="field-label">Datum</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50 [color-scheme:dark]"
+              className="field-input [color-scheme:dark]"
               required
             />
           </div>
 
           {/* Chain prompt — only for postcard/newsletter when date is set */}
           {offerChain && chain && (
-            <div className="bg-background border border-border rounded-sm overflow-hidden">
+            <div className="bg-surface border border-border rounded-xl overflow-hidden">
               <button
                 type="button"
                 onClick={() => setCreateChain((v) => !v)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors"
               >
                 {/* Checkbox */}
-                <span className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${
+                <span className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors ${
                   createChain ? 'bg-accent-warm border-accent-warm' : 'bg-transparent border-border'
                 }`}>
-                  {createChain && <Check size={10} strokeWidth={3} className="text-background" />}
+                  {createChain && <Check size={12} strokeWidth={3} className="text-background" />}
                 </span>
-                <span className="text-xs text-text-primary text-left">
+                <span className="text-sm text-text-primary text-left">
                   {type === 'postcard'
                     ? 'Newsletter und Reports automatisch anlegen'
                     : 'Reports automatisch anlegen'}
@@ -210,16 +225,16 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
 
               {/* Preview */}
               {createChain && (
-                <div className="px-4 pb-3 space-y-1.5 border-t border-border">
+                <div className="px-4 pb-3 space-y-2 border-t border-border">
                   {chain.newsletter && (
-                    <div className="flex items-center gap-2 pt-3 text-xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent-warm shrink-0" />
+                    <div className="flex items-center gap-2.5 pt-3 text-xs">
+                      <Mail size={16} strokeWidth={1.75} className="text-accent-warm shrink-0" />
                       <span className="text-text-secondary flex-1">Newsletter</span>
                       <span className="text-accent-warm">{fmt(chain.newsletter)}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#999999] shrink-0" />
+                  <div className="flex items-center gap-2.5 text-xs">
+                    <FileText size={16} strokeWidth={1.75} className="text-text-secondary shrink-0" />
                     <span className="text-text-secondary flex-1">Report Intern + Extern</span>
                     <span className="text-text-primary">{fmt(chain.report)}</span>
                   </div>
@@ -230,26 +245,26 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
 
           {/* Title */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Titel</label>
+            <label className="field-label">Titel</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={getAutoTitle() || 'Kampagnentitel…'}
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+              className="field-input"
             />
-            <p className="text-xs text-text-secondary mt-1">Leer lassen für Autotitel</p>
+            <p className="text-xs text-text-secondary mt-1.5">Leer lassen für Autotitel</p>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Notizen</label>
+            <label className="field-label">Notizen</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Optional…"
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none"
+              className="field-input resize-none"
             />
           </div>
 
@@ -259,16 +274,16 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-sm text-text-secondary border border-border rounded-sm hover:text-text-primary transition-colors"
+              className="btn-secondary flex-1"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 px-4 py-2.5 text-sm text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="btn-primary flex-1"
             >
-              {isPending && <Loader2 size={14} className="animate-spin" />}
+              {isPending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} strokeWidth={1.75} />}
               {offerChain && createChain ? 'Kette erstellen' : 'Erstellen'}
             </button>
           </div>

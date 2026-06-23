@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Building2 } from 'lucide-react'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
 import WebsiteUrlInlineEdit from '@/components/manufacturers/WebsiteUrlInlineEdit'
 import { updateManufacturerWebsiteUrl } from '../actions'
@@ -44,38 +44,39 @@ export default async function ManufacturerDetailPage({ params }: { params: { id:
   ]
 
   return (
-    <div className="p-8">
+    <div className="p-8 max-w-3xl">
       <Link
         href="/manufacturers"
-        className="inline-flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary transition-colors mb-6"
+        className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors mb-6"
       >
-        <ArrowLeft size={12} />
-        Hersteller
+        <ArrowLeft size={16} strokeWidth={1.75} />
+        Zurück zu den Herstellern
       </Link>
 
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-light text-text-primary">{manufacturer.name}</h1>
-          <p className="text-text-secondary text-sm mt-1">
+          <h1 className="page-title">{manufacturer.name}</h1>
+          <p className="text-text-secondary text-sm mt-1.5">
             {manufacturer.category} · {manufacturer.agencies?.name}
           </p>
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-sm">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-xs tracking-wider uppercase text-text-secondary">Details</h2>
+      <div className="card">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+          <Building2 size={20} strokeWidth={1.75} className="text-text-secondary" />
+          <h2 className="section-title">Details</h2>
         </div>
         <div className="divide-y divide-border">
           {readonlyFields.map(({ label, value }) => (
             <div key={label} className="px-6 py-4 flex items-start justify-between gap-4">
-              <span className="text-xs text-text-secondary w-48 shrink-0">{label}</span>
+              <span className="field-label w-48 shrink-0">{label}</span>
               <span className="text-sm text-text-primary text-right break-all">{value ?? '—'}</span>
             </div>
           ))}
           {/* Editable: website_url */}
           <div className="px-6 py-4 flex items-start justify-between gap-4">
-            <span className="text-xs text-text-secondary w-48 shrink-0">Website</span>
+            <span className="field-label w-48 shrink-0">Website</span>
             <div className="flex-1 flex justify-end">
               <WebsiteUrlInlineEdit
                 manufacturerId={manufacturer.id}

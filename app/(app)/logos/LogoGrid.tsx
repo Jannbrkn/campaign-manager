@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Upload, CheckCircle2, Loader2, Building2, Factory } from 'lucide-react'
+import { Upload, CheckCircle2, Loader2, Building2, Factory, ImageOff } from 'lucide-react'
 import { uploadAgencyLogo, uploadManufacturerLogo } from './actions'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
 
@@ -111,11 +111,11 @@ function LogoCard({
   return (
     <label
       className={`
-        relative flex flex-col items-center justify-center gap-3 p-4 rounded-sm border cursor-pointer
-        transition-all duration-150 min-h-[140px]
+        relative flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border cursor-pointer
+        transition-all duration-150 min-h-[150px]
         ${dragging
           ? 'border-accent-warm bg-accent-warm/5 scale-[1.02]'
-          : 'border-border bg-surface hover:border-border/80 hover:bg-white/[0.02]'
+          : 'border-border bg-surface hover:border-border-strong hover:bg-surface-hover'
         }
       `}
       onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
@@ -134,34 +134,34 @@ function LogoCard({
             onError={() => setPreview(null)}
           />
         ) : (
-          <div className="w-10 h-10 rounded-sm bg-white/5 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-full bg-surface-2 flex items-center justify-center">
             {type === 'agency'
-              ? <Building2 size={18} className="text-text-secondary/40" />
-              : <Factory size={18} className="text-text-secondary/40" />
+              ? <Building2 size={20} strokeWidth={1.75} className="text-text-secondary/40" />
+              : <Factory size={20} strokeWidth={1.75} className="text-text-secondary/40" />
             }
           </div>
         )}
       </div>
 
       {/* Name */}
-      <p className="text-xs text-text-primary text-center leading-snug font-medium truncate w-full text-center px-1">
+      <p className="text-xs text-text-primary leading-snug font-medium truncate w-full text-center px-1">
         {name}
       </p>
 
       {/* Status */}
       <div className="h-5 flex items-center justify-center">
-        {(uploading || fetching) && <Loader2 size={12} className="animate-spin text-text-secondary" />}
-        {success && <CheckCircle2 size={12} className="text-[#2E7D32]" />}
+        {(uploading || fetching) && <Loader2 size={14} strokeWidth={1.75} className="animate-spin text-text-secondary" />}
+        {success && <CheckCircle2 size={14} strokeWidth={1.75} className="text-success" />}
         {!uploading && !fetching && !success && (
-          <span className="text-[10px] text-text-secondary/50 flex items-center gap-1">
-            <Upload size={9} />
+          <span className="text-[10px] text-text-secondary/60 flex items-center gap-1">
+            <Upload size={11} strokeWidth={1.75} />
             {preview ? 'Ersetzen' : 'Logo ablegen'}
           </span>
         )}
       </div>
 
       {error && (
-        <p className="text-[10px] text-[#E65100] text-center absolute bottom-2 left-2 right-2">
+        <p className="text-[10px] text-warning text-center absolute bottom-2 left-2 right-2">
           {error}
         </p>
       )}
@@ -177,16 +177,28 @@ interface Props {
 }
 
 export default function LogoGrid({ agencies, manufacturers }: Props) {
+  if (agencies.length === 0 && manufacturers.length === 0) {
+    return (
+      <div className="card p-6 flex flex-col items-center justify-center text-center py-16 px-6">
+        <ImageOff size={32} strokeWidth={1.5} className="text-text-secondary/50 mb-4" />
+        <p className="text-text-primary text-sm font-medium">Noch keine Logos vorhanden</p>
+        <p className="text-text-secondary text-sm mt-1 max-w-sm">
+          Sobald Agenturen und Hersteller angelegt sind, erscheinen hier ihre Logo-Karten zum Hochladen.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-10">
 
       {/* Agencies */}
       <section>
-        <h2 className="text-xs uppercase tracking-wider text-text-secondary mb-4 flex items-center gap-2">
-          <Building2 size={12} />
+        <h2 className="section-title mb-4 flex items-center gap-2">
+          <Building2 size={16} strokeWidth={1.75} />
           Agenturen
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {agencies.map((agency) => (
             <LogoCard
               key={agency.id}
@@ -205,11 +217,11 @@ export default function LogoGrid({ agencies, manufacturers }: Props) {
         if (mfgs.length === 0) return null
         return (
           <section key={agency.id}>
-            <h2 className="text-xs uppercase tracking-wider text-text-secondary mb-4 flex items-center gap-2">
-              <Factory size={12} />
+            <h2 className="section-title mb-4 flex items-center gap-2">
+              <Factory size={16} strokeWidth={1.75} />
               {agency.name}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {mfgs.map((mfg) => (
                 <LogoCard
                   key={mfg.id}

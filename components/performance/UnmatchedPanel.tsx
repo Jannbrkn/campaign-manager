@@ -48,8 +48,8 @@ function fmtDate(iso: string): string {
 }
 
 function scoreBadge(score: number): { label: string; cls: string } {
-  if (score >= 10) return { label: 'Sehr wahrscheinlich', cls: 'text-[#2E7D32] border-[#2E7D32]/30 bg-[#2E7D32]/10' }
-  if (score >= 5) return { label: 'Wahrscheinlich', cls: 'text-[#C4A87C] border-[#C4A87C]/30 bg-[#C4A87C]/10' }
+  if (score >= 10) return { label: 'Sehr wahrscheinlich', cls: 'text-success border-success/30 bg-success/10' }
+  if (score >= 5) return { label: 'Wahrscheinlich', cls: 'text-accent-gold border-accent-gold/30 bg-accent-gold/10' }
   return { label: 'Eher unwahrscheinlich', cls: 'text-text-secondary border-border bg-transparent' }
 }
 
@@ -112,33 +112,36 @@ export default function UnmatchedPanel() {
 
   if (loading) {
     return (
-      <div className="bg-surface border border-border rounded-sm p-4 mb-6 flex items-center gap-3">
-        <Loader2 size={14} className="animate-spin text-text-secondary" />
-        <p className="text-xs text-text-secondary">Verknüpfungsstatus wird geladen…</p>
+      <div className="card p-5 mb-8 flex items-center gap-3">
+        <Loader2 size={16} strokeWidth={1.75} className="animate-spin text-text-secondary" />
+        <p className="text-sm text-text-secondary">Verknüpfungsstatus wird geladen…</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-surface border border-[#E65100]/30 rounded-sm p-4 mb-6">
-        <p className="text-xs text-[#E65100]">Verknüpfungsstatus: {error}</p>
+      <div className="card border-warning/30 p-5 mb-8 flex items-center gap-3">
+        <AlertCircle size={16} strokeWidth={1.75} className="text-warning shrink-0" />
+        <p className="text-sm text-warning">Verknüpfungsstatus: {error}</p>
       </div>
     )
   }
 
   if (!data || (data.unmatchedDbCount === 0 && data.unusedMcCount === 0)) {
     return (
-      <div className="bg-surface border border-border rounded-sm p-4 mb-6 flex items-center gap-3">
-        <CheckCircle2 size={14} className="text-[#2E7D32]" />
-        <p className="text-xs text-text-secondary">
+      <div className="card p-5 mb-8 flex items-center gap-3">
+        <CheckCircle2 size={20} strokeWidth={1.75} className="text-success shrink-0" />
+        <p className="text-sm text-text-secondary">
           Alle versendeten Kampagnen sind verknüpft.
         </p>
         <button
           onClick={load}
-          className="ml-auto flex items-center gap-1.5 text-[10px] text-text-secondary/60 hover:text-text-secondary transition-colors"
+          title="Erneut prüfen"
+          aria-label="Erneut prüfen"
+          className="btn-ghost ml-auto gap-1.5"
         >
-          <RefreshCw size={10} />
+          <RefreshCw size={16} strokeWidth={1.75} />
           Prüfen
         </button>
       </div>
@@ -146,36 +149,39 @@ export default function UnmatchedPanel() {
   }
 
   return (
-    <div className="mb-6 space-y-3">
+    <div className="mb-8 space-y-3">
       {/* Banner */}
-      <div className="bg-surface border border-[#E65100]/30 rounded-sm overflow-hidden">
+      <div className="card border-warning/30 overflow-hidden">
         <button
           onClick={() => setExpanded((e) => !e)}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#1A1A1A] transition-colors"
+          title={expanded ? 'Zuklappen' : 'Aufklappen'}
+          aria-label={expanded ? 'Zuklappen' : 'Aufklappen'}
+          aria-expanded={expanded}
+          className="w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-hover transition-colors"
         >
-          <AlertCircle size={14} className="text-[#E65100] shrink-0" />
+          <AlertCircle size={20} strokeWidth={1.75} className="text-warning shrink-0" />
           <div className="flex-1 text-left">
-            <p className="text-xs text-text-primary">
+            <p className="text-sm text-text-primary">
               <span className="font-medium">{data.unmatchedDbCount}</span> DB-Kampagne{data.unmatchedDbCount !== 1 ? 'n' : ''} nicht verknüpft
               {data.unusedMcCount > 0 && (
                 <span className="text-text-secondary"> · {data.unusedMcCount} Mailchimp-Kampagnen ohne DB-Eintrag</span>
               )}
             </p>
-            <p className="text-[10px] text-text-secondary/70 mt-0.5">
-              Stats dieser Kampagnen erscheinen erst, wenn sie verknüpft sind
+            <p className="text-xs text-text-secondary mt-1">
+              Stats dieser Kampagnen erscheinen erst, wenn sie verknüpft sind. Klicke zum Aufklappen und ordne die passende Mailchimp-Kampagne zu.
             </p>
           </div>
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {expanded ? <ChevronUp size={18} strokeWidth={1.75} className="shrink-0" /> : <ChevronDown size={18} strokeWidth={1.75} className="shrink-0" />}
         </button>
 
         {expanded && (
           <div className="border-t border-border">
             {data.unmatchedDb.length === 0 ? (
-              <p className="text-xs text-text-secondary px-4 py-4">
+              <p className="text-sm text-text-secondary px-5 py-4">
                 Keine ungematchten DB-Kampagnen.
               </p>
             ) : (
-              <div className="divide-y divide-[#1A1A1A]">
+              <div className="divide-y divide-border">
                 {data.unmatchedDb.map((db) => (
                   <UnmatchedRow
                     key={db.campaign_id}
@@ -193,25 +199,28 @@ export default function UnmatchedPanel() {
 
       {/* Unused Mailchimp campaigns — separate collapsible section */}
       {data.unusedMcCount > 0 && expanded && (
-        <div className="bg-surface border border-border rounded-sm overflow-hidden">
+        <div className="card overflow-hidden">
           <button
             onClick={() => setShowUnusedMc((s) => !s)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#1A1A1A] transition-colors"
+            title={showUnusedMc ? 'Zuklappen' : 'Aufklappen'}
+            aria-label={showUnusedMc ? 'Zuklappen' : 'Aufklappen'}
+            aria-expanded={showUnusedMc}
+            className="w-full flex items-center gap-3 px-5 py-3 hover:bg-surface-hover transition-colors"
           >
             <div className="flex-1 text-left">
-              <p className="text-[11px] text-text-secondary">
+              <p className="text-xs text-text-secondary">
                 {data.unusedMcCount} Mailchimp-Kampagnen ohne DB-Eintrag · nur zur Info
               </p>
             </div>
-            {showUnusedMc ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {showUnusedMc ? <ChevronUp size={16} strokeWidth={1.75} className="shrink-0" /> : <ChevronDown size={16} strokeWidth={1.75} className="shrink-0" />}
           </button>
           {showUnusedMc && (
-            <div className="border-t border-border divide-y divide-[#1A1A1A] max-h-96 overflow-y-auto">
+            <div className="border-t border-border divide-y divide-border max-h-96 overflow-y-auto">
               {data.unusedMc.map((mc) => (
-                <div key={mc.mc_id} className="px-4 py-2.5 flex items-center gap-4">
-                  <span className="text-[10px] text-text-secondary w-16 shrink-0">{fmtDate(mc.send_time)}</span>
-                  <span className="text-xs text-text-primary truncate flex-1">{mc.title || '(ohne Titel)'}</span>
-                  <span className="text-[10px] text-text-secondary truncate max-w-[200px]">{mc.subject}</span>
+                <div key={mc.mc_id} className="px-5 py-3 flex items-center gap-4">
+                  <span className="text-xs text-text-secondary w-16 shrink-0">{fmtDate(mc.send_time)}</span>
+                  <span className="text-sm text-text-primary truncate flex-1">{mc.title || '(ohne Titel)'}</span>
+                  <span className="text-xs text-text-secondary truncate max-w-[200px]">{mc.subject}</span>
                 </div>
               ))}
             </div>
@@ -238,55 +247,57 @@ function UnmatchedRow({
   const visibleCandidates = showAll ? candidates : candidates.slice(0, 3)
 
   return (
-    <div className="px-4 py-3">
+    <div className="px-5 py-4">
       {/* DB campaign summary */}
-      <div className="flex items-baseline gap-3 mb-2">
-        <span className="text-[10px] text-text-secondary w-16 shrink-0">{fmtDate(db.scheduled_date)}</span>
+      <div className="flex items-baseline gap-3 mb-3">
+        <span className="text-xs text-text-secondary w-16 shrink-0">{fmtDate(db.scheduled_date)}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-text-primary truncate">{db.title}</p>
-          <p className="text-[10px] text-text-secondary">{db.manufacturer_name} · {db.agency_name}</p>
+          <p className="text-sm text-text-primary truncate">{db.title}</p>
+          <p className="text-xs text-text-secondary mt-0.5">{db.manufacturer_name} · {db.agency_name}</p>
         </div>
       </div>
 
       {error && (
-        <p className="text-[10px] text-[#E65100] mb-2 ml-[76px]">{error}</p>
+        <p className="text-xs text-warning mb-3 ml-[76px]">{error}</p>
       )}
 
       {/* Candidate list */}
       {candidates.length === 0 ? (
-        <p className="text-[10px] text-text-secondary/60 ml-[76px]">
+        <p className="text-xs text-text-secondary ml-[76px]">
           Keine passende Mailchimp-Kampagne innerhalb von 60 Tagen gefunden.
         </p>
       ) : (
-        <div className="ml-[76px] space-y-1">
+        <div className="ml-[76px] space-y-1.5">
           {visibleCandidates.map((c) => {
             const badge = scoreBadge(c.score)
             return (
               <div
                 key={c.mc_id}
-                className="flex items-center gap-3 px-2.5 py-1.5 bg-background border border-border rounded-sm hover:border-[#3A3A3A] transition-colors"
+                className="flex items-center gap-3 px-3 py-2 bg-surface-2 border border-border rounded-xl hover:border-border-strong transition-colors"
               >
-                <span className="text-[9px] text-text-secondary shrink-0 w-14">
+                <span className="text-[10px] text-text-secondary shrink-0 w-14">
                   {fmtDate(c.send_time)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-text-primary truncate">{c.mc_title || '(ohne Titel)'}</p>
+                  <p className="text-xs text-text-primary truncate">{c.mc_title || '(ohne Titel)'}</p>
                   {c.mc_subject && (
-                    <p className="text-[10px] text-text-secondary truncate">{c.mc_subject}</p>
+                    <p className="text-[10px] text-text-secondary truncate mt-0.5">{c.mc_subject}</p>
                   )}
                 </div>
-                <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 border rounded-sm shrink-0 ${badge.cls}`}>
+                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 border rounded-full shrink-0 ${badge.cls}`}>
                   {badge.label} · {c.score.toFixed(1)}
                 </span>
-                <span className="text-[9px] text-text-secondary/70 shrink-0 w-14 text-right">
+                <span className="text-[10px] text-text-secondary shrink-0 w-14 text-right">
                   {c.diff_days.toFixed(0)}d Ø
                 </span>
                 <button
                   onClick={() => onLink(c.mc_id)}
                   disabled={linking}
-                  className="flex items-center gap-1 text-[10px] text-accent-warm hover:text-accent-warm/80 border border-accent-warm/30 rounded-sm px-2 py-1 transition-colors disabled:opacity-50 shrink-0"
+                  title="Mit dieser Mailchimp-Kampagne verknüpfen"
+                  aria-label="Mit dieser Mailchimp-Kampagne verknüpfen"
+                  className="flex items-center gap-1.5 text-xs text-accent-warm hover:text-accent-warm/80 border border-accent-warm/30 rounded-lg px-2.5 py-1.5 transition-colors disabled:opacity-50 shrink-0"
                 >
-                  {linking ? <Loader2 size={9} className="animate-spin" /> : <Link2 size={9} />}
+                  {linking ? <Loader2 size={14} strokeWidth={1.75} className="animate-spin" /> : <Link2 size={14} strokeWidth={1.75} />}
                   Verknüpfen
                 </button>
               </div>
@@ -295,7 +306,7 @@ function UnmatchedRow({
           {candidates.length > 3 && (
             <button
               onClick={() => setShowAll((s) => !s)}
-              className="text-[10px] text-text-secondary hover:text-text-primary transition-colors pl-2.5"
+              className="text-xs text-text-secondary hover:text-text-primary transition-colors pl-3 pt-1"
             >
               {showAll ? `Weniger anzeigen` : `+ ${candidates.length - 3} weitere Kandidaten`}
             </button>

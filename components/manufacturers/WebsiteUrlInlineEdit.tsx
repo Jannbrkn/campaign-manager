@@ -48,42 +48,55 @@ export default function WebsiteUrlInlineEdit({ manufacturerId, initialValue, onS
         <span className="text-sm text-text-primary break-all text-right">{value || '—'}</span>
         <button
           onClick={() => setEditing(true)}
-          className="text-text-secondary hover:text-text-primary transition-colors shrink-0"
+          className="btn-ghost shrink-0 rounded-lg p-1.5"
+          title="Website bearbeiten"
           aria-label="Bearbeiten"
         >
-          <Pencil size={12} />
+          <Pencil size={16} strokeWidth={1.75} />
         </button>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center gap-2 justify-end flex-wrap">
-      <input
-        type="url"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="https://www.hersteller.com"
-        className="bg-transparent border-b border-border text-sm text-text-primary focus:outline-none focus:border-accent-warm w-64 text-right"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave()
-          if (e.key === 'Escape') handleCancel()
-        }}
-        autoFocus
-      />
-      {saving ? (
-        <Loader2 size={12} className="animate-spin text-text-secondary" />
-      ) : (
-        <>
-          <button onClick={handleSave} className="text-green-500 hover:text-green-400 transition-colors" aria-label="Speichern">
-            <Check size={12} />
-          </button>
-          <button onClick={handleCancel} className="text-text-secondary hover:text-text-primary transition-colors" aria-label="Abbrechen">
-            <X size={12} />
-          </button>
-        </>
-      )}
-      {error && <span className="text-xs text-red-500">{error}</span>}
+    <div className="flex flex-col items-end gap-1.5">
+      <div className="flex items-center gap-2 justify-end flex-wrap">
+        <input
+          type="url"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="https://www.hersteller.com"
+          className="field-input w-64 text-right"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave()
+            if (e.key === 'Escape') handleCancel()
+          }}
+          autoFocus
+        />
+        {saving ? (
+          <Loader2 size={16} strokeWidth={1.75} className="animate-spin text-text-secondary shrink-0" />
+        ) : (
+          <>
+            <button
+              onClick={handleSave}
+              className="btn-ghost shrink-0 rounded-lg p-1.5 text-success hover:text-success"
+              title="Speichern"
+              aria-label="Speichern"
+            >
+              <Check size={16} strokeWidth={1.75} />
+            </button>
+            <button
+              onClick={handleCancel}
+              className="btn-ghost shrink-0 rounded-lg p-1.5"
+              title="Abbrechen"
+              aria-label="Abbrechen"
+            >
+              <X size={16} strokeWidth={1.75} />
+            </button>
+          </>
+        )}
+      </div>
+      {error && <span className="text-xs text-warning text-right max-w-xs">{error}</span>}
     </div>
   )
 }

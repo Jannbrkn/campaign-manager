@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Building2, Factory } from 'lucide-react'
 import type { Agency, Manufacturer } from '@/lib/supabase/types'
 import WebsiteUrlInlineEdit from '@/components/agencies/WebsiteUrlInlineEdit'
 import { updateAgencyWebsiteUrl } from '../actions'
@@ -28,34 +28,42 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
   ]
 
   return (
-    <div className="p-8">
+    <div className="p-8 max-w-3xl">
       <Link
         href="/agencies"
-        className="inline-flex items-center gap-2 text-xs text-text-secondary hover:text-text-primary transition-colors mb-6"
+        className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors mb-6"
       >
-        <ArrowLeft size={12} />
-        Agenturen
+        <ArrowLeft size={16} strokeWidth={1.75} />
+        Zurück zu den Agenturen
       </Link>
 
-      <div className="flex items-start justify-between mb-8">
-        <h1 className="text-2xl font-light text-text-primary">{agency.name}</h1>
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="page-title flex items-center gap-3">
+            <Building2 size={28} strokeWidth={1.75} className="text-accent-gold shrink-0" />
+            {agency.name}
+          </h1>
+          <p className="mt-1.5 text-sm text-text-secondary">
+            Stammdaten dieser Agentur und alle zugeordneten Hersteller.
+          </p>
+        </div>
       </div>
 
       {/* Details */}
-      <div className="bg-surface border border-border rounded-sm mb-8">
+      <div className="card mb-8">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-xs tracking-wider uppercase text-text-secondary">Details</h2>
+          <h2 className="section-title">Details</h2>
         </div>
         <div className="divide-y divide-border">
           {readonlyFields.map(({ label, value }) => (
-            <div key={label} className="px-6 py-4 flex items-center justify-between">
-              <span className="text-xs text-text-secondary w-40">{label}</span>
+            <div key={label} className="px-6 py-4 flex items-center justify-between gap-4">
+              <span className="field-label w-40 shrink-0 mb-0">{label}</span>
               <span className="text-sm text-text-primary flex-1 text-right">{value ?? '—'}</span>
             </div>
           ))}
           {/* Editable: website_url */}
-          <div className="px-6 py-4 flex items-center justify-between">
-            <span className="text-xs text-text-secondary w-40">Website</span>
+          <div className="px-6 py-4 flex items-center justify-between gap-4">
+            <span className="field-label w-40 shrink-0 mb-0">Website</span>
             <div className="flex-1 flex justify-end">
               <WebsiteUrlInlineEdit
                 agencyId={agency.id}
@@ -69,33 +77,37 @@ export default async function AgencyDetailPage({ params }: { params: { id: strin
 
       {/* Manufacturers */}
       <div>
-        <h2 className="text-xs tracking-wider uppercase text-text-secondary mb-4">
+        <h2 className="section-title mb-4">
           Hersteller ({manufacturers.length})
         </h2>
-        <div className="bg-surface border border-border rounded-sm divide-y divide-border">
-          {manufacturers.length === 0 ? (
-            <p className="px-6 py-6 text-text-secondary text-sm text-center">
-              Keine Hersteller zugeordnet
+        {manufacturers.length === 0 ? (
+          <div className="card flex flex-col items-center justify-center text-center py-16 px-6">
+            <Factory size={32} strokeWidth={1.5} className="text-text-secondary/50 mb-4" />
+            <p className="text-text-primary text-sm font-medium">Noch keine Hersteller zugeordnet</p>
+            <p className="text-text-secondary text-sm mt-1 max-w-sm">
+              Sobald dieser Agentur Hersteller zugeordnet sind, erscheinen sie hier.
             </p>
-          ) : (
-            manufacturers.map((m) => (
+          </div>
+        ) : (
+          <div className="card divide-y divide-border overflow-hidden">
+            {manufacturers.map((m) => (
               <Link
                 key={m.id}
                 href={`/manufacturers/${m.id}`}
-                className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors group"
+                className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-surface-hover transition-colors group"
               >
                 <div>
-                  <p className="text-sm text-text-primary">{m.name}</p>
+                  <p className="text-sm font-medium text-text-primary">{m.name}</p>
                   <p className="text-xs text-text-secondary mt-0.5">{m.category}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-text-secondary hidden sm:block">{m.postcard_frequency}</span>
-                  <ChevronRight size={14} className="text-text-secondary group-hover:text-text-primary transition-colors" />
+                  <ChevronRight size={16} strokeWidth={1.75} className="text-text-secondary group-hover:text-text-primary transition-colors shrink-0" />
                 </div>
               </Link>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

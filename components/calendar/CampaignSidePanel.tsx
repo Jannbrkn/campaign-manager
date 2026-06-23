@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useTransition, useEffect, useCallback } from 'react'
-import { X, Upload, FileText, Loader2, ChevronLeft, ExternalLink, Trash2, Pencil, Link2, ChevronRight, Plus, Maximize2, Mail, CheckCircle2 } from 'lucide-react'
+import { X, Upload, FileText, Loader2, ChevronLeft, ExternalLink, Trash2, Pencil, Link2, ChevronRight, Plus, Maximize2, Mail, CheckCircle2, ChevronDown, Send, RefreshCw, Sparkles, CalendarDays } from 'lucide-react'
 import { uploadCampaignAsset, deleteCampaignAsset, updateCampaignStatus, deleteCampaign, updateCampaignBriefing, updateReviewApproved, updateAutoSendEmails } from '@/app/(app)/calendar/actions'
 import type { CampaignWithManufacturer, CampaignAsset, CampaignStatus, CampaignType, NewsletterBriefing } from '@/lib/supabase/types'
 import EditCampaignModal from './EditCampaignModal'
@@ -178,20 +178,22 @@ function StatusDropdown({ campaignId, status, onChanged }: {
       <button
         onClick={() => setOpen((o) => !o)}
         disabled={pending}
-        className={`flex items-center gap-1.5 text-xs px-2 py-1 border rounded-sm transition-colors ${STATUS_STYLE[status].badge}`}
+        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 border rounded-full transition-colors ${STATUS_STYLE[status].badge}`}
+        title="Status ändern"
+        aria-label="Status ändern"
       >
-        {pending && <Loader2 size={10} className="animate-spin" />}
+        {pending && <Loader2 size={12} strokeWidth={1.75} className="animate-spin" />}
         {STATUS_LABELS[status]}
-        <span className="opacity-40 ml-0.5">▾</span>
+        <ChevronDown size={12} strokeWidth={1.75} className="opacity-50 ml-0.5" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-surface border border-border rounded-sm shadow-xl overflow-hidden">
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-48 bg-surface-2 border border-border rounded-xl shadow-elevated overflow-hidden">
           {STATUS_ORDER.map((s) => (
             <button
               key={s}
               onClick={() => select(s)}
-              className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 transition-colors hover:bg-white/5 ${s === status ? 'bg-white/5' : ''}`}
+              className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 transition-colors hover:bg-surface-hover ${s === status ? 'bg-surface-hover' : ''}`}
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_STYLE[s].dot}`} />
               <span className={s === status ? 'text-text-primary' : 'text-text-secondary'}>
@@ -532,28 +534,28 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-2 px-5 py-4 border-b border-border shrink-0">
-        <button onClick={onBack} className="text-text-secondary hover:text-text-primary transition-colors shrink-0" aria-label="Zurück" title="Zurück">
-          <ChevronLeft size={16} />
+        <button onClick={onBack} className="btn-ghost p-2 shrink-0" aria-label="Zurück" title="Zurück">
+          <ChevronLeft size={16} strokeWidth={1.75} />
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={`w-2 h-2 rounded-full shrink-0 ${TYPE_DOT[campaign.type]}`} />
-          <span className="text-sm text-text-primary truncate">{campaign.title}</span>
+          <span className="text-sm font-medium text-text-primary truncate">{campaign.title}</span>
         </div>
-        <button onClick={() => setShowEdit(true)} className="p-1.5 text-text-secondary hover:text-text-primary transition-colors shrink-0" aria-label="Bearbeiten" title="Bearbeiten">
-          <Pencil size={13} />
+        <button onClick={() => setShowEdit(true)} className="btn-ghost p-2 shrink-0" aria-label="Bearbeiten" title="Bearbeiten">
+          <Pencil size={16} strokeWidth={1.75} />
         </button>
-        <button onClick={() => setConfirmDelete(true)} className="p-1.5 text-text-secondary hover:text-[#E65100] transition-colors shrink-0" aria-label="Löschen" title="Löschen">
-          <Trash2 size={13} />
+        <button onClick={() => setConfirmDelete(true)} className="btn-ghost p-2 shrink-0 hover:text-warning" aria-label="Löschen" title="Löschen">
+          <Trash2 size={16} strokeWidth={1.75} />
         </button>
       </div>
 
       {/* Delete confirmation modal */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-surface border border-border rounded-sm shadow-2xl w-80 p-6">
-            <div className="flex items-start gap-3 mb-5">
-              <div className="w-8 h-8 rounded-full bg-[#E65100]/10 flex items-center justify-center shrink-0 mt-0.5">
-                <Trash2 size={14} className="text-[#E65100]" />
+          <div className="bg-surface-2 border border-border rounded-2xl shadow-elevated w-80 p-6">
+            <div className="flex items-start gap-3 mb-6">
+              <div className="w-9 h-9 rounded-full bg-warning/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Trash2 size={16} strokeWidth={1.75} className="text-warning" />
               </div>
               <div>
                 <p className="text-sm font-medium text-text-primary mb-1">Kampagne löschen?</p>
@@ -565,16 +567,16 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="px-4 py-2 text-xs text-text-secondary hover:text-text-primary border border-border rounded-sm hover:bg-white/5 transition-colors"
+                className="btn-secondary"
               >
                 Abbrechen
               </button>
               <button
                 onClick={handleDeleteCampaign}
                 disabled={deletingCampaign}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs text-white bg-[#E65100] rounded-sm hover:bg-[#E65100]/90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-warning rounded-xl hover:bg-warning/90 transition-colors disabled:opacity-50"
               >
-                {deletingCampaign && <Loader2 size={11} className="animate-spin" />}
+                {deletingCampaign ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Trash2 size={16} strokeWidth={1.75} />}
                 Endgültig löschen
               </button>
             </div>
@@ -627,7 +629,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           {campaign.notes && (
             <div className="pt-1">
               <p className="text-xs text-text-secondary mb-1">Notizen</p>
-              <p className="text-xs text-text-primary bg-background rounded-sm px-3 py-2 border border-border">{campaign.notes}</p>
+              <p className="text-xs text-text-primary bg-surface-2 rounded-xl px-3 py-2 border border-border leading-relaxed">{campaign.notes}</p>
             </div>
           )}
         </div>
@@ -637,59 +639,60 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           <>
             <div className="border-t border-border" />
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-text-secondary uppercase tracking-wider">Briefing</p>
-                {briefingSaving && <Loader2 size={11} className="animate-spin text-text-secondary" />}
+              <div className="flex items-center justify-between mb-1">
+                <p className="section-title">Briefing</p>
+                {briefingSaving && <Loader2 size={14} strokeWidth={1.75} className="animate-spin text-text-secondary" />}
               </div>
+              <p className="text-[11px] text-text-secondary mb-3">Diese Angaben steuern, was die KI für den Newsletter erzeugt.</p>
               <div className="space-y-3">
 
                 <div>
-                  <label className="block text-[10px] text-text-secondary mb-1">Produkt / Thema</label>
+                  <label className="field-label">Produkt / Thema</label>
                   <input
                     type="text"
                     value={briefing.product ?? ''}
                     onChange={(e) => setBriefing((b) => ({ ...b, product: e.target.value }))}
                     placeholder="z.B. Boffi Küchen Frühjahr 2026"
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                    className="field-input text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-text-secondary mb-1">Textentwurf</label>
+                  <label className="field-label">Textentwurf</label>
                   <textarea
                     value={briefing.draft ?? ''}
                     onChange={(e) => setBriefing((b) => ({ ...b, draft: e.target.value }))}
                     placeholder="Rohentwurf oder Stichpunkte für den Newsletter-Text…"
                     rows={5}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none"
+                    className="field-input text-xs resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] text-text-secondary mb-1">CTA-Text</label>
+                    <label className="field-label">CTA-Text</label>
                     <input
                       type="text"
                       value={briefing.cta_text ?? ''}
                       onChange={(e) => setBriefing((b) => ({ ...b, cta_text: e.target.value }))}
                       placeholder="Einladung bestätigen"
-                      className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                      className="field-input text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-text-secondary mb-1">CTA-Link</label>
+                    <label className="field-label">CTA-Link</label>
                     <input
                       type="url"
                       value={briefing.cta_link ?? ''}
                       onChange={(e) => setBriefing((b) => ({ ...b, cta_link: e.target.value }))}
                       placeholder="https://…"
-                      className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                      className="field-input text-xs"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-text-secondary mb-1">Weitere Links</label>
+                  <label className="field-label">Weitere Links</label>
                   <div className="space-y-1.5">
                     {(briefing.extra_links ?? []).map((link, i) => (
                       <div key={i} className="flex gap-1.5">
@@ -702,7 +705,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                             setBriefing((b) => ({ ...b, extra_links: updated }))
                           }}
                           placeholder="Label"
-                          className="flex-1 bg-background border border-border rounded-sm px-2 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                          className="field-input flex-1 text-xs"
                         />
                         <input
                           type="url"
@@ -713,16 +716,18 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                             setBriefing((b) => ({ ...b, extra_links: updated }))
                           }}
                           placeholder="https://…"
-                          className="flex-1 bg-background border border-border rounded-sm px-2 py-1.5 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50"
+                          className="field-input flex-1 text-xs"
                         />
                         <button
                           onClick={() => {
                             const updated = (briefing.extra_links ?? []).filter((_, j) => j !== i)
                             setBriefing((b) => ({ ...b, extra_links: updated }))
                           }}
-                          className="p-1.5 text-text-secondary hover:text-[#E65100] transition-colors"
+                          className="btn-ghost p-2 hover:text-warning"
+                          title="Link entfernen"
+                          aria-label="Link entfernen"
                         >
-                          <X size={11} />
+                          <X size={16} strokeWidth={1.75} />
                         </button>
                       </div>
                     ))}
@@ -731,22 +736,22 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                         ...b,
                         extra_links: [...(b.extra_links ?? []), { label: '', url: '' }],
                       }))}
-                      className="text-[10px] text-text-secondary hover:text-accent-warm transition-colors flex items-center gap-1"
+                      className="text-xs text-text-secondary hover:text-accent-warm transition-colors flex items-center gap-1.5"
                     >
-                      <Plus size={10} />
+                      <Plus size={16} strokeWidth={1.75} />
                       Link hinzufügen
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-text-secondary mb-1">Extra-Hinweise</label>
+                  <label className="field-label">Extra-Hinweise</label>
                   <textarea
                     value={briefing.hints ?? ''}
                     onChange={(e) => setBriefing((b) => ({ ...b, hints: e.target.value }))}
                     placeholder="z.B. Messe-Einladung, förmlicher Ton, Termin: 23. April"
                     rows={2}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none"
+                    className="field-input text-xs resize-none"
                   />
                 </div>
 
@@ -770,14 +775,14 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     placeholder="Feedback zur vorherigen Version (optional)…"
                     rows={2}
                     disabled={generating}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none mb-2 disabled:opacity-50"
+                    className="field-input text-xs resize-none mb-2 disabled:opacity-50"
                   />
                   <button
                     onClick={handleGenerate}
                     disabled={generating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                    className="btn-primary w-full"
                   >
-                    {generating && <Loader2 size={12} className="animate-spin" />}
+                    {generating ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <RefreshCw size={16} strokeWidth={1.75} />}
                     {generating ? 'Wird generiert…' : 'Neu generieren'}
                   </button>
                 </>
@@ -790,7 +795,8 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                       const dueDate = getAutoReportDate(linkedNl)
                       if (!dueDate) return null
                       return (
-                        <p className="text-xs text-text-secondary mb-2">
+                        <p className="flex items-center gap-1.5 text-xs text-text-secondary mb-2">
+                          <CalendarDays size={16} strokeWidth={1.75} className="shrink-0" />
                           Auto-Report wird ca. {dueDate} generiert
                         </p>
                       )
@@ -798,9 +804,9 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                   <button
                     onClick={handleGenerate}
                     disabled={generating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                    className="btn-primary w-full"
                   >
-                    {generating && <Loader2 size={12} className="animate-spin" />}
+                    {generating ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Sparkles size={16} strokeWidth={1.75} />}
                     {generating
                       ? 'Wird generiert…'
                       : campaign.type === 'newsletter'
@@ -809,7 +815,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                   </button>
                 </>
               )}
-              {genError && <p className="text-xs text-[#E65100] mt-2">{genError}</p>}
+              {genError && <p className="text-xs text-warning mt-2">{genError}</p>}
             </div>
           </>
         )}
@@ -819,22 +825,22 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           <>
             <div className="border-t border-border" />
             <div className="space-y-2">
-              <p className="text-xs text-text-secondary uppercase tracking-wider">Mailchimp</p>
+              <p className="section-title">Mailchimp</p>
               {mailchimpUrl ? (
                 <>
                   <button
                     onClick={handleOpenMailchimp}
                     disabled={checkingMailchimp}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-[#2E7D32] border border-[#2E7D32]/40 bg-[#2E7D32]/8 rounded-sm hover:bg-[#2E7D32]/15 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-medium text-success border border-success/40 bg-success/8 rounded-xl hover:bg-success/15 transition-colors disabled:opacity-50"
                   >
-                    {checkingMailchimp ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
+                    {checkingMailchimp ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <ExternalLink size={16} strokeWidth={1.75} />}
                     {checkingMailchimp ? 'Wird geprüft…' : 'In Mailchimp ansehen'}
                   </button>
-                  {mailchimpError && <p className="text-xs text-[#E65100]">{mailchimpError}</p>}
+                  {mailchimpError && <p className="text-xs text-warning">{mailchimpError}</p>}
                   {sizeWarnings.length > 0 && (
                     <div className="space-y-1">
                       {sizeWarnings.map((w, i) => (
-                        <p key={i} className="text-xs text-[#C4A87C]">{w}</p>
+                        <p key={i} className="text-xs text-accent-gold">{w}</p>
                       ))}
                     </div>
                   )}
@@ -847,7 +853,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     onChange={(e) => setMailchimpSubject(e.target.value)}
                     placeholder="Betreff der E-Mail…"
                     disabled={sendingMailchimp}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 disabled:opacity-50"
+                    className="field-input text-xs disabled:opacity-50"
                   />
                   <input
                     type="text"
@@ -855,17 +861,17 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     onChange={(e) => setMailchimpPreviewText(e.target.value)}
                     placeholder="Preview-Text (erscheint nach dem Betreff)…"
                     disabled={sendingMailchimp}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 disabled:opacity-50"
+                    className="field-input text-xs disabled:opacity-50"
                   />
                   <button
                     onClick={handleSendToMailchimp}
                     disabled={sendingMailchimp || !mailchimpSubject.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-40"
+                    className="btn-primary w-full"
                   >
-                    {sendingMailchimp && <Loader2 size={12} className="animate-spin" />}
+                    {sendingMailchimp ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Send size={16} strokeWidth={1.75} />}
                     {sendingMailchimp ? 'Wird erstellt…' : 'Kampagne in Mailchimp erstellen'}
                   </button>
-                  {mailchimpError && <p className="text-xs text-[#E65100]">{mailchimpError}</p>}
+                  {mailchimpError && <p className="text-xs text-warning">{mailchimpError}</p>}
                 </>
               )}
             </div>
@@ -877,7 +883,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           <>
             <div className="border-t border-border" />
             <div className="space-y-3">
-              <p className="text-xs text-text-secondary uppercase tracking-wider">Freigabe & Auto-Send</p>
+              <p className="section-title">Freigabe & Auto-Send</p>
 
               {/* review_approved toggle */}
               <button
@@ -887,32 +893,32 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                   await updateReviewApproved(campaign.id, next)
                   onRefresh()
                 }}
-                className={`w-full flex items-center justify-between px-4 py-3 border rounded-sm transition-colors ${
+                className={`w-full flex items-center justify-between px-4 py-3 border rounded-xl transition-colors ${
                   reviewApproved
-                    ? 'border-[#2E7D32]/50 bg-[#2E7D32]/8'
-                    : 'border-border bg-background hover:border-text-secondary/30'
+                    ? 'border-success/50 bg-success/8'
+                    : 'border-border bg-surface-2 hover:border-border-strong'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${
-                    reviewApproved ? 'bg-[#2E7D32] border-[#2E7D32]' : 'border-border'
+                  <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-colors ${
+                    reviewApproved ? 'bg-success border-success' : 'border-border'
                   }`}>
-                    {reviewApproved && <CheckCircle2 size={11} className="text-white" />}
+                    {reviewApproved && <CheckCircle2 size={14} strokeWidth={1.75} className="text-white" />}
                   </div>
                   <span className="text-xs text-text-primary">Report freigegeben</span>
                 </div>
-                <span className={`text-[10px] ${reviewApproved ? 'text-[#2E7D32]' : 'text-text-secondary/50'}`}>
+                <span className={`text-[10px] ${reviewApproved ? 'text-success' : 'text-text-secondary/50'}`}>
                   {reviewApproved ? 'Wird montags versendet' : 'Kein Auto-Send'}
                 </span>
               </button>
 
               {/* auto_send_emails */}
               <div>
-                <p className="text-[10px] text-text-secondary/70 mb-2">Empfänger (Montags-Auto-Send)</p>
+                <p className="field-label">Empfänger (Montags-Auto-Send)</p>
                 <div className="space-y-1.5">
                   {autoSendEmails.map((email) => (
-                    <div key={email} className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-sm">
-                      <Mail size={10} className="text-text-secondary/50 shrink-0" />
+                    <div key={email} className="flex items-center gap-2 px-3 py-1.5 bg-surface-2 border border-border rounded-xl">
+                      <Mail size={16} strokeWidth={1.75} className="text-text-secondary/50 shrink-0" />
                       <span className="text-xs text-text-primary flex-1 truncate">{email}</span>
                       <button
                         onClick={async () => {
@@ -920,9 +926,11 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                           setAutoSendEmails(next)
                           await updateAutoSendEmails(campaign.id, next)
                         }}
-                        className="text-text-secondary/40 hover:text-[#E65100] transition-colors shrink-0"
+                        className="text-text-secondary/40 hover:text-warning transition-colors shrink-0"
+                        title="Empfänger entfernen"
+                        aria-label="Empfänger entfernen"
                       >
-                        <X size={11} />
+                        <X size={16} strokeWidth={1.75} />
                       </button>
                     </div>
                   ))}
@@ -940,7 +948,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                         }
                       }}
                       placeholder="mail@beispiel.de + Enter"
-                      className="flex-1 bg-background border border-border rounded-sm px-3 py-1.5 text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 transition-colors"
+                      className="field-input flex-1 text-xs"
                     />
                     <button
                       onClick={async () => {
@@ -950,9 +958,11 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                         setNewEmail('')
                         await updateAutoSendEmails(campaign.id, next)
                       }}
-                      className="px-2.5 py-1.5 text-xs border border-border text-text-secondary hover:text-text-primary hover:border-text-secondary/40 rounded-sm transition-colors"
+                      className="btn-secondary px-3"
+                      title="Empfänger hinzufügen"
+                      aria-label="Empfänger hinzufügen"
                     >
-                      <Plus size={12} />
+                      <Plus size={16} strokeWidth={1.75} />
                     </button>
                   </div>
                 </div>
@@ -967,25 +977,27 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             <div className="border-t border-border" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-text-secondary uppercase tracking-wider">Report per Mail senden</p>
+                <p className="section-title">Report per Mail senden</p>
                 <button
                   onClick={() => setEmailDraft(null)}
                   className="text-text-secondary/50 hover:text-text-secondary transition-colors"
+                  title="Schließen"
+                  aria-label="Schließen"
                 >
-                  <X size={12} />
+                  <X size={16} strokeWidth={1.75} />
                 </button>
               </div>
 
               {emailSent ? (
-                <div className="flex items-center gap-2 px-3 py-3 bg-[#2E7D32]/10 border border-[#2E7D32]/30 rounded-sm">
-                  <CheckCircle2 size={13} className="text-[#2E7D32] shrink-0" />
-                  <p className="text-xs text-[#2E7D32]">Mail wurde gesendet an {emailDraft.to}</p>
+                <div className="flex items-center gap-2 px-3 py-3 bg-success/10 border border-success/30 rounded-xl">
+                  <CheckCircle2 size={16} strokeWidth={1.75} className="text-success shrink-0" />
+                  <p className="text-xs text-success">Mail wurde gesendet an {emailDraft.to}</p>
                 </div>
               ) : (
                 <>
                   {/* To */}
-                  <div className="flex items-center gap-2 px-3 py-2 bg-background border border-border rounded-sm">
-                    <Mail size={11} className="text-text-secondary/50 shrink-0" />
+                  <div className="flex items-center gap-2 px-3 py-2 bg-surface-2 border border-border rounded-xl">
+                    <Mail size={16} strokeWidth={1.75} className="text-text-secondary/50 shrink-0" />
                     <span className="text-xs text-text-secondary">An:</span>
                     <span className="text-xs text-text-primary">{emailDraft.to}</span>
                   </div>
@@ -995,7 +1007,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     type="text"
                     value={emailDraft.subject}
                     onChange={(e) => setEmailDraft((d) => d ? { ...d, subject: e.target.value } : d)}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 transition-colors"
+                    className="field-input text-xs"
                     placeholder="Betreff"
                   />
 
@@ -1004,22 +1016,22 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                     value={emailDraft.body}
                     onChange={(e) => setEmailDraft((d) => d ? { ...d, body: e.target.value } : d)}
                     rows={9}
-                    className="w-full bg-background border border-border rounded-sm px-3 py-2 text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-accent-warm/50 resize-none transition-colors leading-relaxed"
+                    className="field-input text-xs resize-none leading-relaxed"
                   />
 
                   {emailError && (
-                    <p className="text-xs text-[#E65100]">{emailError}</p>
+                    <p className="text-xs text-warning">{emailError}</p>
                   )}
 
                   <button
                     onClick={handleSendEmail}
                     disabled={emailSending}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50"
+                    className="btn-primary w-full"
                   >
                     {emailSending ? (
-                      <><Loader2 size={12} className="animate-spin" /> Wird gesendet…</>
+                      <><Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> Wird gesendet…</>
                     ) : (
-                      <><Mail size={12} /> Mail mit Anhängen senden</>
+                      <><Mail size={16} strokeWidth={1.75} /> Mail mit Anhängen senden</>
                     )}
                   </button>
                 </>
@@ -1033,16 +1045,16 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           <>
             <div className="border-t border-border" />
             <div>
-              <p className="text-xs text-text-secondary uppercase tracking-wider mb-2.5">{linkedLabel}</p>
+              <p className="section-title mb-2.5">{linkedLabel}</p>
               <div className="space-y-1.5">
                 {linked.map((lc) => (
                   <button
                     key={lc.id}
                     onClick={() => handleNavigate(lc.id)}
                     disabled={navigatingId === lc.id}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-background border border-border rounded-sm hover:border-text-secondary/40 transition-colors group text-left"
+                    className="card-interactive w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl group text-left"
                   >
-                    <Link2 size={11} className="text-text-secondary shrink-0" />
+                    <Link2 size={16} strokeWidth={1.75} className="text-text-secondary shrink-0" />
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${TYPE_DOT[lc.type]}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-text-primary truncate">{lc.title}</p>
@@ -1051,8 +1063,8 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                       </p>
                     </div>
                     {navigatingId === lc.id
-                      ? <Loader2 size={12} className="shrink-0 text-text-secondary animate-spin" />
-                      : <ChevronRight size={12} className="shrink-0 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
+                      ? <Loader2 size={16} strokeWidth={1.75} className="shrink-0 text-text-secondary animate-spin" />
+                      : <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
                     }
                   </button>
                 ))}
@@ -1067,19 +1079,20 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             <div className="border-t border-border" />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-text-secondary uppercase tracking-wider">Newsletter-Vorschau</p>
+                <p className="section-title">Newsletter-Vorschau</p>
                 <button
                   onClick={() => setShowPreviewModal(true)}
-                  className="flex items-center gap-1.5 text-[10px] text-text-secondary hover:text-accent-warm transition-colors px-2 py-1 border border-border hover:border-accent-warm/40 rounded-sm"
+                  className="flex items-center gap-1.5 text-[10px] text-text-secondary hover:text-accent-warm transition-colors px-2.5 py-1 border border-border hover:border-accent-warm/40 rounded-lg"
+                  title="Vollbild"
+                  aria-label="Vorschau im Vollbild öffnen"
                 >
-                  <Maximize2 size={11} />
+                  <Maximize2 size={16} strokeWidth={1.75} />
                   Vollbild
                 </button>
               </div>
               <iframe
                 src={previewSrc}
-                className="w-full rounded-sm border border-border"
-                style={{ height: '400px' }}
+                className="w-full h-[400px] rounded-xl border border-border"
                 title="Newsletter Vorschau"
                 sandbox="allow-same-origin"
               />
@@ -1094,36 +1107,37 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             onClick={() => setShowPreviewModal(false)}
           >
             <div
-              className="relative flex flex-col"
-              style={{ width: 680 }}
+              className="relative flex flex-col w-[680px] max-w-[92vw] shadow-elevated"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal toolbar */}
-              <div className="flex items-center justify-between px-4 py-3 bg-surface border border-border rounded-t-sm">
-                <p className="text-sm text-text-primary">{campaign.title}</p>
+              <div className="flex items-center justify-between px-4 py-3 bg-surface-2 border border-border rounded-t-2xl">
+                <p className="text-sm font-medium text-text-primary">{campaign.title}</p>
                 <div className="flex items-center gap-2">
                   <a
                     href={previewSrc}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary border border-border px-2.5 py-1 rounded-sm transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary border border-border px-2.5 py-1 rounded-lg transition-colors"
+                    title="Im Browser öffnen"
                   >
-                    <ExternalLink size={12} />
+                    <ExternalLink size={16} strokeWidth={1.75} />
                     Im Browser öffnen
                   </a>
                   <button
                     onClick={() => setShowPreviewModal(false)}
-                    className="p-1.5 text-text-secondary hover:text-text-primary transition-colors"
+                    className="btn-ghost p-2"
+                    title="Schließen"
+                    aria-label="Vorschau schließen"
                   >
-                    <X size={16} />
+                    <X size={16} strokeWidth={1.75} />
                   </button>
                 </div>
               </div>
               {/* Full iframe */}
               <iframe
                 src={previewSrc}
-                className="w-full border-x border-b border-border rounded-b-sm bg-white"
-                style={{ height: '90vh' }}
+                className="w-full h-[90vh] border-x border-b border-border rounded-b-2xl bg-white"
                 title="Newsletter Vorschau Vollbild"
                 sandbox="allow-same-origin"
               />
@@ -1136,8 +1150,8 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
         {/* Assets */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-text-secondary uppercase tracking-wider">Assets</span>
-            {loadingAssets && <Loader2 size={12} className="animate-spin text-text-secondary" />}
+            <span className="section-title">Assets</span>
+            {loadingAssets && <Loader2 size={16} strokeWidth={1.75} className="animate-spin text-text-secondary" />}
           </div>
 
           <div
@@ -1145,11 +1159,11 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             onDragLeave={() => setIsDragging(false)}
             onDrop={(e) => { e.preventDefault(); setIsDragging(false); Array.from(e.dataTransfer.files).forEach(uploadFile) }}
             onClick={() => fileInputRef.current?.click()}
-            className={`border border-dashed rounded-sm px-4 py-5 text-center cursor-pointer transition-colors ${
-              isDragging ? 'border-accent-warm/50 bg-accent-warm/5' : 'border-border hover:border-text-secondary/40'
+            className={`border border-dashed rounded-xl px-4 py-6 text-center cursor-pointer transition-colors ${
+              isDragging ? 'border-accent-warm/50 bg-accent-warm/5' : 'border-border hover:border-border-strong'
             }`}
           >
-            <Upload size={16} className="mx-auto text-text-secondary mb-1.5" />
+            <Upload size={24} strokeWidth={1.75} className="mx-auto text-text-secondary mb-2" />
             <p className="text-xs text-text-secondary">
               Ziehen oder <span className="text-accent-warm">auswählen</span>
             </p>
@@ -1164,7 +1178,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
             />
           </div>
 
-          {uploadError && <p className="text-xs text-[#E65100] mt-2">{uploadError}</p>}
+          {uploadError && <p className="text-xs text-warning mt-2">{uploadError}</p>}
 
           {assets.length > 0 && (
             <div className="mt-3 space-y-1.5">
@@ -1174,10 +1188,10 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                 return (
                   <div
                     key={asset.id}
-                    className={`flex items-center gap-2.5 bg-background border rounded-sm overflow-hidden group transition-colors ${
+                    className={`flex items-center gap-2.5 bg-surface-2 border rounded-xl overflow-hidden group transition-colors ${
                       asset.is_output
                         ? 'border-accent-warm/30 hover:border-accent-warm/60'
-                        : 'border-border hover:border-text-secondary/30'
+                        : 'border-border hover:border-border-strong'
                     }`}
                   >
                     {isImage ? (
@@ -1187,7 +1201,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                       </div>
                     ) : (
                       <div className="w-10 h-10 shrink-0 flex items-center justify-center bg-border/30">
-                        <FileText size={14} className="text-text-secondary" />
+                        <FileText size={16} strokeWidth={1.75} className="text-text-secondary" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0 py-2">
@@ -1200,16 +1214,20 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                       <a
                         href={asset.file_url} target="_blank" rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 text-text-secondary hover:text-text-primary transition-colors"
+                        className="p-2 text-text-secondary hover:text-text-primary transition-colors"
+                        title="Öffnen"
+                        aria-label="Asset öffnen"
                       >
-                        <ExternalLink size={11} />
+                        <ExternalLink size={16} strokeWidth={1.75} />
                       </a>
                       <button
                         onClick={() => handleDeleteAsset(asset)}
                         disabled={isDeleting}
-                        className="p-1.5 text-text-secondary hover:text-[#E65100] transition-colors disabled:opacity-50"
+                        className="p-2 text-text-secondary hover:text-warning transition-colors disabled:opacity-50"
+                        title="Löschen"
+                        aria-label="Asset löschen"
                       >
-                        {isDeleting ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                        {isDeleting ? <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> : <Trash2 size={16} strokeWidth={1.75} />}
                       </button>
                     </div>
                   </div>
@@ -1219,7 +1237,10 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
           )}
 
           {!loadingAssets && assets.length === 0 && (
-            <p className="text-xs text-text-secondary text-center mt-3 py-2">Noch keine Assets</p>
+            <div className="flex flex-col items-center justify-center text-center py-8 px-6">
+              <FileText size={28} strokeWidth={1.5} className="text-text-secondary/50 mb-3" />
+              <p className="text-xs text-text-secondary max-w-xs">Noch keine Assets. Lade Bilder, Texte oder Exporte oben hoch.</p>
+            </div>
           )}
         </div>
       </div>
@@ -1272,25 +1293,29 @@ export default function CampaignSidePanel({ campaigns, selectedDate, onClose, on
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
         <div>
-          <p className="text-sm text-text-primary capitalize">{formattedDate}</p>
+          <p className="text-sm font-medium text-text-primary capitalize">{formattedDate}</p>
           <p className="text-xs text-text-secondary mt-0.5">
             {campaigns.length} Kampagne{campaigns.length !== 1 ? 'n' : ''}
           </p>
         </div>
-        <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors" aria-label="Schließen" title="Schließen">
-          <X size={16} />
+        <button onClick={onClose} className="btn-ghost p-2" aria-label="Schließen" title="Schließen">
+          <X size={16} strokeWidth={1.75} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {campaigns.length === 0 ? (
-          <p className="text-xs text-text-secondary text-center py-8">Keine Kampagnen an diesem Tag</p>
+          <div className="flex flex-col items-center justify-center text-center py-16 px-6">
+            <CalendarDays size={32} strokeWidth={1.5} className="text-text-secondary/50 mb-4" />
+            <p className="text-sm font-medium text-text-primary">Keine Kampagnen an diesem Tag</p>
+            <p className="text-xs text-text-secondary mt-1 max-w-xs">Wähle einen anderen Tag im Kalender oder lege eine neue Kampagne an.</p>
+          </div>
         ) : (
           campaigns.map((c) => (
             <button
               key={c.id}
               onClick={() => push(c)}
-              className="w-full text-left bg-background border border-border rounded-sm px-4 py-3 hover:border-text-secondary/30 transition-colors"
+              className="card-interactive w-full text-left rounded-xl px-4 py-3"
             >
               <div className="flex items-center gap-2.5 mb-1.5">
                 <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_STYLE[c.status].dot}`} />
@@ -1298,7 +1323,7 @@ export default function CampaignSidePanel({ campaigns, selectedDate, onClose, on
               </div>
               <div className="flex items-center justify-between pl-[18px]">
                 <span className="text-xs text-text-secondary">{c.manufacturers?.name}</span>
-                <span className={`text-xs px-1.5 py-0.5 border rounded-sm ${STATUS_STYLE[c.status].badge}`}>
+                <span className={`text-xs px-2 py-0.5 border rounded-full ${STATUS_STYLE[c.status].badge}`}>
                   {STATUS_LABELS[c.status]}
                 </span>
               </div>

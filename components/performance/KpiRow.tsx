@@ -70,9 +70,13 @@ export default function KpiRow({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {kpis.map(({ label, value, sub, small }) => (
-        <div key={label} className="bg-surface border border-border rounded-sm p-6">
-          <p className="text-text-secondary text-[10px] tracking-wider uppercase mb-3">{label}</p>
-          <p className={`font-light text-text-primary ${small ? 'text-xl' : 'text-3xl'}`}>{value}</p>
+        <div key={label} className="card p-6">
+          <p className="field-label mb-3">{label}</p>
+          <p
+            className={`font-display font-semibold text-text-primary ${small ? 'text-xl' : 'text-3xl'}`}
+          >
+            {value}
+          </p>
           <p className="text-[11px] text-text-secondary/60 mt-1.5">{sub}</p>
         </div>
       ))}

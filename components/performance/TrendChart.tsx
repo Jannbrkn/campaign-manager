@@ -5,6 +5,7 @@
 'use client'
 
 import { useState } from 'react'
+import { LineChart } from 'lucide-react'
 import type { CampaignWithManufacturer } from '@/lib/supabase/types'
 
 interface Point {
@@ -57,13 +58,19 @@ export default function TrendChart({
 
   if (points.length < 2) {
     return (
-      <div className="bg-[#0F0F0F] border border-border rounded-sm p-5">
-        <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-3">{label}</p>
-        <p className="text-xs text-text-secondary/60">
-          {points.length === 0
-            ? 'Keine Daten — noch keine Kampagne mit Stats'
-            : 'Mindestens 2 Kampagnen nötig für einen Trendverlauf'}
-        </p>
+      <div className="bg-surface border border-border rounded-2xl p-6">
+        <p className="section-title mb-4">{label}</p>
+        <div className="flex flex-col items-center justify-center text-center py-8 px-6">
+          <LineChart size={32} className="text-text-secondary/50 mb-4" strokeWidth={1.5} />
+          <p className="text-text-primary text-sm font-medium">
+            {points.length === 0 ? 'Noch keine Daten' : 'Noch zu wenige Kampagnen'}
+          </p>
+          <p className="text-text-secondary text-sm mt-1 max-w-sm">
+            {points.length === 0
+              ? 'Sobald Kampagnen mit Statistiken vorliegen, erscheint hier der Trendverlauf.'
+              : 'Mindestens 2 Kampagnen mit Statistiken sind nötig, um einen Trendverlauf zu zeigen.'}
+          </p>
+        </div>
       </div>
     )
   }
@@ -115,15 +122,15 @@ export default function TrendChart({
     : null
 
   return (
-    <div className="bg-[#0F0F0F] border border-border rounded-sm p-5">
+    <div className="bg-surface border border-border rounded-2xl p-6">
       {/* Header with summary */}
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-baseline justify-between mb-4 gap-4">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-text-secondary mb-0.5">{label}</p>
-          <p className="text-[11px] text-text-secondary/60">
+          <p className="section-title mb-1">{label}</p>
+          <p className="text-[11px] text-text-secondary">
             {points.length} Kampagnen · Ø {fmtRate(avgOwn)}
             {avgBench != null && (
-              <span className="ml-1 text-text-secondary/50">
+              <span className="ml-1 text-text-secondary/70">
                 · Branche Ø {fmtRate(avgBench)}
               </span>
             )}
@@ -131,7 +138,7 @@ export default function TrendChart({
         </div>
         {hover && (
           <div className="text-right">
-            <p className="text-xs text-[#C4A87C] font-medium">{fmtRate(hover.y)}</p>
+            <p className="font-display text-base font-semibold text-accent-gold">{fmtRate(hover.y)}</p>
             <p className="text-[10px] text-text-secondary truncate max-w-[200px]">
               {fmtDate(hover.date)} · {hover.title}
             </p>
@@ -240,15 +247,15 @@ export default function TrendChart({
       </svg>
 
       {/* Legend */}
-      <div className="flex gap-4 mt-2 pl-10">
+      <div className="flex gap-4 mt-3 pl-10">
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-[#C4A87C]" />
-          <span className="text-[9px] text-text-secondary">Diese Marke</span>
+          <span className="w-3 h-0.5 rounded-full bg-[#C4A87C]" />
+          <span className="text-[10px] text-text-secondary">Diese Marke</span>
         </div>
         {avgBench != null && (
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-0.5 border-t border-dashed border-[#666]" />
-            <span className="text-[9px] text-text-secondary">Branchenschnitt</span>
+            <span className="text-[10px] text-text-secondary">Branchenschnitt</span>
           </div>
         )}
       </div>

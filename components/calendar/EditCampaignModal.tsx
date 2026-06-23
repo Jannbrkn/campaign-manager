@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Save, Factory } from 'lucide-react'
 import { updateCampaign } from '@/app/(app)/calendar/actions'
 import type { Campaign, Agency, Manufacturer } from '@/lib/supabase/types'
 
@@ -71,29 +71,42 @@ export default function EditCampaignModal({ campaign, onClose, onSaved }: Props)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-surface border border-border rounded-sm shadow-2xl">
+      <div className="relative z-10 w-full max-w-lg bg-surface-2 border border-border rounded-2xl shadow-elevated">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-          <h2 className="text-sm font-medium text-text-primary">Kampagne bearbeiten</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
-            <X size={16} />
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border">
+          <div>
+            <h2 className="section-title">Kampagne bearbeiten</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Titel, Datum, Hersteller und Notizen dieser Kampagne anpassen.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            title="Schließen"
+            aria-label="Schließen"
+            className="btn-ghost p-2 shrink-0"
+          >
+            <X size={16} strokeWidth={1.75} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
           {/* Manufacturer */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Hersteller</label>
+            <label className="field-label flex items-center gap-1.5">
+              <Factory size={14} strokeWidth={1.75} className="text-text-secondary" />
+              Hersteller
+            </label>
             {loadingData ? (
               <div className="flex items-center gap-2 py-2.5">
-                <Loader2 size={12} className="animate-spin text-text-secondary" />
-                <span className="text-xs text-text-secondary">Lädt…</span>
+                <Loader2 size={16} className="animate-spin text-text-secondary" strokeWidth={1.75} />
+                <span className="text-sm text-text-secondary">Lädt…</span>
               </div>
             ) : (
               <select
                 value={manufacturerId}
                 onChange={(e) => setManufacturerId(e.target.value)}
-                className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50 appearance-none"
+                className="field-input appearance-none"
                 required
               >
                 {agencies.map((ag) => {
@@ -113,56 +126,59 @@ export default function EditCampaignModal({ campaign, onClose, onSaved }: Props)
 
           {/* Title */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Titel</label>
+            <label className="field-label">Titel</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50"
+              className="field-input"
               required
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Datum</label>
+            <label className="field-label">Datum</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-warm/50 [color-scheme:dark]"
+              className="field-input [color-scheme:dark]"
               required
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs text-text-secondary mb-1.5">Notizen</label>
+            <label className="field-label">Notizen</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Optional…"
-              className="w-full bg-background border border-border rounded-sm px-3 py-2.5 text-sm text-text-primary placeholder-text-secondary/50 focus:outline-none focus:border-accent-warm/50 resize-none"
+              className="field-input resize-none"
             />
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Interne Notizen zur Kampagne – optional.
+            </p>
           </div>
 
-          {error && <p className="text-xs text-warning">{error}</p>}
+          {error && <p className="text-sm text-warning">{error}</p>}
 
           <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-sm text-text-secondary border border-border rounded-sm hover:text-text-primary transition-colors"
+              className="btn-secondary flex-1"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               disabled={isPending || loadingData}
-              className="flex-1 px-4 py-2.5 text-sm text-background bg-accent-warm rounded-sm hover:bg-accent-warm/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="btn-primary flex-1"
             >
-              {isPending && <Loader2 size={14} className="animate-spin" />}
+              {isPending ? <Loader2 size={16} className="animate-spin" strokeWidth={1.75} /> : <Save size={16} strokeWidth={1.75} />}
               Speichern
             </button>
           </div>

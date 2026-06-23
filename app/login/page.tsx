@@ -1,34 +1,23 @@
 export const dynamic = 'force-dynamic'
 
+import { LayoutGrid } from 'lucide-react'
 import LoginForm from './LoginForm'
 
 export default function LoginPage() {
   return (
-    <main
-      style={{ backgroundColor: '#0A0A0A', minHeight: '100vh' }}
-      className="flex items-center justify-center px-4"
-    >
-      <div style={{ width: '100%', maxWidth: '380px' }}>
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
 
         {/* Logo + Brand */}
-        <div className="text-center mb-10">
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              border: '1px solid #2A2A2A',
-              borderRadius: '2px',
-              display: 'inline-block',
-              marginBottom: '20px',
-            }}
-          />
-          <p style={{
-            color: '#999999',
-            fontSize: '10px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-          }}>
+        <div className="mb-10 text-center">
+          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface">
+            <LayoutGrid size={22} strokeWidth={1.75} className="text-accent-warm" />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-text-secondary">
             Collezioni Design Syndicate
+          </p>
+          <p className="mt-2 text-sm text-text-secondary">
+            Bitte melde dich an, um deine Kampagnen zu verwalten.
           </p>
         </div>
 

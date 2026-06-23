@@ -39,7 +39,7 @@ export default function Sidebar({ alertCount }: { alertCount: number }) {
     <aside className="w-56 bg-surface border-r border-border flex flex-col shrink-0">
       {/* Logo */}
       <div className="px-6 py-7 border-b border-border">
-        <span className="text-xs tracking-[0.2em] uppercase text-text-secondary">
+        <span className="font-display text-base font-semibold tracking-tight text-text-primary">
           Campaign Manager
         </span>
       </div>
@@ -52,13 +52,14 @@ export default function Sidebar({ alertCount }: { alertCount: number }) {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition-colors ${
+              aria-current={active ? 'page' : undefined}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
                 active
-                  ? `${isLight ? 'bg-accent-warm/10' : 'bg-[#EDE8E3]/10'} text-accent-warm`
+                  ? 'bg-accent-warm/10 text-accent-warm font-medium'
                   : `text-text-secondary ${hoverText} ${hoverBg}`
               }`}
             >
-              <Icon size={16} strokeWidth={active ? 2 : 1.5} />
+              <Icon size={16} strokeWidth={active ? 2 : 1.75} />
               {label}
             </Link>
           )
@@ -70,16 +71,20 @@ export default function Sidebar({ alertCount }: { alertCount: number }) {
         <AlertsPanel initialCount={alertCount} />
         <button
           onClick={toggleTheme}
-          className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-sm text-sm text-text-secondary ${hoverText} ${hoverBg} transition-colors`}
+          title={isLight ? 'Dark Mode' : 'Light Mode'}
+          aria-label={isLight ? 'Zu Dark Mode wechseln' : 'Zu Light Mode wechseln'}
+          className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-text-secondary ${hoverText} ${hoverBg} transition-colors`}
         >
-          {isLight ? <Moon size={16} strokeWidth={1.5} /> : <Sun size={16} strokeWidth={1.5} />}
+          {isLight ? <Moon size={16} strokeWidth={1.75} /> : <Sun size={16} strokeWidth={1.75} />}
           {isLight ? 'Dark Mode' : 'Light Mode'}
         </button>
         <button
           onClick={handleSignOut}
-          className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-sm text-sm text-text-secondary ${hoverText} ${hoverBg} transition-colors`}
+          title="Abmelden"
+          aria-label="Abmelden"
+          className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm text-text-secondary ${hoverText} ${hoverBg} transition-colors`}
         >
-          <LogOut size={16} strokeWidth={1.5} />
+          <LogOut size={16} strokeWidth={1.75} />
           Abmelden
         </button>
       </div>
