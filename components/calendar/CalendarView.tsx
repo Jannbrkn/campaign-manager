@@ -172,10 +172,16 @@ function QuarterMonth({
   onDayClick: (dateKey: string) => void
 }) {
   const grid = buildCalendarGrid(year, month)
+  // Normalize every month to 6 week-rows so all three quarter columns align and
+  // fill the height equally (a 5-week month would otherwise get taller cells).
+  while (grid.length < 42) {
+    const last = grid[grid.length - 1]
+    grid.push(new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1))
+  }
   const rows = grid.length / 7
 
   return (
-    <div className="flex flex-col border-r border-border last:border-r-0 min-h-0">
+    <div className="flex flex-col flex-1 min-w-0 border-r border-border last:border-r-0 min-h-0">
       {/* Month label */}
       <div className="px-4 py-3 border-b border-border shrink-0">
         <p className="text-sm font-medium text-text-primary">
