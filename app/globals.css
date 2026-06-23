@@ -4,6 +4,7 @@
 
 /* ── Dark theme (default) ──────────────────────────────── */
 :root {
+  color-scheme: dark; /* native controls (date picker, scrollbars) follow the theme */
   --color-background:     #0A0A0A;
   --color-surface:        #1A1A1A;
   --color-surface-2:      #202023; /* elevated: cards-on-cards, modals, popovers */
@@ -21,6 +22,7 @@
 
 /* ── Light theme ───────────────────────────────────────── */
 html.light {
+  color-scheme: light;
   --color-background:     #F5F4F2;
   --color-surface:        #FFFFFF;
   --color-surface-2:      #FFFFFF;

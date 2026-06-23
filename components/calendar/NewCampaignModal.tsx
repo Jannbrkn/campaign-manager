@@ -197,7 +197,7 @@ export default function NewCampaignModal({ agencies, manufacturers, defaultDate,
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="field-input [color-scheme:dark]"
+              className="field-input"
               required
             />
           </div>

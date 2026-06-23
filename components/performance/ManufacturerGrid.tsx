@@ -82,14 +82,8 @@ export default function ManufacturerGrid({
 
   return (
     <div>
-      {/* Page header */}
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Performance</h1>
-          <p className="mt-1.5 text-sm text-text-secondary max-w-prose">
-            Öffnungs- und Klickraten aller Hersteller im Überblick. Karte anklicken für Details.
-          </p>
-        </div>
+      {/* Refresh controls — the page title is rendered by performance/page.tsx */}
+      <div className="mb-8 flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-3">
           <span
             className="text-[11px] text-text-secondary/60"

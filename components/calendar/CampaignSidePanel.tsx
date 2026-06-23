@@ -925,6 +925,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                           const next = autoSendEmails.filter((e) => e !== email)
                           setAutoSendEmails(next)
                           await updateAutoSendEmails(campaign.id, next)
+                          onRefresh()
                         }}
                         className="text-text-secondary/40 hover:text-warning transition-colors shrink-0"
                         title="Empfänger entfernen"
@@ -945,6 +946,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                           setAutoSendEmails(next)
                           setNewEmail('')
                           await updateAutoSendEmails(campaign.id, next)
+                          onRefresh()
                         }
                       }}
                       placeholder="mail@beispiel.de + Enter"
@@ -957,6 +959,7 @@ function CampaignDetail({ campaign, onBack, onRefresh, onNavigate }: CampaignDet
                         setAutoSendEmails(next)
                         setNewEmail('')
                         await updateAutoSendEmails(campaign.id, next)
+                        onRefresh()
                       }}
                       className="btn-secondary px-3"
                       title="Empfänger hinzufügen"

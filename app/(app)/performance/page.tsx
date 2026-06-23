@@ -112,7 +112,7 @@ function groupCampaigns(
   latestByCampaign: Map<string, LatestSnapshot>,
   searchParams: { year?: string; agency?: string; type?: string }
 ): ManufacturerGroup[] {
-  const year = searchParams.year
+  const year = searchParams.year ?? '2026'
   const agencyFilter = searchParams.agency
   const typeFilter = searchParams.type
 

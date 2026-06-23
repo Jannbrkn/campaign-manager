@@ -499,15 +499,19 @@ export async function generateNewsletter(input: NewsletterInput): Promise<Newsle
     throw new Error('INVALID_MJML:' + mjmlSource)
   }
 
-  let compiled = mjml2html(mjmlSource, { validationLevel: 'strict' })
-
-  if (compiled.errors && compiled.errors.length > 0) {
-    // Fallback: retry with soft validation so the user still gets output
+  // mjml strict mode THROWS a ValidationError on any validation issue (it does not
+  // return the errors on the result object), so guard it and fall back to a
+  // best-effort soft compile — minor issues still yield usable output.
+  let compiled
+  try {
+    compiled = mjml2html(mjmlSource, { validationLevel: 'strict' })
+  } catch {
     compiled = mjml2html(mjmlSource, { validationLevel: 'soft' })
-    if (!compiled.html) {
-      const msg = compiled.errors.map((e: any) => e.formattedMessage ?? e.message).join('; ')
-      throw new Error('MJML_ERROR:' + msg + '|||' + mjmlSource)
-    }
+  }
+
+  if (!compiled.html) {
+    const msg = (compiled.errors ?? []).map((e: any) => e.formattedMessage ?? e.message).join('; ') || 'MJML konnte nicht kompiliert werden'
+    throw new Error('MJML_ERROR:' + msg + '|||' + mjmlSource)
   }
 
   const { html } = compiled

@@ -34,7 +34,8 @@ export default function AgencyForm() {
         setSaving(false)
         return
       }
-      logo_url = path
+      const { data: urlData } = supabase.storage.from('campaign-assets').getPublicUrl(path)
+      logo_url = urlData.publicUrl
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

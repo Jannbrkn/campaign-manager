@@ -143,7 +143,7 @@ export default function EditCampaignModal({ campaign, onClose, onSaved }: Props)
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="field-input [color-scheme:dark]"
+              className="field-input"
               required
             />
           </div>
