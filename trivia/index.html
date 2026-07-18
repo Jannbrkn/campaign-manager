@@ -1,0 +1,497 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Auto-Trivia</title>
+<style>
+  :root {
+    --bg: #0E1116;
+    --surface: #171B22;
+    --surface-2: #1F242D;
+    --border: #2A303B;
+    --text: #F2EFE9;
+    --muted: #98A0AE;
+    --accent: #FFB868;
+    --accent-ink: #1A1206;
+    --easy: #7BC47F;
+    --medium: #E8B34D;
+    --hard: #E07A6B;
+    --radius: 18px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: max(16px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  }
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Home ---------- */
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1.title {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+    text-wrap: balance;
+  }
+  .subtitle { color: var(--muted); font-size: 14px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .chips {
+    display: flex;
+    gap: 6px;
+    margin: 22px 0 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 5px;
+  }
+  .chip {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .chip[aria-pressed="true"] { background: var(--surface-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--border); }
+  .chip[data-d="1"][aria-pressed="true"] { color: var(--easy); }
+  .chip[data-d="2"][aria-pressed="true"] { color: var(--medium); }
+  .chip[data-d="3"][aria-pressed="true"] { color: var(--hard); }
+
+  .btn-random {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 17px;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+  .btn-random:active { transform: scale(0.98); }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .cat-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 14px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-align: left;
+    min-height: 104px;
+    overflow: hidden;
+  }
+  .cat-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--cat-color);
+    opacity: 0.9;
+  }
+  .cat-tile:active { background: var(--surface-2); }
+  .cat-tile .emoji { font-size: 26px; }
+  .cat-tile .name { font-size: 14.5px; font-weight: 700; line-height: 1.25; }
+  .cat-tile .count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat-tile[disabled] { opacity: 0.45; }
+
+  .home-footer { margin-top: 22px; text-align: center; }
+  .btn-ghost {
+    padding: 12px 18px;
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .btn-ghost:active { color: var(--text); }
+
+  /* ---------- Question screen ---------- */
+  .q-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .btn-back {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .badge-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 0;
+  }
+  .badge-cat .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--cat-color); }
+  .badge-cat .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge-diff {
+    margin-left: auto;
+    flex: none;
+    padding: 9px 13px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+  .badge-diff[data-d="1"] { color: var(--easy); border-color: color-mix(in srgb, var(--easy) 45%, transparent); }
+  .badge-diff[data-d="2"] { color: var(--medium); border-color: color-mix(in srgb, var(--medium) 45%, transparent); }
+  .badge-diff[data-d="3"] { color: var(--hard); border-color: color-mix(in srgb, var(--hard) 45%, transparent); }
+
+  .q-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 12px 0;
+  }
+  .q-inner {
+    margin: auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .q-text {
+    font-size: clamp(21px, 5.8vw, 27px);
+    font-weight: 750;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .hint-box, .answer-box {
+    border-radius: var(--radius);
+    padding: 15px 16px;
+    font-size: 16px;
+    line-height: 1.45;
+    animation: rise 0.22s ease-out;
+  }
+  .hint-box {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+    color: color-mix(in srgb, var(--accent) 85%, white);
+  }
+  .hint-box .k, .answer-box .k {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    opacity: 0.75;
+  }
+  .answer-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 19px;
+    font-weight: 700;
+  }
+  .answer-box .k { color: var(--accent); }
+  .btn-hint {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .btn-hint:active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+  .q-bottom { display: flex; flex-direction: column; gap: 10px; }
+  .btn-reveal, .btn-next {
+    width: 100%;
+    padding: 18px;
+    border-radius: var(--radius);
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .btn-reveal { background: var(--surface-2); border: 1px solid var(--border); }
+  .btn-reveal:active { background: var(--border); }
+  .btn-next { background: var(--accent); color: var(--accent-ink); }
+  .btn-next:active { transform: scale(0.98); }
+  .q-counter { text-align: center; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Done screen ---------- */
+  .done {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+  }
+  .done .big { font-size: 52px; }
+  .done h2 { font-size: 23px; font-weight: 800; text-wrap: balance; }
+  .done p { color: var(--muted); font-size: 15px; max-width: 30ch; }
+  .done .q-bottom { width: 100%; margin-top: 14px; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hint-box, .answer-box { animation: none; }
+    .btn-random:active, .btn-next:active { transform: none; }
+  }
+</style>
+
+<div id="app"></div>
+
+<script>
+'use strict';
+var CATEGORIES = [{"key":"allgemein","name":"Allgemeinwissen","emoji":"💡","color":"#E8C468","questions":[{"q":"Wie viele Beine hat eine Spinne?","a":"Acht","hint":"Mehr als ein Insekt.","d":1},{"q":"Welche Farbe entsteht, wenn man Blau und Gelb mischt?","a":"Grün","hint":"Die Farbe von Gras.","d":1},{"q":"Wie nennt man ein Baby vom Pferd?","a":"Fohlen","hint":"Beginnt mit F.","d":1},{"q":"Wie viele Zähne hat ein erwachsener Mensch normalerweise — mit Weisheitszähnen?","a":"32","hint":"Eine Zahl zwischen 30 und 35.","d":1},{"q":"Was ist das größte Tier der Welt?","a":"Der Blauwal","hint":"Es lebt im Meer.","d":1},{"q":"Wie viele Saiten hat eine klassische Gitarre?","a":"Sechs","hint":"Halbes Dutzend.","d":1},{"q":"Welches Tier gilt als „König der Tiere\"?","a":"Der Löwe","hint":"Er hat eine Mähne.","d":1},{"q":"Wie viele Tage hat ein Schaltjahr?","a":"366","hint":"Ein Tag mehr als sonst.","d":1},{"q":"Wie nennt man das Ergebnis einer Multiplikation?","a":"Das Produkt","hint":"Das Wort kennt man auch aus dem Supermarkt.","d":1},{"q":"Was misst ein Thermometer?","a":"Die Temperatur","hint":"Fieber zum Beispiel.","d":1},{"q":"Wie nennt man jemanden, der Bücher schreibt?","a":"Autor bzw. Schriftsteller","hint":"Beginnt mit A oder S.","d":1},{"q":"Welches Organ pumpt das Blut durch den Körper?","a":"Das Herz","hint":"Es schlägt.","d":1},{"q":"Wie viele Farben hat ein Regenbogen, klassisch gezählt?","a":"Sieben","hint":"Eine Glückszahl.","d":1},{"q":"Wie nennt man eine Gruppe von Wölfen?","a":"Ein Rudel","hint":"Das Wort nutzt man auch für Hunde.","d":1},{"q":"Wie heißt die Angst vor Spinnen?","a":"Arachnophobie","hint":"Kommt vom griechischen Wort für Spinne.","d":1},{"q":"Wie viele Monate haben 31 Tage?","a":"Sieben","hint":"Mehr als die Hälfte.","d":1},{"q":"Welches Tier trägt sein Haus auf dem Rücken?","a":"Die Schnecke","hint":"Sie ist sehr langsam.","d":1},{"q":"Wie nennt man den krankhaften Verlust des Gedächtnisses?","a":"Amnesie","hint":"Beginnt mit A.","d":1},{"q":"Wie viele Ecken hat ein Würfel?","a":"Acht","hint":"Mehr als sechs.","d":1},{"q":"Wie nennt man gefrorenes Wasser, das im Winter vom Dach hängt?","a":"Eiszapfen","hint":"Spitz und kalt.","d":1},{"q":"Wie viele Knochen hat ein erwachsener Mensch ungefähr?","a":"Etwa 206","hint":"Etwas mehr als 200.","d":2},{"q":"Wie heißt die griechische Göttin der Weisheit?","a":"Athene","hint":"Nach ihr ist eine Hauptstadt benannt.","d":2},{"q":"Wofür steht die Abkürzung „WWW\"?","a":"World Wide Web","hint":"Drei englische Wörter, alle mit W.","d":2},{"q":"Wie nennt man ein Wort, das vorwärts und rückwärts gleich gelesen wird — wie „Anna\"?","a":"Ein Palindrom","hint":"Beginnt mit P.","d":2},{"q":"Welches Metall ist bei Raumtemperatur flüssig?","a":"Quecksilber","hint":"Früher in Fieberthermometern.","d":2},{"q":"Was ist die am häufigsten gesprochene Muttersprache der Welt?","a":"Mandarin (Chinesisch)","hint":"Nicht Englisch.","d":2},{"q":"Wie heißt das Parlament in Deutschland?","a":"Der Bundestag","hint":"Sitzt im Reichstagsgebäude.","d":2},{"q":"Aus wie vielen Sternen besteht die Flagge der Europäischen Union?","a":"Zwölf","hint":"Wie die Monate im Jahr.","d":2},{"q":"Welcher Vogel kann als einziger rückwärts fliegen?","a":"Der Kolibri","hint":"Der kleinste Vogel der Welt.","d":2},{"q":"Wie viele Herzen hat ein Oktopus?","a":"Drei","hint":"Mehr als eins, weniger als vier.","d":2},{"q":"Was sammelt ein Philatelist?","a":"Briefmarken","hint":"Man leckt sie an — oder klebt sie.","d":2},{"q":"Wie nennt man ein Tier, das sowohl Fleisch als auch Pflanzen frisst?","a":"Allesfresser (Omnivore)","hint":"Der Mensch ist auch einer.","d":2},{"q":"Welche Blutgruppe gilt als Universalspender?","a":"0 negativ","hint":"Eine Zahl, kein Buchstabe.","d":2},{"q":"Wie viele Buchstaben hat das deutsche Alphabet — ohne Umlaute und ß?","a":"26","hint":"Zwischen 24 und 28.","d":2},{"q":"Wie heißt die Währung in Japan?","a":"Der Yen","hint":"Drei Buchstaben.","d":2},{"q":"Nach welchem römischen Herrscher ist der Monat Juli benannt?","a":"Julius Caesar","hint":"Er wurde an den Iden des März ermordet.","d":2},{"q":"Wie nennt man die Kunst der schönen Handschrift?","a":"Kalligrafie","hint":"Beginnt mit K.","d":2},{"q":"Wie heißt die Angst vor engen Räumen?","a":"Klaustrophobie","hint":"Zum Beispiel im Aufzug.","d":2},{"q":"Wie nennt man die Lehre von den Wappen?","a":"Heraldik","hint":"Beginnt mit H.","d":3},{"q":"Was ist ein Oxymoron?","a":"Die Verbindung zweier sich widersprechender Begriffe — z. B. „beredtes Schweigen\"","hint":"Ein Stilmittel aus der Sprache.","d":3},{"q":"Wie viele Musen gibt es in der griechischen Mythologie?","a":"Neun","hint":"Eine einstellige Zahl, mehr als sieben.","d":3},{"q":"Was sammelt ein Numismatiker?","a":"Münzen","hint":"Klimpert im Portemonnaie.","d":3},{"q":"Wie viele Karat hat reines Gold?","a":"24","hint":"Wie die Stunden eines Tages.","d":3},{"q":"Was ist der kleinste Knochen des Menschen — und wo sitzt er?","a":"Der Steigbügel, im Ohr","hint":"Er ist nach einem Reitzubehör benannt.","d":3},{"q":"Welches chemische Element hat das Symbol „Sn\"?","a":"Zinn","hint":"Daraus goss man früher Soldaten-Figuren.","d":3},{"q":"Wie hieß die Währung in Deutschland vor der D-Mark?","a":"Die Reichsmark","hint":"Der Name klingt nach Kaiserzeit.","d":3},{"q":"Wie viele Windstärken umfasst die Beaufort-Skala?","a":"13 (Stufe 0 bis 12)","hint":"Sie beginnt bei null.","d":3},{"q":"Wie nennt man ein Wort, das aus zwei Wörtern verschmolzen ist — wie „Brunch\"?","a":"Ein Kofferwort","hint":"Man packt zwei Wörter hinein wie in ein Gepäckstück.","d":3},{"q":"Wie nennt man ein Gedicht mit genau 14 Versen?","a":"Ein Sonett","hint":"Shakespeare schrieb 154 davon.","d":3},{"q":"Was bedeutet das lateinische „Carpe diem\"?","a":"„Nutze den Tag\"","hint":"Ein Aufruf, das Heute zu genießen.","d":3}]},{"key":"geografie","name":"Geografie & Reisen","emoji":"🌍","color":"#6FBF8F","questions":[{"q":"Wie heißt die Hauptstadt von Frankreich?","a":"Paris","hint":"Stadt der Liebe.","d":1},{"q":"Auf welchem Kontinent liegt Ägypten?","a":"Afrika","hint":"Der Kontinent mit der Sahara.","d":1},{"q":"Welches Land hat die Form eines Stiefels?","a":"Italien","hint":"Pasta-Land.","d":1},{"q":"Wie heißt die Hauptstadt von Spanien?","a":"Madrid","hint":"Nicht Barcelona.","d":1},{"q":"Wie viele Bundesländer hat Deutschland?","a":"16","hint":"Mehr als 12, weniger als 20.","d":1},{"q":"Welcher Ozean liegt zwischen Europa und Amerika?","a":"Der Atlantik","hint":"Nicht der Pazifik.","d":1},{"q":"In welcher Stadt steht die Freiheitsstatue?","a":"New York","hint":"Der „Big Apple\".","d":1},{"q":"Welches ist das flächenmäßig größte Land der Welt?","a":"Russland","hint":"Es liegt in Europa und Asien.","d":1},{"q":"Wie heißt die Hauptstadt von Österreich?","a":"Wien","hint":"Berühmt für Schnitzel und Walzer.","d":1},{"q":"Welches Meer liegt zwischen Europa und Afrika?","a":"Das Mittelmeer","hint":"Der Name sagt, wo es liegt.","d":1},{"q":"Wie heißt die größte heiße Wüste der Welt?","a":"Die Sahara","hint":"Sie liegt in Nordafrika.","d":1},{"q":"In welcher Stadt steht der berühmte Schiefe Turm?","a":"Pisa","hint":"Eine Stadt in Italien.","d":1},{"q":"Welches Land hat die meisten Einwohner der Welt?","a":"Indien","hint":"Seit 2023 nicht mehr China.","d":1},{"q":"Wie heißt der höchste Berg der Welt?","a":"Der Mount Everest","hint":"Er steht im Himalaya.","d":1},{"q":"Wie heißt die Hauptstadt von Italien?","a":"Rom","hint":"Alle Wege führen dorthin.","d":1},{"q":"Auf welchem Kontinent liegt der Südpol?","a":"Antarktis","hint":"Dort leben Pinguine.","d":1},{"q":"Mit welcher Währung bezahlt man in der Schweiz?","a":"Mit dem Schweizer Franken","hint":"Nicht mit dem Euro.","d":1},{"q":"Wie heißt die Hauptstadt der Niederlande?","a":"Amsterdam","hint":"Berühmt für ihre Grachten.","d":1},{"q":"Welcher US-Bundesstaat ist eine Inselgruppe mitten im Pazifik?","a":"Hawaii","hint":"Berühmt für Surfen und Vulkane.","d":1},{"q":"Wie heißt der längste Fluss, der durch Deutschland fließt?","a":"Der Rhein","hint":"Er mündet in die Nordsee.","d":1},{"q":"An wie viele Länder grenzt Deutschland?","a":"Neun","hint":"Eine einstellige Zahl, fast zweistellig.","d":2},{"q":"Wie heißt die Hauptstadt von Australien?","a":"Canberra","hint":"Weder Sydney noch Melbourne.","d":2},{"q":"Welcher Fluss fließt durch London?","a":"Die Themse","hint":"An ihr steht der Big Ben.","d":2},{"q":"Wie heißt der längste Fluss der Welt — nach klassischer Zählung?","a":"Der Nil","hint":"Er fließt durch Ägypten.","d":2},{"q":"Wie heißt die Hauptstadt von Kanada?","a":"Ottawa","hint":"Weder Toronto noch Vancouver.","d":2},{"q":"In welchem afrikanischen Land liegt die legendäre Stadt Timbuktu?","a":"Mali","hint":"Vier Buchstaben.","d":2},{"q":"Wie heißt der höchste Berg Deutschlands?","a":"Die Zugspitze","hint":"Er steht in Bayern.","d":2},{"q":"Welches Land hat die längste Küste der Welt?","a":"Kanada","hint":"Sehr viele Inseln im hohen Norden.","d":2},{"q":"Wie heißt die Hauptstadt der Türkei?","a":"Ankara","hint":"Nicht Istanbul.","d":2},{"q":"Welcher Kanal verbindet das Mittelmeer mit dem Roten Meer?","a":"Der Suezkanal","hint":"Er liegt in Ägypten.","d":2},{"q":"Wie heißt der tiefste See der Welt?","a":"Der Baikalsee","hint":"Er liegt in Sibirien.","d":2},{"q":"In welchem Land liegt die Inka-Ruinenstadt Machu Picchu?","a":"Peru","hint":"Ein Anden-Land.","d":2},{"q":"Wie heißen die berühmten Wasserfälle an der Grenze zwischen den USA und Kanada?","a":"Die Niagarafälle","hint":"Beginnt mit N.","d":2},{"q":"Welches Land nennt man das „Land der aufgehenden Sonne\"?","a":"Japan","hint":"Die Sonne ist auf der Flagge.","d":2},{"q":"Wie heißt die Hauptstadt von Brasilien?","a":"Brasília","hint":"Nicht Rio, nicht São Paulo.","d":2},{"q":"Wie heißt die Meerenge zwischen Spanien und Marokko?","a":"Die Straße von Gibraltar","hint":"Benannt nach einem Affenfelsen.","d":2},{"q":"Welches ist das kleinste Land der Welt?","a":"Die Vatikanstadt","hint":"Es liegt mitten in Rom.","d":2},{"q":"In welchem Gebirge steht das Matterhorn?","a":"In den Alpen (Walliser Alpen, Grenze Schweiz/Italien)","hint":"Europas bekanntestes Gebirge.","d":2},{"q":"Wie heißt die Hauptstadt von Neuseeland?","a":"Wellington","hint":"Nicht Auckland.","d":3},{"q":"Wie heißt der größte See der Welt?","a":"Das Kaspische Meer","hint":"Er heißt gar nicht „See\".","d":3},{"q":"Welches Land hat gleich drei Hauptstädte?","a":"Südafrika (Pretoria, Kapstadt, Bloemfontein)","hint":"Es liegt ganz im Süden seines Kontinents.","d":3},{"q":"Wie heißt die Hauptstadt der Mongolei?","a":"Ulaanbaatar (Ulan-Bator)","hint":"Die kälteste Hauptstadt der Welt.","d":3},{"q":"Welcher Fluss bildet einen Großteil der Grenze zwischen den USA und Mexiko?","a":"Der Rio Grande","hint":"Spanisch für „großer Fluss\".","d":3},{"q":"Wie heißt der tiefste Punkt der Weltmeere?","a":"Der Marianengraben","hint":"Er liegt im Pazifik, rund 11 km tief.","d":3},{"q":"Welches Land hat die meisten Zeitzonen?","a":"Frankreich (12, dank Überseegebieten)","hint":"Nicht Russland — wegen der Überseegebiete.","d":3},{"q":"Wie heißt die Hauptstadt von Kasachstan?","a":"Astana","hint":"Sie wurde zwischenzeitlich nach einem Präsidenten benannt.","d":3},{"q":"Welche zwei Länder teilen sich die längste Landgrenze der Welt?","a":"USA und Kanada","hint":"Beide liegen in Nordamerika.","d":3},{"q":"Wie heißt die größte Insel der Welt?","a":"Grönland","hint":"Sie gehört zu Dänemark.","d":3},{"q":"In welchem Land liegt die Atacama, die trockenste Wüste der Erde?","a":"Chile","hint":"Ein sehr langes, schmales Land.","d":3},{"q":"Wie hieß der Inselstaat Sri Lanka früher?","a":"Ceylon","hint":"Der alte Name steckt noch in einer Teesorte.","d":3}]},{"key":"film","name":"Film & Serien","emoji":"🎬","color":"#E48A8A","questions":[{"q":"Wie heißt der junge Zauberer mit der Blitznarbe auf der Stirn?","a":"Harry Potter","hint":"Er lebt bei den Dursleys unter der Treppe.","d":1},{"q":"Welcher Clownfisch wird in einem berühmten Pixar-Film gesucht?","a":"Nemo","hint":"„Findet …\"","d":1},{"q":"Wie heißt der Schneemann in „Die Eiskönigin\"?","a":"Olaf","hint":"Er liebt den Sommer.","d":1},{"q":"In welcher Filmreihe sagt Darth Vader: „Ich bin dein Vater\"?","a":"Star Wars","hint":"Es geht um Lichtschwerter.","d":1},{"q":"Wie heißt der grüne Oger, der im Sumpf lebt?","a":"Shrek","hint":"Sein bester Freund ist ein Esel.","d":1},{"q":"In welcher Stadt wohnen die Simpsons?","a":"Springfield","hint":"Ein sehr häufiger US-Ortsname.","d":1},{"q":"Wie heißt der Löwenjunge in „Der König der Löwen\"?","a":"Simba","hint":"Sein Vater ist Mufasa.","d":1},{"q":"Welcher Superheld wird von einer radioaktiven Spinne gebissen?","a":"Spider-Man","hint":"Sein bürgerlicher Name ist Peter Parker.","d":1},{"q":"Wie heißt die Heimatstadt von Batman?","a":"Gotham City","hint":"Eine düstere Version von New York.","d":1},{"q":"Welcher Schauspieler spielt Jack in „Titanic\"?","a":"Leonardo DiCaprio","hint":"„Ich bin der König der Welt!\"","d":1},{"q":"Wie heißt die Zauberschule in Harry Potter?","a":"Hogwarts","hint":"Vier Häuser, ein sprechender Hut.","d":1},{"q":"Wie heißt der Weltraum-Held an Woodys Seite in „Toy Story\"?","a":"Buzz Lightyear","hint":"„Bis zur Unendlichkeit — und noch viel weiter!\"","d":1},{"q":"Wie heißt der Piraten-Kapitän in „Fluch der Karibik\"?","a":"Jack Sparrow","hint":"„Captain! Captain Jack …\"","d":1},{"q":"Wie heißt die Drachenmutter in „Game of Thrones\"?","a":"Daenerys Targaryen","hint":"Mutter von drei Drachen, silbernes Haar.","d":1},{"q":"Wie heißt der Junge, der an Weihnachten allein zu Hause vergessen wird?","a":"Kevin (McCallister)","hint":"Er verteidigt sein Haus gegen zwei Einbrecher.","d":1},{"q":"Wie heißt der Hobbit, der den Einen Ring nach Mordor trägt?","a":"Frodo Beutlin","hint":"Sein Gärtner heißt Sam.","d":1},{"q":"Welche gelbe Figur lebt in einer Ananas unter dem Meer?","a":"SpongeBob Schwammkopf","hint":"Sein bester Freund ist ein Seestern.","d":1},{"q":"Wie heißt der Hund von Micky Maus?","a":"Pluto","hint":"Er heißt wie ein Zwergplanet.","d":1},{"q":"Welcher Filmagent hat die Kennung 007?","a":"James Bond","hint":"„Geschüttelt, nicht gerührt.\"","d":1},{"q":"Wie heißen die kleinen gelben Helfer von Gru?","a":"Die Minions","hint":"Sie lieben Bananen.","d":1},{"q":"Wer führte Regie bei „Titanic\" und „Avatar\"?","a":"James Cameron","hint":"Er tauchte selbst zum Marianengraben.","d":2},{"q":"Wie heißt das Café, in dem die „Friends\" ständig sitzen?","a":"Central Perk","hint":"Ein Wortspiel mit einem New Yorker Park.","d":2},{"q":"Welcher südkoreanische Film gewann 2020 als erster nicht-englischsprachiger Film den Oscar als Bester Film?","a":"Parasite","hint":"Es geht um eine arme Familie, die sich in eine reiche einschleicht.","d":2},{"q":"Wie heißt der krebskranke Chemielehrer in „Breaking Bad\"?","a":"Walter White","hint":"Sein Deckname ist Heisenberg.","d":2},{"q":"Welcher Schauspieler spielte den Joker in „The Dark Knight\" — und bekam posthum den Oscar?","a":"Heath Ledger","hint":"„Why so serious?\"","d":2},{"q":"In welchem Land spielt „Haus des Geldes\"?","a":"Spanien","hint":"Überfall auf die Banknotendruckerei in Madrid.","d":2},{"q":"Wie heißt das Raumschiff von Han Solo?","a":"Millennium Falke (Millennium Falcon)","hint":"Der „schnellste Schrotthaufen der Galaxis\".","d":2},{"q":"In welcher Serie kämpfen Kinder aus Hawkins gegen Monster aus der „anderen Seite\"?","a":"Stranger Things","hint":"Eine der Hauptfiguren heißt Elfi (Eleven).","d":2},{"q":"Welcher Schauspieler spielt Iron Man im Marvel-Universum?","a":"Robert Downey Jr.","hint":"„I am Iron Man.\"","d":2},{"q":"In welchem Film erlebt Bill Murray immer wieder denselben Tag?","a":"„Und täglich grüßt das Murmeltier\"","hint":"Es ist der 2. Februar.","d":2},{"q":"Wie heißt der Freund und Mitbewohner von Sherlock Holmes?","a":"Dr. John Watson","hint":"Er ist Arzt.","d":2},{"q":"Welcher Regisseur drehte „Pulp Fiction\" und „Kill Bill\"?","a":"Quentin Tarantino","hint":"Er taucht in seinen Filmen oft selbst kurz auf.","d":2},{"q":"Wie heißt die Serie über den Anwalt Saul Goodman?","a":"Better Call Saul","hint":"Ein Ableger von „Breaking Bad\".","d":2},{"q":"In welchem Film mit Leonardo DiCaprio geht es um Träume in Träumen?","a":"Inception","hint":"Ein Kreisel verrät, ob man träumt.","d":2},{"q":"In welchem Land wurde die „Herr der Ringe\"-Trilogie gedreht?","a":"Neuseeland","hint":"Auenland-Kulisse am anderen Ende der Welt.","d":2},{"q":"Wie heißt Homers Ehefrau bei den Simpsons?","a":"Marge","hint":"Sie hat hohe blaue Haare.","d":2},{"q":"Welcher deutsche Film über die Stasi gewann 2007 den Auslands-Oscar?","a":"„Das Leben der Anderen\"","hint":"Ein Stasi-Hauptmann hört einen Schriftsteller ab.","d":2},{"q":"Wie heißt der Bordcomputer in „2001: Odyssee im Weltraum\"?","a":"HAL 9000","hint":"Drei Buchstaben und eine Zahl.","d":2},{"q":"Wer war der erste James-Bond-Darsteller im Kino?","a":"Sean Connery","hint":"Ein Schotte.","d":3},{"q":"Welcher Film gewann 11 Oscars — genau wie „Titanic\" und „Ben Hur\"?","a":"„Der Herr der Ringe: Die Rückkehr des Königs\"","hint":"Der Abschluss einer Trilogie.","d":3},{"q":"In welchem Jahr kam der erste Star-Wars-Film ins Kino?","a":"1977","hint":"Ende der 70er.","d":3},{"q":"Wer komponierte die Filmmusik zu „Star Wars\", „Indiana Jones\" und „Jurassic Park\"?","a":"John Williams","hint":"Der berühmteste Filmkomponist Hollywoods.","d":3},{"q":"Welcher japanische Regisseur schuf „Chihiros Reise ins Zauberland\"?","a":"Hayao Miyazaki","hint":"Mitgründer von Studio Ghibli.","d":3},{"q":"Welcher Filmklassiker beginnt mit dem Satz: „Ich glaube an Amerika\"?","a":"„Der Pate\"","hint":"Marlon Brando macht ein Angebot, das man nicht ablehnen kann.","d":3},{"q":"Wie hieß der erste abendfüllende Zeichentrickfilm von Disney (1937)?","a":"„Schneewittchen und die sieben Zwerge\"","hint":"Ein Märchen der Brüder Grimm.","d":3},{"q":"Welche Schauspielerin hält den Rekord für die meisten Oscar-Nominierungen?","a":"Meryl Streep","hint":"Sie spielte u. a. den „Teufel\", der Prada trägt.","d":3},{"q":"Wie heißt der Android an Bord der Nostromo im Original-„Alien\" von 1979?","a":"Ash","hint":"Drei Buchstaben.","d":3},{"q":"Wer spielte den „Blonden\" in „Zwei glorreiche Halunken\"?","a":"Clint Eastwood","hint":"Er wurde später Oscar-Regisseur.","d":3},{"q":"Welcher deutsche Stummfilm-Klassiker von 1927 spielt in einer futuristischen Stadt?","a":"„Metropolis\"","hint":"Regie: Fritz Lang.","d":3},{"q":"Aus welchem Film stammt das Zitat: „Mein Name ist Inigo Montoya. Du hast meinen Vater getötet. Mach dich bereit zu sterben\"?","a":"„Die Braut des Prinzen\"","hint":"Ein Märchen-Kultfilm von 1987.","d":3}]},{"key":"musik","name":"Musik & Pop","emoji":"🎵","color":"#B58FD9","questions":[{"q":"Aus welchem Land kommt die Band ABBA?","a":"Schweden","hint":"Skandinavien.","d":1},{"q":"Wer wird als „King of Pop\" bezeichnet?","a":"Michael Jackson","hint":"Erfinder des Moonwalks.","d":1},{"q":"Welche Band sang „Let It Be\" und „Hey Jude\"?","a":"The Beatles","hint":"Die „Fab Four\" aus Liverpool.","d":1},{"q":"Wie viele Mitglieder hatten die Beatles?","a":"Vier","hint":"John, Paul, George und …","d":1},{"q":"Welche britische Sängerin sang „Rolling in the Deep\" und „Hello\"?","a":"Adele","hint":"Ihre Alben heißen wie Zahlen.","d":1},{"q":"Wer singt „Shape of You\" und „Perfect\"?","a":"Ed Sheeran","hint":"Rothaariger Brite mit Gitarre.","d":1},{"q":"Wie viele Tasten hat ein klassisches Klavier?","a":"88","hint":"Eine Schnapszahl unter 100.","d":1},{"q":"Welche junge US-Sängerin wurde mit „Bad Guy\" berühmt?","a":"Billie Eilish","hint":"Ihr Bruder Finneas produziert ihre Songs.","d":1},{"q":"Wer singt „Atemlos durch die Nacht\"?","a":"Helene Fischer","hint":"Deutschlands Schlager-Queen.","d":1},{"q":"Welche Band singt „Highway to Hell\"?","a":"AC/DC","hint":"Der Bandname klingt nach Strom.","d":1},{"q":"Wie nennen sich die Fans von Taylor Swift?","a":"Swifties","hint":"Der Name steckt schon drin.","d":1},{"q":"Welcher Rapper heißt mit bürgerlichem Namen Marshall Mathers?","a":"Eminem","hint":"Der „Rap God\" aus Detroit.","d":1},{"q":"Aus welcher Stadt kommen die Toten Hosen?","a":"Düsseldorf","hint":"Am Rhein, Rivale von Köln.","d":1},{"q":"Welches Instrument spielt ein Drummer?","a":"Schlagzeug","hint":"Mit zwei Stöcken.","d":1},{"q":"Wer sang „Purple Rain\"?","a":"Prince","hint":"Sein Name ist ein Adelstitel.","d":1},{"q":"Welche kolumbianische Sängerin sang „Hips Don't Lie\"?","a":"Shakira","hint":"Ihre Hüften lügen nicht.","d":1},{"q":"Wie heißt der legendäre Frontmann von Queen?","a":"Freddie Mercury","hint":"Sein Nachname ist ein Planet — und ein Metall.","d":1},{"q":"Welche Boyband sang „Everybody (Backstreet's Back)\"?","a":"Backstreet Boys","hint":"Die Antwort steckt im Songtitel.","d":1},{"q":"Wer sang „Single Ladies\" und wird „Queen B\" genannt?","a":"Beyoncé","hint":"Früher bei Destiny's Child.","d":1},{"q":"Aus welcher deutschen Stadt kommt die Band Rammstein?","a":"Berlin","hint":"Die Hauptstadt.","d":1},{"q":"Mit welchem Song gewann Lena 2010 den Eurovision Song Contest?","a":"„Satellite\"","hint":"Der Titel kreist um die Erde.","d":2},{"q":"Wie heißt das meistverkaufte Album von Michael Jackson — und aller Zeiten?","a":"„Thriller\"","hint":"Im Video tanzen Zombies.","d":2},{"q":"Welche Band sang „Smells Like Teen Spirit\"?","a":"Nirvana","hint":"Grunge aus Seattle, Sänger Kurt Cobain.","d":2},{"q":"Welcher US-Rocker wird „The Boss\" genannt?","a":"Bruce Springsteen","hint":"„Born in the U.S.A.\"","d":2},{"q":"Welches Musical von Andrew Lloyd Webber spielt in der Pariser Oper?","a":"„Das Phantom der Oper\"","hint":"Die Hauptfigur trägt eine halbe Maske.","d":2},{"q":"Wie viele Saiten hat eine Violine?","a":"Vier","hint":"Weniger als eine Gitarre.","d":2},{"q":"Welcher Komponist schrieb die Oper „Die Zauberflöte\"?","a":"Wolfgang Amadeus Mozart","hint":"Wunderkind aus Salzburg.","d":2},{"q":"Wer komponierte die 9. Sinfonie mit der „Ode an die Freude\"?","a":"Ludwig van Beethoven","hint":"Er war am Ende fast taub.","d":2},{"q":"Wie heißt der Sänger von Coldplay?","a":"Chris Martin","hint":"Er war mit Gwyneth Paltrow verheiratet.","d":2},{"q":"Welcher spanischsprachige Song von Luis Fonsi wurde 2017 zum Welthit?","a":"„Despacito\"","hint":"Der Titel bedeutet „langsam\".","d":2},{"q":"Wie heißt die südkoreanische Boyband mit dem Hit „Dynamite\"?","a":"BTS","hint":"Drei Buchstaben.","d":2},{"q":"Welche irische Band singt „With or Without You\"?","a":"U2","hint":"Der Sänger heißt Bono.","d":2},{"q":"Wie heißt Elvis Presleys berühmtes Anwesen in Memphis?","a":"Graceland","hint":"Paul Simon benannte ein Album danach.","d":2},{"q":"Welche Sängerin heißt mit bürgerlichem Namen Stefani Germanotta?","a":"Lady Gaga","hint":"Sie trug einmal ein Kleid aus Fleisch.","d":2},{"q":"Welches Instrument spielte die Jazz-Legende Louis Armstrong?","a":"Trompete","hint":"Ein Blechblasinstrument.","d":2},{"q":"Wie heißt das riesige Metal-Festival in Schleswig-Holstein?","a":"Wacken Open Air","hint":"Ein kleines Dorf, einmal im Jahr voller Metalheads.","d":2},{"q":"Welche Britpop-Band sang „Wonderwall\"?","a":"Oasis","hint":"Die streitenden Gallagher-Brüder.","d":2},{"q":"Wer war der „King of Rock 'n' Roll\"?","a":"Elvis Presley","hint":"Berühmter Hüftschwung.","d":2},{"q":"Wie viele Sinfonien vollendete Beethoven?","a":"Neun","hint":"Die letzte enthält die „Ode an die Freude\".","d":3},{"q":"Welcher Jazz-Trompeter nahm das legendäre Album „Kind of Blue\" auf?","a":"Miles Davis","hint":"Vorname wie das englische Wort für Meilen.","d":3},{"q":"Wie hieß David Bowies außerirdisches Alter Ego?","a":"Ziggy Stardust","hint":"Er kam mit den „Spiders from Mars\".","d":3},{"q":"Wie hießen die „Drei Tenöre\"?","a":"Luciano Pavarotti, Plácido Domingo und José Carreras","hint":"Ein Italiener und zwei Spanier.","d":3},{"q":"In welchem Ort fand das Woodstock-Festival 1969 tatsächlich statt?","a":"In Bethel (New York)","hint":"Nicht in Woodstock selbst.","d":3},{"q":"Wie heißt die Dur-Tonart ohne jedes Vorzeichen?","a":"C-Dur","hint":"Nur weiße Tasten.","d":3},{"q":"In welcher US-Stadt wurde das Motown-Label gegründet?","a":"Detroit","hint":"Die „Motor City\" — daher der Name.","d":3},{"q":"Welcher deutsche Komponist schrieb den Opernzyklus „Der Ring des Nibelungen\"?","a":"Richard Wagner","hint":"Seine Festspiele finden in Bayreuth statt.","d":3},{"q":"Wie viele Halbtöne umfasst eine Oktave?","a":"Zwölf","hint":"Wie die Monate im Jahr.","d":3},{"q":"Welche Weltband nannte sich in ihren Anfängen „The Quarrymen\"?","a":"The Beatles","hint":"Gegründet von John Lennon in Liverpool.","d":3},{"q":"Wer sang das Bond-Titellied „Goldfinger\"?","a":"Shirley Bassey","hint":"Eine Waliserin mit gewaltiger Stimme.","d":3},{"q":"Welches Orchesterstück von Ravel wiederholt ein einziges Thema über eine Viertelstunde?","a":"Der „Boléro\"","hint":"Es beginnt mit einer kleinen Trommel.","d":3}]},{"key":"sport","name":"Sport","emoji":"⚽","color":"#6FA8DC","questions":[{"q":"Wie viele Spieler stehen bei einer Fußballmannschaft auf dem Feld?","a":"Elf","hint":"Inklusive Torwart.","d":1},{"q":"Wie oft finden die Olympischen Sommerspiele statt?","a":"Alle vier Jahre","hint":"Wie Schaltjahre.","d":1},{"q":"Welche Farbe hat das Trikot des Gesamtführenden bei der Tour de France?","a":"Gelb","hint":"Wie die Sonne.","d":1},{"q":"Wie nennt man beim Tennis einen Aufschlag, den der Gegner nicht einmal berührt?","a":"Ein Ass","hint":"Auch eine Spielkarte.","d":1},{"q":"Wie viele Ringe hat das olympische Symbol?","a":"Fünf","hint":"Einer pro Kontinent.","d":1},{"q":"Welcher Fußballverein trägt seine Heimspiele im Signal Iduna Park aus?","a":"Borussia Dortmund","hint":"Die „Gelbe Wand\".","d":1},{"q":"Wie lange dauert ein Fußballspiel regulär?","a":"90 Minuten","hint":"Zweimal 45.","d":1},{"q":"In welcher Sportart wurde Dirk Nowitzki zum Weltstar?","a":"Basketball","hint":"Er spielte für die Dallas Mavericks.","d":1},{"q":"Wie nennt man es, wenn ein Spieler drei Tore in einem Spiel schießt?","a":"Hattrick","hint":"Hat mit einem Hut zu tun.","d":1},{"q":"Welches Land wurde 2014 Fußball-Weltmeister?","a":"Deutschland","hint":"7:1 im Halbfinale gegen Brasilien.","d":1},{"q":"Auf welchem Belag wird das Tennisturnier von Wimbledon gespielt?","a":"Rasen","hint":"Er ist grün und wächst.","d":1},{"q":"Wie viele Punkte bringt ein Freiwurf beim Basketball?","a":"Einen","hint":"Die kleinstmögliche Ausbeute.","d":1},{"q":"Welcher Wintersport kombiniert Skilanglauf und Schießen?","a":"Biathlon","hint":"Der Name bedeutet „Zweikampf\".","d":1},{"q":"Welcher deutsche Fußballer wurde „Der Kaiser\" genannt?","a":"Franz Beckenbauer","hint":"Weltmeister als Spieler und als Trainer.","d":1},{"q":"Wie viele Felder hat ein Schachbrett?","a":"64","hint":"8 mal 8.","d":1},{"q":"Welches Land ist mit fünf Titeln Rekord-Fußballweltmeister?","a":"Brasilien","hint":"Heimat von Pelé.","d":1},{"q":"Wie heißt die höchste deutsche Fußballliga?","a":"Die Bundesliga","hint":"18 Vereine.","d":1},{"q":"Wie lang ist ein Marathon?","a":"42,195 Kilometer","hint":"Etwas mehr als 42 km.","d":1},{"q":"Wie viele Pins stehen beim Bowling?","a":"Zehn","hint":"Aufgestellt als Dreieck.","d":1},{"q":"Welcher Jamaikaner gilt als schnellster Mann der Welt?","a":"Usain Bolt","hint":"Sein Nachname bedeutet „Blitz\".","d":1},{"q":"Wie viele Grand-Slam-Turniere gibt es im Tennis pro Jahr?","a":"Vier","hint":"Melbourne, Paris, London, New York.","d":2},{"q":"Welche zwei Fahrer sind mit je sieben Titeln Rekord-Formel-1-Weltmeister?","a":"Michael Schumacher und Lewis Hamilton","hint":"Ein Deutscher und ein Brite.","d":2},{"q":"Wie viele Punkte bringt ein Touchdown beim American Football?","a":"Sechs","hint":"Danach gibt es noch einen Zusatzpunkt-Versuch.","d":2},{"q":"In welcher Stadt fanden die Olympischen Sommerspiele 2021 statt?","a":"Tokio","hint":"Sie hießen offiziell „2020\".","d":2},{"q":"Wie heißt das Stadion des FC Bayern München?","a":"Allianz Arena","hint":"Es leuchtet nachts rot.","d":2},{"q":"Welcher Boxer nannte sich selbst „The Greatest\"?","a":"Muhammad Ali","hint":"„Schwebe wie ein Schmetterling, stich wie eine Biene.\"","d":2},{"q":"Wie viele Gewinnsätze braucht ein Herr für einen Grand-Slam-Sieg in einem Match?","a":"Drei (Best of Five)","hint":"Bei den Damen sind es zwei.","d":2},{"q":"Aus welchem Land stammt die Kampfsportart Judo?","a":"Japan","hint":"Der Name bedeutet „sanfter Weg\".","d":2},{"q":"Wie heißt die berühmteste Radrundfahrt Italiens?","a":"Der Giro d'Italia","hint":"Das Führungstrikot ist rosa.","d":2},{"q":"Wie viele Spieler stehen beim Volleyball pro Team auf dem Feld?","a":"Sechs","hint":"Halb so viele wie beim Fußball plus eins? Nein — einfach ein halbes Dutzend.","d":2},{"q":"Wie schnell lief Usain Bolt seinen 100-Meter-Weltrekord?","a":"9,58 Sekunden","hint":"Unter 9,6 Sekunden.","d":2},{"q":"Welcher Verein hat die meisten Champions-League-Titel?","a":"Real Madrid","hint":"Die „Königlichen\".","d":2},{"q":"In welcher Sportart gibt es „Birdie\" und „Eagle\"?","a":"Golf","hint":"Beides sind Vogelnamen — es geht um Schläge unter Par.","d":2},{"q":"Wie oft war Deutschland Fußball-Weltmeister?","a":"Viermal","hint":"1954, 1974, 1990 und …","d":2},{"q":"Wie heißt der wichtigste Platz in Wimbledon?","a":"Centre Court","hint":"Er hat ein verschließbares Dach.","d":2},{"q":"Welche Nation dominiert seit Jahrzehnten das Tischtennis?","a":"China","hint":"Das bevölkerungsreichste Land Asiens.","d":2},{"q":"Bei welchem Verein spielte Lionel Messi über 20 Jahre?","a":"FC Barcelona","hint":"Katalonien.","d":2},{"q":"Welche Mannschaftssportart mit Puck gilt als schnellstes Spiel der Welt?","a":"Eishockey","hint":"Gespielt auf Kufen.","d":2},{"q":"In welchem Jahr gewann Deutschland zum ersten Mal die Fußball-WM?","a":"1954","hint":"Das „Wunder von Bern\".","d":3},{"q":"Gegen wen gewann Deutschland das WM-Finale von 1954?","a":"Ungarn","hint":"Die „Goldene Elf\" galt als unschlagbar.","d":3},{"q":"Wer lief 1954 als erster Mensch die Meile unter vier Minuten?","a":"Roger Bannister","hint":"Ein britischer Medizinstudent.","d":3},{"q":"Welche Gürtelfarbe kommt im Judo klassisch direkt vor Schwarz?","a":"Braun","hint":"Dunkler als Blau.","d":3},{"q":"Welches Land gewann die allererste Fußball-WM 1930?","a":"Uruguay","hint":"Das Gastgeberland in Südamerika.","d":3},{"q":"Wer gewann als bislang einziger Deutscher die Tour de France?","a":"Jan Ullrich","hint":"Im Jahr 1997.","d":3},{"q":"Welcher legendäre Baseballspieler trug den Spitznamen „The Bambino\"?","a":"Babe Ruth","hint":"Er spielte für die New York Yankees.","d":3},{"q":"In welcher Disziplin springt man mit dem „Fosbury-Flop\"?","a":"Hochsprung","hint":"Man überquert die Latte rückwärts.","d":3},{"q":"Wie viele Punkte bringt das Bullseye beim Darts?","a":"50","hint":"Der äußere grüne Ring bringt die Hälfte.","d":3},{"q":"Gegen welchen Computer verlor Schachweltmeister Garri Kasparow 1997?","a":"Deep Blue","hint":"Gebaut von IBM.","d":3},{"q":"Wie heißt die Meisterschafts-Trophäe der Eishockey-Liga NHL?","a":"Der Stanley Cup","hint":"Benannt nach einem britischen Lord.","d":3},{"q":"Wie viele Löcher hat eine vollständige Golfrunde?","a":"18","hint":"Volljährig.","d":3}]},{"key":"wissenschaft","name":"Wissenschaft & Technik","emoji":"🔬","color":"#5FC9C9","questions":[{"q":"Welcher Planet ist der Sonne am nächsten?","a":"Merkur","hint":"Auch ein römischer Götterbote.","d":1},{"q":"Welche chemische Formel hat Wasser?","a":"H₂O","hint":"Zwei Wasserstoff, ein Sauerstoff.","d":1},{"q":"Wie viele Planeten hat unser Sonnensystem?","a":"Acht","hint":"Pluto zählt nicht mehr.","d":1},{"q":"Welches Gas brauchen wir zum Atmen?","a":"Sauerstoff","hint":"Chemisches Symbol O.","d":1},{"q":"Wofür steht die Abkürzung „PC\"?","a":"Personal Computer","hint":"Zwei englische Wörter.","d":1},{"q":"Welcher Planet wird „der Rote Planet\" genannt?","a":"Mars","hint":"Auch ein Schokoriegel.","d":1},{"q":"Womit orientieren sich Fledermäuse im Dunkeln?","a":"Mit Echoortung (Ultraschall)","hint":"Sie rufen und hören das Echo.","d":1},{"q":"Welche Teilchen kreisen um den Atomkern?","a":"Elektronen","hint":"Sie sind negativ geladen.","d":1},{"q":"Bei wie viel Grad Celsius kocht Wasser auf Meereshöhe?","a":"100 Grad","hint":"Eine runde Zahl.","d":1},{"q":"Was misst man in Volt?","a":"Elektrische Spannung","hint":"Auf jeder Batterie steht ein Wert.","d":1},{"q":"Welches Organ steuert unseren gesamten Körper?","a":"Das Gehirn","hint":"Es sitzt im Kopf.","d":1},{"q":"Wie heißt die Kraft, die uns am Boden hält?","a":"Die Schwerkraft (Gravitation)","hint":"Newton und der Apfel.","d":1},{"q":"Was ist schneller: Licht oder Schall?","a":"Licht","hint":"Erst der Blitz, dann der Donner.","d":1},{"q":"Wie nennt man einen Berg, der Lava spuckt?","a":"Vulkan","hint":"Benannt nach einem römischen Gott.","d":1},{"q":"Welche Firma entwickelte das iPhone?","a":"Apple","hint":"Das Logo ist ein angebissenes Obst.","d":1},{"q":"Wie heißt der größte Planet unseres Sonnensystems?","a":"Jupiter","hint":"Benannt nach dem obersten römischen Gott.","d":1},{"q":"Wie heißt der Prozess, mit dem Pflanzen aus Licht Energie gewinnen?","a":"Photosynthese","hint":"„Photo\" heißt Licht.","d":1},{"q":"Wie nennt man Wissenschaftler, die Sterne und Galaxien erforschen?","a":"Astronomen","hint":"Nicht zu verwechseln mit Sterndeutern.","d":1},{"q":"Wie heißt die Raumfahrtfirma von Elon Musk?","a":"SpaceX","hint":"Der Name enthält das englische Wort für Weltraum.","d":1},{"q":"Welches Metall wird von Magneten angezogen?","a":"Eisen","hint":"Chemisches Symbol Fe.","d":1},{"q":"Wie schnell ist das Licht ungefähr?","a":"Rund 300.000 Kilometer pro Sekunde","hint":"Sechsstellige Zahl in km/s.","d":2},{"q":"Wie viele Chromosomen hat ein Mensch?","a":"46","hint":"23 Paare.","d":2},{"q":"Wer entwickelte die Relativitätstheorie?","a":"Albert Einstein","hint":"Berühmtes Foto mit herausgestreckter Zunge.","d":2},{"q":"Welches chemische Symbol hat Gold?","a":"Au","hint":"Vom lateinischen „Aurum\".","d":2},{"q":"Wie heißt der sonnennächste Stern — nach der Sonne selbst?","a":"Proxima Centauri","hint":"Der Name bedeutet „der Nächste\".","d":2},{"q":"Was misst die Richterskala?","a":"Die Stärke von Erdbeben","hint":"Die Erde bebt.","d":2},{"q":"Welcher Physiker beschrieb die Schwerkraft — angeblich nach einem fallenden Apfel?","a":"Isaac Newton","hint":"Nach ihm ist die Einheit der Kraft benannt.","d":2},{"q":"Wie heißt der Vorgang der Zellteilung?","a":"Mitose","hint":"Beginnt mit M.","d":2},{"q":"Was ist DNA?","a":"Der Träger der Erbinformation (Desoxyribonukleinsäure)","hint":"Die berühmte Doppelhelix.","d":2},{"q":"Welches Element hat die Ordnungszahl 1?","a":"Wasserstoff","hint":"Das leichteste und häufigste Element im Universum.","d":2},{"q":"Wem wird die Erfindung der Glühbirne populär zugeschrieben?","a":"Thomas Edison","hint":"Ein US-Erfinder mit über 1000 Patenten.","d":2},{"q":"Was ist der härteste natürliche Stoff der Welt?","a":"Diamant","hint":"Bester Freund mancher Menschen.","d":2},{"q":"Wie nennt man die Wissenschaft vom Wetter?","a":"Meteorologie","hint":"Hat nichts mit Meteoren zu tun — klingt aber so.","d":2},{"q":"Welcher Planet hat die auffälligsten Ringe?","a":"Saturn","hint":"Der zweitgrößte Planet.","d":2},{"q":"Wer betrat als erster Mensch den Mond?","a":"Neil Armstrong","hint":"„Ein kleiner Schritt für einen Menschen …\"","d":2},{"q":"Wie heißt das Smartphone-Betriebssystem von Google?","a":"Android","hint":"Das Maskottchen ist ein grüner Roboter.","d":2},{"q":"Wie hieß die Hündin, die 1957 als erstes Lebewesen die Erde umkreiste?","a":"Laika","hint":"An Bord von Sputnik 2.","d":2},{"q":"Aus welchen zwei Elementen besteht Kochsalz?","a":"Natrium und Chlor","hint":"NaCl.","d":2},{"q":"Wie hieß die erste Frau im Weltall?","a":"Walentina Tereschkowa","hint":"Eine Sowjet-Kosmonautin, 1963.","d":3},{"q":"Was besagt die Formel E = mc²?","a":"Masse und Energie sind äquivalent — Energie gleich Masse mal Lichtgeschwindigkeit im Quadrat","hint":"Die berühmteste Formel Einsteins.","d":3},{"q":"Wie heißt das Elementarteilchen, das 2012 am CERN nachgewiesen wurde?","a":"Das Higgs-Boson","hint":"Es wird auch „Gottesteilchen\" genannt.","d":3},{"q":"Welche Wissenschaftlerin erhielt als einzige Person Nobelpreise in zwei Naturwissenschaften?","a":"Marie Curie (Physik und Chemie)","hint":"Sie erforschte Radioaktivität.","d":3},{"q":"Wie lange braucht das Sonnenlicht bis zur Erde?","a":"Etwa 8 Minuten","hint":"Weniger als 10 Minuten.","d":3},{"q":"Nach welcher Komikergruppe ist die Programmiersprache Python benannt?","a":"Monty Python","hint":"Nicht nach der Schlange.","d":3},{"q":"Welche Ordnungszahl hat Kohlenstoff?","a":"6","hint":"Eine einstellige Zahl.","d":3},{"q":"Nach welchem Astronomen ist das berühmte Weltraumteleskop von 1990 benannt?","a":"Edwin Hubble","hint":"Er entdeckte die Ausdehnung des Universums.","d":3},{"q":"Welches Organ produziert Insulin?","a":"Die Bauchspeicheldrüse","hint":"Sie liegt hinter dem Magen.","d":3},{"q":"Wie viele Kammern hat das menschliche Herz?","a":"Vier (zwei Vorhöfe, zwei Kammern)","hint":"Eine gerade Zahl.","d":3},{"q":"Wofür steht die Abkürzung „HTTP\"?","a":"Hypertext Transfer Protocol","hint":"Steht am Anfang jeder Webadresse.","d":3},{"q":"Wie heißt die Grenze, hinter der nichts einem Schwarzen Loch entkommt?","a":"Der Ereignishorizont","hint":"Ab hier gibt es kein Zurück.","d":3}]},{"key":"essen","name":"Essen & Trinken","emoji":"🍕","color":"#E8A05C","questions":[{"q":"Aus welchem Land kommt die Pizza?","a":"Italien","hint":"Die Margherita ist nach einer Königin von dort benannt.","d":1},{"q":"Was ist die Hauptzutat von Guacamole?","a":"Avocado","hint":"Eine grüne Frucht mit großem Kern.","d":1},{"q":"Aus welcher Frucht wird Wein gemacht?","a":"Aus Trauben","hint":"Sie wachsen am Stock.","d":1},{"q":"Wie heißt das japanische Gericht aus rohem Fisch und Reis?","a":"Sushi","hint":"Man isst es mit Stäbchen und Sojasoße.","d":1},{"q":"Welches Getränk wird aus gerösteten und gemahlenen Bohnen gebrüht?","a":"Kaffee","hint":"Viele brauchen es morgens.","d":1},{"q":"Aus welchem Gemüse werden Pommes frites gemacht?","a":"Aus Kartoffeln","hint":"Eine Knolle.","d":1},{"q":"Wie heißt der italienische Nudelklassiker mit Hackfleischsoße?","a":"Spaghetti Bolognese","hint":"Benannt nach der Stadt Bologna.","d":1},{"q":"Aus welcher Bohne wird Schokolade gemacht?","a":"Aus der Kakaobohne","hint":"Sie wächst in den Tropen.","d":1},{"q":"Welches Land ist berühmt für Paella?","a":"Spanien","hint":"Das Gericht kommt aus Valencia.","d":1},{"q":"Was kommt auf einen Cappuccino obendrauf?","a":"Milchschaum","hint":"Weiß und luftig.","d":1},{"q":"Wie heißt das Schweizer Gericht, bei dem man Brot in geschmolzenen Käse tunkt?","a":"Fondue","hint":"Man isst es mit langen Gabeln aus einem Topf.","d":1},{"q":"Aus welchem Land stammt der Döner Kebab?","a":"Aus der Türkei","hint":"Weiterentwickelt wurde er in Berlin.","d":1},{"q":"Welche gelbe, krumme Frucht wächst in Stauden?","a":"Die Banane","hint":"Affenfutter-Klischee.","d":1},{"q":"Was ist die Hauptzutat von Hummus?","a":"Kichererbsen","hint":"Eine Hülsenfrucht mit lustigem Namen.","d":1},{"q":"Wie heißt das deutsche Gericht aus fermentiertem Weißkohl?","a":"Sauerkraut","hint":"International ein Spitzname für Deutsche.","d":1},{"q":"Welcher Käse ist berühmt für seine großen Löcher?","a":"Der Emmentaler","hint":"Er kommt aus der Schweiz.","d":1},{"q":"Welches Land ist berühmt für Scotch Whisky?","a":"Schottland","hint":"Der Name verrät es fast.","d":1},{"q":"Woraus wird Tofu hergestellt?","a":"Aus Sojabohnen","hint":"Eine Bohne aus Asien.","d":1},{"q":"Wie heißt das mexikanische Fladenbrot, die Grundlage von Tacos und Burritos?","a":"Tortilla","hint":"In Spanien ist es ein Omelett.","d":1},{"q":"Welches Getränk ist nach Wasser das meistgetrunkene der Welt?","a":"Tee","hint":"Nicht Kaffee!","d":1},{"q":"Welches Gewürz ist das teuerste der Welt?","a":"Safran","hint":"Es sind die Fäden einer Krokusblüte.","d":2},{"q":"Aus welchem Land kommt der Feta-Käse?","a":"Griechenland","hint":"Der Name ist herkunftsgeschützt.","d":2},{"q":"Was ist die Hauptzutat von Marzipan?","a":"Mandeln","hint":"Plus Zucker. Berühmt aus Lübeck.","d":2},{"q":"Wie heißt die japanische Suppe aus fermentierter Sojabohnenpaste?","a":"Miso-Suppe","hint":"Vier Buchstaben, beginnt mit M.","d":2},{"q":"Welche Zutat lässt Brotteig aufgehen?","a":"Hefe","hint":"Ein lebender Pilz.","d":2},{"q":"Was macht ein Barista beruflich?","a":"Kaffee zubereiten","hint":"Latte Art gehört dazu.","d":2},{"q":"Aus welchem Land kommt der Gouda?","a":"Aus den Niederlanden","hint":"Benannt nach einer Stadt dort.","d":2},{"q":"Welche dünne Nudelsorte heißt auf Italienisch „kleine Würmchen\"?","a":"Vermicelli","hint":"Klingt nach „Wurm\" auf Latein.","d":2},{"q":"Wie darf Schaumwein nur heißen, wenn er aus einer bestimmten französischen Region stammt?","a":"Champagner","hint":"Die Region heißt genauso.","d":2},{"q":"Was ist Wasabi?","a":"Japanischer Meerrettich","hint":"Grün und sehr scharf.","d":2},{"q":"Welches Fleisch gehört in ein originales Wiener Schnitzel?","a":"Kalbfleisch","hint":"Nicht Schwein.","d":2},{"q":"Wie heißt die italienische Soße aus Basilikum, Pinienkernen, Parmesan und Olivenöl?","a":"Pesto","hint":"Klassisch „alla Genovese\".","d":2},{"q":"Welcher Stoff macht Chilis scharf?","a":"Capsaicin","hint":"Beginnt mit C — steckt auch im Namen der Chili-Gattung Capsicum.","d":2},{"q":"Woraus wird japanischer Sake gebraut?","a":"Aus Reis","hint":"Japans wichtigstes Grundnahrungsmittel.","d":2},{"q":"Wie heißt der „verlängerte\" Espresso mit mehr Wasser?","a":"Lungo","hint":"Italienisch für „lang\".","d":2},{"q":"Was hat mehr Vitamin C: Zitrone oder schwarze Johannisbeere?","a":"Die schwarze Johannisbeere — rund dreimal so viel","hint":"Die Zitrone ist überschätzt.","d":2},{"q":"Aus welchem Land stammt das Nudelgericht Pad Thai?","a":"Thailand","hint":"Steckt im Namen.","d":2},{"q":"Welcher Alkohol gehört klassisch in einen Mojito?","a":"Rum","hint":"Der Cocktail kommt aus Kuba.","d":2},{"q":"In welcher Stadt liegt der Ursprung des Croissants — als „Kipferl\"?","a":"Wien","hint":"Nicht in Frankreich!","d":3},{"q":"Was ist „Umami\"?","a":"Die fünfte Grundgeschmacksrichtung — herzhaft-würzig","hint":"Neben süß, sauer, salzig und bitter.","d":3},{"q":"Wie heißt der Kaffee, dessen Bohnen zuvor eine Schleichkatze verdaut hat?","a":"Kopi Luwak","hint":"Er kommt aus Indonesien und ist extrem teuer.","d":3},{"q":"Welcher Blauschimmelkäse reift in den Höhlen eines südfranzösischen Dorfes?","a":"Roquefort","hint":"Das Dorf heißt wie der Käse.","d":3},{"q":"Was bedeutet „al dente\"?","a":"Bissfest — wörtlich „für den Zahn\"","hint":"Der Garzustand guter Pasta.","d":3},{"q":"Aus welchem Land stammt Ketchup ursprünglich — als fermentierte Fischsauce?","a":"Aus China","hint":"Nicht aus den USA.","d":3},{"q":"Von welcher Pflanzenart stammt echte Vanille?","a":"Von einer Orchidee","hint":"Die einzige Nutzpflanze dieser Blumenfamilie.","d":3},{"q":"Was macht ein Sommelier beruflich?","a":"Er ist Weinexperte und berät bei der Weinauswahl","hint":"Man trifft ihn im Restaurant.","d":3},{"q":"Aus welchem Jahr stammt das deutsche Reinheitsgebot für Bier?","a":"1516","hint":"Anfang des 16. Jahrhunderts.","d":3},{"q":"Was ist Halloumi — und woher kommt er?","a":"Ein Grillkäse aus Zypern","hint":"Er quietscht beim Kauen.","d":3},{"q":"Welcher giftige Fisch ist eine japanische Delikatesse, die nur lizenzierte Köche zubereiten dürfen?","a":"Fugu (Kugelfisch)","hint":"Sein Gift ist tödlicher als Zyanid.","d":3},{"q":"Woraus wird traditioneller Aceto Balsamico aus Modena hergestellt?","a":"Aus eingekochtem Traubenmost","hint":"Er reift jahrelang in Holzfässern.","d":3}]},{"key":"geschichte","name":"Geschichte","emoji":"🏛️","color":"#C4A87C","questions":[{"q":"In welchem Jahr fiel die Berliner Mauer?","a":"1989","hint":"Ende der 80er.","d":1},{"q":"Wer war der erste Bundeskanzler der Bundesrepublik Deutschland?","a":"Konrad Adenauer","hint":"Der Kölner Flughafen trägt seinen Namen.","d":1},{"q":"Welches antike Volk baute die Pyramiden von Gizeh?","a":"Die alten Ägypter","hint":"Am Nil.","d":1},{"q":"In welchem Land begann die Industrielle Revolution?","a":"In England (Großbritannien)","hint":"Dampfmaschinen und Kohle.","d":1},{"q":"Wie hieß das „unsinkbare\" Schiff, das 1912 unterging?","a":"Die Titanic","hint":"Es kollidierte mit einem Eisberg.","d":1},{"q":"Wer erreichte 1492 Amerika und hielt es für Indien?","a":"Christoph Kolumbus","hint":"Er segelte für Spanien.","d":1},{"q":"Welcher Weltkrieg endete 1945?","a":"Der Zweite Weltkrieg","hint":"Der spätere von beiden.","d":1},{"q":"Welche britische Königin regierte über 70 Jahre bis 2022?","a":"Elisabeth II.","hint":"Ihr Sohn Charles folgte ihr nach.","d":1},{"q":"Wie hießen die Schwertkämpfer im alten Japan?","a":"Samurai","hint":"Sie folgten dem Ehrenkodex Bushidō.","d":1},{"q":"In welchem Reich herrschte Julius Caesar?","a":"Im Römischen Reich","hint":"Hauptstadt: die „Ewige Stadt\".","d":1},{"q":"In welchem Jahr landeten zum ersten Mal Menschen auf dem Mond?","a":"1969","hint":"Ende der 60er.","d":1},{"q":"Wie hieß der ägyptische Pharao, dessen fast unberührtes Grab 1922 entdeckt wurde?","a":"Tutanchamun","hint":"Seine goldene Totenmaske ist weltberühmt.","d":1},{"q":"Welche römische Stadt wurde 79 n. Chr. vom Vesuv verschüttet?","a":"Pompeji","hint":"Sie liegt bei Neapel.","d":1},{"q":"Wie nennt man die Epoche der Ritter und Burgen?","a":"Das Mittelalter","hint":"Zwischen Antike und Neuzeit.","d":1},{"q":"Welches Land schenkte den USA die Freiheitsstatue?","a":"Frankreich","hint":"Zum 100. Geburtstag der Unabhängigkeit.","d":1},{"q":"Wer malte die Mona Lisa?","a":"Leonardo da Vinci","hint":"Ein Universalgenie der Renaissance.","d":1},{"q":"Wie hieß die deutsche Währung vor dem Euro?","a":"Die D-Mark","hint":"Eingeführt 1948.","d":1},{"q":"In welcher Stadt steht das Brandenburger Tor?","a":"Berlin","hint":"Direkt an der früheren Mauer.","d":1},{"q":"Wie hießen die seefahrenden Krieger aus Skandinavien im Frühmittelalter?","a":"Die Wikinger","hint":"Sie fuhren Langboote mit Drachenköpfen.","d":1},{"q":"Wer führte die Nationalsozialisten und stürzte die Welt in den Zweiten Weltkrieg?","a":"Adolf Hitler","hint":"Diktator ab 1933.","d":1},{"q":"In welchem Jahr begann der Erste Weltkrieg?","a":"1914","hint":"Anfang der 1910er.","d":2},{"q":"Wer war der erste Präsident der USA?","a":"George Washington","hint":"Die Hauptstadt trägt seinen Namen.","d":2},{"q":"Wie hieß die französische Königin, die 1793 unter der Guillotine starb?","a":"Marie-Antoinette","hint":"Ihr wird der Satz mit dem Kuchen zugeschrieben.","d":2},{"q":"Wie heißt die römische Grenzmauer in Nordengland?","a":"Der Hadrianswall","hint":"Benannt nach einem Kaiser.","d":2},{"q":"In welchem Jahr wurde die Bundesrepublik Deutschland gegründet?","a":"1949","hint":"Vier Jahre nach Kriegsende.","d":2},{"q":"Wer hielt 1963 die Rede „I Have a Dream\"?","a":"Martin Luther King","hint":"Bürgerrechtler, in Washington.","d":2},{"q":"Wie hieß der erste Kaiser des Deutschen Reichs von 1871?","a":"Wilhelm I.","hint":"Gekrönt in Versailles.","d":2},{"q":"Welches Ereignis am 14. Juli 1789 gilt als Beginn der Französischen Revolution?","a":"Der Sturm auf die Bastille","hint":"Ein Gefängnis in Paris.","d":2},{"q":"Mit welchem römischen Feldherrn hatte Kleopatra einen Sohn?","a":"Julius Caesar","hint":"Der Sohn hieß Caesarion.","d":2},{"q":"Wie hieß das Militärbündnis der Ostblockstaaten im Kalten Krieg?","a":"Der Warschauer Pakt","hint":"Benannt nach Polens Hauptstadt.","d":2},{"q":"Wer erfand um 1450 den Buchdruck mit beweglichen Lettern in Europa?","a":"Johannes Gutenberg","hint":"Er lebte in Mainz.","d":2},{"q":"In welchem Jahr endete der Dreißigjährige Krieg?","a":"1648","hint":"Mit dem Westfälischen Frieden.","d":2},{"q":"Auf welche Insel wurde Napoleon nach Waterloo verbannt?","a":"St. Helena","hint":"Ein winziges Eiland im Südatlantik — nicht Elba.","d":2},{"q":"Welche englische Königin regierte im „Goldenen Zeitalter\" des 16. Jahrhunderts?","a":"Elisabeth I.","hint":"Tochter von Heinrich VIII.","d":2},{"q":"Wessen Expedition umsegelte als erste die Erde?","a":"Die von Ferdinand Magellan","hint":"Er selbst starb unterwegs auf den Philippinen.","d":2},{"q":"Wer war US-Präsident während des Amerikanischen Bürgerkriegs?","a":"Abraham Lincoln","hint":"Er wurde im Theater erschossen.","d":2},{"q":"Wie nannte Churchill die Grenze zwischen West- und Osteuropa im Kalten Krieg?","a":"Den Eisernen Vorhang","hint":"Ein Begriff aus dem Theater.","d":2},{"q":"Welche chinesische Dynastie ließ die Verbotene Stadt in Peking errichten?","a":"Die Ming-Dynastie","hint":"Berühmt auch für ihre Vasen.","d":2},{"q":"In welchem Jahr wurde Rom der Legende nach gegründet?","a":"753 v. Chr.","hint":"„… kroch Rom aus dem Ei.\"","d":3},{"q":"Wie hieß der Friedensvertrag, der den Ersten Weltkrieg offiziell beendete?","a":"Der Versailler Vertrag","hint":"Unterzeichnet in einem französischen Schloss.","d":3},{"q":"Wer war der letzte Zar Russlands?","a":"Nikolaus II.","hint":"Er wurde 1918 mit seiner Familie erschossen.","d":3},{"q":"In welcher Schlacht wurde Napoleon 1815 endgültig besiegt?","a":"In der Schlacht bei Waterloo","hint":"ABBA sang darüber.","d":3},{"q":"Wie hieß die Hauptstadt des Inka-Reichs?","a":"Cusco","hint":"Sie liegt im heutigen Peru.","d":3},{"q":"Wie hieß die erste deutsche Demokratie von 1919 bis 1933?","a":"Die Weimarer Republik","hint":"Benannt nach der Stadt der Verfassungsgebung.","d":3},{"q":"Welcher Herrscher ließ als erster Kaiser Chinas die Große Mauer verbinden?","a":"Qin Shi Huangdi","hint":"Sein Grab bewacht die Terrakotta-Armee.","d":3},{"q":"In welcher Stadt wurde 1914 Erzherzog Franz Ferdinand erschossen?","a":"Sarajevo","hint":"Heute die Hauptstadt von Bosnien-Herzegowina.","d":3},{"q":"Welches afrikanische Land wurde — neben Liberia — nie dauerhaft kolonisiert?","a":"Äthiopien","hint":"Es besiegte Italien 1896 bei Adwa.","d":3},{"q":"Wie hieß das Schriftsystem der Sumerer?","a":"Die Keilschrift","hint":"In Ton geritzt, mit keilförmigen Zeichen.","d":3},{"q":"Wie hieß das Schiff, das 1620 die Pilgerväter nach Amerika brachte?","a":"Die Mayflower","hint":"Benannt nach einer Blume.","d":3},{"q":"An welchem Datum trat die deutsche Wiedervereinigung in Kraft?","a":"Am 3. Oktober 1990","hint":"Heute ein Feiertag.","d":3}]},{"key":"nerd","name":"Nerd-Spezial","emoji":"🤓","color":"#9AA5E8","questions":[{"q":"Wie viele Bits hat ein Byte?","a":"Acht","hint":"Eine Zweierpotenz.","d":3},{"q":"Wie heißt der Fluss der Unterwelt in der griechischen Mythologie?","a":"Der Styx","hint":"Über ihn setzt der Fährmann Charon über.","d":3},{"q":"Wie lauten die ersten fünf Nachkommastellen von Pi?","a":"14159","hint":"Beginnt mit 1 und 4.","d":3},{"q":"In welcher Videospielreihe sammelt man „Rubine\" (Rupees) als Währung?","a":"The Legend of Zelda","hint":"Der Held trägt Grün.","d":3},{"q":"Wie heißt Odins achtbeiniges Pferd?","a":"Sleipnir","hint":"Ein Kind Lokis.","d":3},{"q":"Wofür steht die Abkürzung „HTML\"?","a":"Hypertext Markup Language","hint":"Die Sprache, in der Webseiten geschrieben sind.","d":3},{"q":"Wie heißt das berühmteste Raumschiff in „Star Trek\"?","a":"Die USS Enterprise","hint":"Kennung NCC-1701.","d":3},{"q":"Was ist laut „Per Anhalter durch die Galaxis\" die Antwort auf alles?","a":"42","hint":"Eine zweistellige Zahl.","d":3},{"q":"Wer erfand das Betriebssystem Linux?","a":"Linus Torvalds","hint":"Ein Finne — sein Vorname steckt im Namen.","d":3},{"q":"Welche Ordnungszahl hat Uran?","a":"92","hint":"Knapp unter 100.","d":3},{"q":"Wie heißt die Heimatwelt der Klingonen?","a":"Qo'noS (gesprochen „Kronos\")","hint":"Klingt wie ein griechischer Titan.","d":3},{"q":"Wer schrieb den dystopischen Roman „1984\"?","a":"George Orwell","hint":"Von ihm stammt auch „Farm der Tiere\".","d":3},{"q":"Wie hieß das erste kommerziell erfolgreiche Videospiel von 1972 — digitales Tischtennis?","a":"Pong","hint":"Vier Buchstaben.","d":3},{"q":"Was ist in der Programmierung ein „Boolean\"?","a":"Ein Wahrheitswert — wahr oder falsch","hint":"Es gibt nur zwei mögliche Werte.","d":3},{"q":"Wie heißt der griechische Gott des Feuers und der Schmiedekunst?","a":"Hephaistos","hint":"Sein römischer Name steckt im Wort „Vulkan\".","d":3},{"q":"Wie hieß Mario bei seinem ersten Auftritt in „Donkey Kong\" (1981)?","a":"Jumpman","hint":"Der Name beschreibt, was er tut.","d":3},{"q":"Was ist 2 hoch 10?","a":"1024","hint":"Ein „Kilo\" in der Informatik.","d":3},{"q":"Wie heißen die beiden großen Elbensprachen bei Tolkien?","a":"Quenya und Sindarin","hint":"Eine „Latein-Variante\" und eine Alltagssprache.","d":3},{"q":"Wie heißt der Wüstenplanet in „Dune\"?","a":"Arrakis","hint":"Dort gibt es das Spice — und Sandwürmer.","d":3},{"q":"Wofür steht die Abkürzung „CPU\"?","a":"Central Processing Unit — der Hauptprozessor","hint":"Das „Gehirn\" des Computers.","d":3},{"q":"Wie heißt der Weltenbaum der nordischen Mythologie?","a":"Yggdrasil","hint":"Eine gewaltige Esche.","d":3},{"q":"Wer gilt als erste Programmiererin der Geschichte?","a":"Ada Lovelace","hint":"Tochter des Dichters Lord Byron, 19. Jahrhundert.","d":3},{"q":"Wie heißt der Schöpfer des Monsters in Mary Shelleys Roman „Frankenstein\"?","a":"Victor Frankenstein","hint":"Das Monster selbst hat keinen Namen.","d":3},{"q":"In welchem Jahr wurde Google gegründet?","a":"1998","hint":"Ende der 90er.","d":3},{"q":"Worum geht es beim Gedankenexperiment „Schrödingers Katze\"?","a":"Um Quanten-Überlagerung — die Katze ist gleichzeitig tot und lebendig, bis man nachsieht","hint":"Es spielt in einer Kiste.","d":3},{"q":"In welchem Land wurde Tetris erfunden?","a":"In der Sowjetunion","hint":"Vom Programmierer Alexei Paschitnow, 1984.","d":3},{"q":"Wie heißt der grün gekleidete Held der „Legend of Zelda\"-Spiele?","a":"Link","hint":"Nicht Zelda!","d":3},{"q":"Was ist eine Primzahl?","a":"Eine Zahl größer 1, die nur durch 1 und sich selbst teilbar ist","hint":"2, 3, 5, 7, 11 …","d":3},{"q":"Wie heißt das berühmteste Pen-&-Paper-Rollenspiel mit einem „Dungeon Master\"?","a":"Dungeons & Dragons","hint":"Abgekürzt D&D.","d":3},{"q":"Wie heißt das römische Gegenstück zum griechischen Göttervater Zeus?","a":"Jupiter","hint":"Auch der größte Planet.","d":3},{"q":"Wie heißt Batmans Butler?","a":"Alfred (Pennyworth)","hint":"Ein britischer Vorname.","d":3},{"q":"Welches Pokémon hat die Nummer 1 im nationalen Pokédex?","a":"Bisasam","hint":"Ein Pflanzen-Pokémon, nicht Pikachu.","d":3},{"q":"Wie heißt die sarkastische KI-Gegenspielerin in „Portal\"?","a":"GLaDOS","hint":"Sie verspricht Kuchen.","d":3},{"q":"Wie schreibt man die Zahl 5 im Binärsystem?","a":"101","hint":"Drei Ziffern, nur Einsen und Nullen.","d":3},{"q":"Wie hieß Gandalfs Schwert?","a":"Glamdring","hint":"Er fand es in einer Trollhöhle.","d":3},{"q":"Wer schrieb den Roman „Jurassic Park\"?","a":"Michael Crichton","hint":"Er schuf auch die Serie „Emergency Room\".","d":3},{"q":"Welcher griechische Held war nur an der Ferse verwundbar?","a":"Achilles","hint":"Eine Sehne ist nach ihm benannt.","d":3},{"q":"Wer ist in der nordischen Mythologie der Vater von Thor?","a":"Odin","hint":"Der einäugige Göttervater.","d":3},{"q":"Was bewirkt die Tastenkombination Strg+Z?","a":"Rückgängig machen","hint":"Der beste Freund aller Fehler.","d":3},{"q":"Wie hieß das befürchtete Computerproblem zum Jahreswechsel 1999/2000?","a":"Der Y2K-Bug (Millennium-Bug)","hint":"Es ging um zweistellige Jahreszahlen.","d":3},{"q":"Welche Spielkonsole brachte Nintendo 2017 auf den Markt?","a":"Die Nintendo Switch","hint":"Man kann sie an den Fernseher docken — oder mitnehmen.","d":3},{"q":"Welcher britische Mathematiker gilt als Vater der Informatik und knackte die Enigma?","a":"Alan Turing","hint":"Nach ihm ist ein berühmter KI-Test benannt.","d":3},{"q":"Welches griechische Wesen versteinert jeden, der es anblickt?","a":"Medusa","hint":"Sie hat Schlangen statt Haare.","d":3},{"q":"Wie funktioniert die Fibonacci-Folge?","a":"Jede Zahl ist die Summe der beiden vorherigen: 1, 1, 2, 3, 5, 8, 13 …","hint":"Man findet sie überall in der Natur.","d":3},{"q":"Wie heißt Luke Skywalkers Heimatplanet?","a":"Tatooine","hint":"Er hat zwei Sonnen.","d":3},{"q":"Was bedeutet „Open Source\" bei Software?","a":"Der Quellcode ist offen einsehbar und darf verändert werden","hint":"Das Gegenteil von proprietär.","d":3},{"q":"Wie heißt der dreiköpfige Höllenhund der griechischen Unterwelt?","a":"Zerberus","hint":"Heute ein Wort für strenge Türsteher.","d":3},{"q":"Welches Videospiel ist mit über 300 Millionen Verkäufen das meistverkaufte aller Zeiten?","a":"Minecraft","hint":"Alles besteht aus Blöcken.","d":3},{"q":"Wofür steht die Abkürzung „RAM\"?","a":"Random Access Memory — der Arbeitsspeicher","hint":"Er vergisst alles beim Ausschalten.","d":3},{"q":"Was war der erste dokumentierte Computer-„Bug\" — wortwörtlich?","a":"Eine Motte, die 1947 in einem Relais des Harvard Mark II klemmte","hint":"Es war wirklich ein Insekt.","d":3}]}];
+
+// Flat question list; id is stable (category key + index) so localStorage survives reloads.
+var ALL = [];
+CATEGORIES.forEach(function (c) {
+  c.questions.forEach(function (q, i) {
+    ALL.push({ id: c.key + ':' + i, cat: c, q: q.q, a: q.a, hint: q.hint, d: q.d });
+  });
+});
+
+var LS_KEY = 'autotrivia_used_v1';
+var used = loadUsed();
+var diffFilter = 0; // 0 = alle
+var DIFF_NAMES = { 1: 'Leicht', 2: 'Mittel', 3: 'Schwer' };
+
+function loadUsed() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch (e) { return new Set(); }
+}
+function saveUsed() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(Array.from(used))); } catch (e) { /* private mode */ }
+}
+
+function pool(catKey) {
+  return ALL.filter(function (x) {
+    if (used.has(x.id)) return false;
+    if (diffFilter && x.d !== diffFilter) return false;
+    if (catKey && x.cat.key !== catKey) return false;
+    return true;
+  });
+}
+function totalFor(catKey) {
+  return ALL.filter(function (x) {
+    if (diffFilter && x.d !== diffFilter) return false;
+    if (catKey && x.cat.key !== catKey) return false;
+    return true;
+  }).length;
+}
+
+var app = document.getElementById('app');
+function el(tag, cls, text) {
+  var n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+/* ---------- Home ---------- */
+function renderHome() {
+  app.innerHTML = '';
+  var open = pool(null).length;
+
+  var eyebrow = el('div', 'eyebrow', 'Roadtrip-Quiz');
+  var title = el('h1', 'title', 'Auto-Trivia');
+  var sub = el('div', 'subtitle', open + ' von ' + totalFor(null) + ' Fragen übrig' + (diffFilter ? ' · ' + DIFF_NAMES[diffFilter] : ''));
+  app.append(eyebrow, title, sub);
+
+  var chips = el('div', 'chips');
+  [[0, 'Alle'], [1, 'Leicht'], [2, 'Mittel'], [3, 'Schwer']].forEach(function (opt) {
+    var b = el('button', 'chip', opt[1]);
+    b.dataset.d = opt[0];
+    b.setAttribute('aria-pressed', String(diffFilter === opt[0]));
+    b.addEventListener('click', function () { diffFilter = opt[0]; renderHome(); });
+    chips.appendChild(b);
+  });
+  app.appendChild(chips);
+
+  var rnd = el('button', 'btn-random', '🎲  Zufällige Frage');
+  rnd.disabled = open === 0;
+  if (open === 0) rnd.style.opacity = '0.45';
+  rnd.addEventListener('click', function () { draw(null); });
+  app.appendChild(rnd);
+
+  var grid = el('div', 'cat-grid');
+  CATEGORIES.forEach(function (c) {
+    var left = pool(c.key).length;
+    var tile = el('button', 'cat-tile');
+    tile.style.setProperty('--cat-color', c.color);
+    if (left === 0) tile.disabled = true;
+    tile.append(
+      el('span', 'emoji', c.emoji),
+      el('span', 'name', c.name),
+      el('span', 'count', left + ' / ' + totalFor(c.key) + ' übrig')
+    );
+    tile.addEventListener('click', function () { draw(c.key); });
+    grid.appendChild(tile);
+  });
+  app.appendChild(grid);
+
+  var foot = el('div', 'home-footer');
+  var reset = el('button', 'btn-ghost', '↺ Fragen zurücksetzen');
+  reset.addEventListener('click', function () {
+    if (used.size === 0) return;
+    if (confirm('Alle ' + used.size + ' gespielten Fragen wieder freigeben?')) {
+      used = new Set();
+      saveUsed();
+      renderHome();
+    }
+  });
+  foot.appendChild(reset);
+  app.appendChild(foot);
+}
+
+/* ---------- Question ---------- */
+function draw(catKey) {
+  var p = pool(catKey);
+  if (p.length === 0) { renderDone(catKey); return; }
+  var x = p[Math.floor(Math.random() * p.length)];
+  used.add(x.id);
+  saveUsed();
+  renderQuestion(x, catKey);
+}
+
+function renderQuestion(x, catKey) {
+  app.innerHTML = '';
+  var hintShown = false, answerShown = false;
+
+  var top = el('div', 'q-top');
+  var back = el('button', 'btn-back', '←');
+  back.setAttribute('aria-label', 'Zurück zur Übersicht');
+  back.addEventListener('click', renderHome);
+  var badge = el('span', 'badge-cat');
+  badge.style.setProperty('--cat-color', x.cat.color);
+  badge.append(el('span', 'dot'), el('span', 'label', x.cat.emoji + ' ' + x.cat.name));
+  var diff = el('span', 'badge-diff', DIFF_NAMES[x.d]);
+  diff.dataset.d = x.d;
+  top.append(back, badge, diff);
+  app.appendChild(top);
+
+  var main = el('div', 'q-main');
+  var inner = el('div', 'q-inner');
+  main.appendChild(inner);
+  var qText = el('div', 'q-text', x.q);
+  inner.appendChild(qText);
+
+  var hintSlot = el('div');
+  var hintBtn = el('button', 'btn-hint', '💡 Tipp anzeigen');
+  hintBtn.addEventListener('click', function () {
+    if (hintShown) return;
+    hintShown = true;
+    var box = el('div', 'hint-box');
+    box.append(el('span', 'k', 'Tipp'), document.createTextNode(x.hint));
+    hintSlot.innerHTML = '';
+    hintSlot.appendChild(box);
+  });
+  hintSlot.appendChild(hintBtn);
+  inner.appendChild(hintSlot);
+
+  var answerSlot = el('div');
+  inner.appendChild(answerSlot);
+  app.appendChild(main);
+
+  var bottom = el('div', 'q-bottom');
+  var action = el('button', 'btn-reveal', 'Antwort aufdecken');
+  action.addEventListener('click', function () {
+    if (!answerShown) {
+      answerShown = true;
+      var box = el('div', 'answer-box');
+      box.append(el('span', 'k', 'Antwort'), document.createTextNode(x.a));
+      answerSlot.appendChild(box);
+      action.className = 'btn-next';
+      action.textContent = 'Nächste Frage  →';
+    } else {
+      draw(catKey);
+    }
+  });
+  var counter = el('div', 'q-counter', pool(catKey).length + ' Fragen übrig in dieser Auswahl');
+  bottom.append(action, counter);
+  app.appendChild(bottom);
+}
+
+/* ---------- Done ---------- */
+function renderDone(catKey) {
+  app.innerHTML = '';
+  var scope = catKey
+    ? CATEGORIES.filter(function (c) { return c.key === catKey; })[0].name
+    : 'dieser Auswahl';
+  var box = el('div', 'done');
+  box.append(
+    el('div', 'big', '🏁'),
+    el('h2', null, 'Alle Fragen durchgespielt!'),
+    el('p', null, 'In ' + scope + ' ist nichts mehr übrig' + (diffFilter ? ' (' + DIFF_NAMES[diffFilter] + ')' : '') + '. Setzt die Fragen zurück — oder nehmt eine andere Kategorie.')
+  );
+  var bottom = el('div', 'q-bottom');
+  var reset = el('button', 'btn-next', '↺ Fragen zurücksetzen');
+  reset.addEventListener('click', function () {
+    used = new Set();
+    saveUsed();
+    renderHome();
+  });
+  var home = el('button', 'btn-reveal', 'Zur Übersicht');
+  home.addEventListener('click', renderHome);
+  bottom.append(reset, home);
+  box.appendChild(bottom);
+  app.appendChild(box);
+}
+
+renderHome();
+</script>
